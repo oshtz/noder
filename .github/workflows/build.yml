@@ -139,6 +139,32 @@ jobs:
           name: noder-portable
           path: src-tauri/target/release/noder-portable.exe
 
+      - name: Create zip bundle
+        shell: pwsh
+        run: |
+          $releaseDir = "src-tauri\target\release"
+          $zipDir = "noder-win"
+          New-Item -ItemType Directory -Force -Path $zipDir | Out-Null
+
+          # Copy main executable
+          Copy-Item "$releaseDir\noder.exe" $zipDir
+
+          # Copy WebView2Loader.dll
+          $webviewDll = Get-ChildItem -Path "src-tauri\target" -Filter "WebView2Loader.dll" -Recurse | Select-Object -First 1
+          if ($webviewDll) {
+            Copy-Item $webviewDll.FullName $zipDir
+          }
+
+          # Create zip
+          Compress-Archive -Path "$zipDir\*" -DestinationPath "noder-win.zip" -Force
+          Write-Host "Created noder-win.zip"
+
+      - name: Upload zip bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: noder-win-zip
+          path: noder-win.zip
+
       - name: Determine release tag
         id: release_tag
         if: github.ref == 'refs/heads/main'
@@ -151,12 +177,14 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=v$version" >> $env:GITHUB_OUTPUT
 
-      - name: Upload portable exe to GitHub release
+      - name: Upload Windows builds to GitHub release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          files: src-tauri/target/release/noder-portable.exe
+          files: |
+            src-tauri/target/release/noder-portable.exe
+            noder-win.zip
 
   build-macos:
     runs-on: macos-latest

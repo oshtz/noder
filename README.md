@@ -42,7 +42,7 @@ Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/),
 - **Local-First Architecture** - All workflows, settings, and API keys stay on your machine
 - **Keyboard Shortcuts** - Power-user features including copy/paste nodes, duplicate, and more
 - **Dark/Light Themes** - Comfortable editing in any lighting condition
-- **Cross-Platform** - Native apps for Windows (portable exe) and macOS (signed & notarized)
+- **Cross-Platform** - Native apps for Windows and macOS (signed & notarized)
 
 ---
 
@@ -52,15 +52,18 @@ Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/),
 
 Download the latest release from the [Releases](https://github.com/oshtz/noder/releases) page:
 
-| Platform | Download |
-|----------|----------|
-| Windows (Portable) | `noder-portable.exe` |
-| macOS (DMG) | `noder_x.x.x_x64.dmg` |
-| macOS (App Bundle) | `noder.app.zip` |
+| Platform | Download | Description |
+|----------|----------|-------------|
+| Windows (Zip) | `noder-win.zip` | Recommended - extract and run |
+| Windows (Portable) | `noder-portable.exe` | Single-file executable |
+| macOS (DMG) | `noder_x.x.x_x64.dmg` | Installer |
+| macOS (App Bundle) | `noder.app.zip` | Direct app bundle |
 
-**Windows:** The portable executable requires no installation—just download and run.
+**Windows:** Extract `noder-win.zip` and run `noder.exe`. No installation required.
 
 **macOS:** Download the DMG, open it, and drag noder to your Applications folder. The app is signed and notarized for Gatekeeper.
+
+> **Note for Windows Portable Users:** The portable executable (`noder-portable.exe`) may trigger a false positive in Windows Defender (Win32/Wacatac.B!ml). This is caused by [Enigma Virtual Box](https://enigmaprotector.com/en/aboutvb.html), the tool used to package the app into a single file. The virtualization techniques it uses are similar to patterns flagged by antivirus heuristics. **This is a false positive and can be safely ignored.** If you prefer to avoid the warning, use `noder-win.zip` instead.
 
 ### Build from Source
 

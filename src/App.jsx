@@ -2741,7 +2741,7 @@ function App() {
         
         setActiveWorkflow(loadedWorkflow);
         setNodes(loadedWorkflow.data.nodes || []);
-        setEdges(loadedWorkflow.data.edges || []);
+        setEdges(markEdgeGlows(loadedWorkflow.data.edges || []));
         setWorkflowMetadata({
           ...(loadedWorkflow.data.metadata || workflowMetadata),
           name: loadedWorkflow.name || loadedWorkflow.id
@@ -2917,7 +2917,7 @@ function App() {
     // Set the new nodes and edges
     setTimeout(() => {
       setNodes(templateNodes);
-      setEdges(templateEdges);
+      setEdges(markEdgeGlows(templateEdges));
       
       // Fit view to show all nodes
       if (reactFlowInstance) {
