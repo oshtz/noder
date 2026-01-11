@@ -1,0 +1,134 @@
+.popover-backdrop {
+  display: none;
+}
+
+.node-settings-popover {
+  position: fixed;
+  top: 50px;
+  right: calc(20px + var(--assistant-panel-offset, 0px));
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  min-width: 240px;
+  max-width: 600px;
+  max-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.2s ease-out;
+  /* Ensure positioning is always relative to viewport, not parent transforms */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.node-settings-popover.is-resizing {
+  animation: none;
+  transition: none;
+  user-select: none;
+}
+
+/* Resize handle on the left edge */
+.popover-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  border-radius: 8px 0 0 8px;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.popover-resize-handle:hover,
+.node-settings-popover.is-resizing .popover-resize-handle {
+  background: var(--primary-color, #646cff);
+}
+
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.popover-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.9;
+}
+
+.popover-close {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.popover-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.popover-content {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 13px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scrollbar styling for popover content */
+.popover-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.popover-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.popover-content::-webkit-scrollbar-thumb {
+  background: var(--node-border);
+  border-radius: 4px;
+}
+
+.popover-content::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}

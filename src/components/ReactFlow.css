@@ -1,0 +1,162 @@
+/* Handles - Hidden by default, shown on node hover */
+.react-flow__handle {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  opacity: 0 !important;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.6);
+  pointer-events: none !important;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Handle icon styling */
+.react-flow__handle .handle-icon {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Show handles ONLY on node hover or when actively connecting */
+.react-flow__node:hover .react-flow__handle {
+  opacity: 1 !important;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: all !important;
+}
+
+/* Also show when actively connecting */
+.react-flow__handle.connectionindicator,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto,
+.react-flow__handle.connecting {
+  opacity: 1 !important;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: all !important;
+}
+
+/* Magnetic effect - enlarge on hover */
+.react-flow__handle:hover {
+  transform: scale(1.4);
+}
+
+.react-flow__handle:hover .handle-icon {
+  transform: translate(-50%, -50%) scale(1.15);
+  opacity: 1;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Active connection states */
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  transform: scale(1.2);
+}
+
+.react-flow__handle.connectingfrom .handle-icon,
+.react-flow__handle.connectingto .handle-icon {
+  transform: translate(-50%, -50%) scale(1.15);
+  opacity: 1;
+}
+
+/* Valid connection target */
+.react-flow__handle.connectionindicator {
+  animation: pulse-handle 1s ease-in-out infinite;
+}
+
+.react-flow__handle.connectionindicator .handle-icon {
+  animation: pulse-icon 1s ease-in-out infinite;
+}
+
+@keyframes pulse-handle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes pulse-icon {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Edge styling - Elegant and subtle with neutral gray color */
+.react-flow__edge-path {
+  stroke: rgba(160, 160, 160, 0.6);
+  stroke-width: 2;
+  z-index: 1000;
+  transition: stroke-width 0.2s ease, stroke 0.2s ease, opacity 0.2s ease;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2.5;
+  stroke: rgba(180, 180, 180, 0.8);
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 2.5;
+  stroke: rgba(200, 200, 200, 0.9);
+  filter: drop-shadow(0 0 4px rgba(160, 160, 160, 0.3));
+}
+
+/* ReactFlow layer styles */
+.react-flow__renderer {
+  z-index: 0;
+}
+
+.react-flow__pane {
+  z-index: 1;
+}
+
+.react-flow__selection {
+  z-index: 4;
+}
+
+.react-flow__edges {
+  z-index: 2;
+}
+
+.react-flow__edge {
+  z-index: 2;
+}
+
+.react-flow__nodes {
+  z-index: 3;
+}
+
+
+/* Animated edges - only when processing */
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Connection preview while dragging */
+.react-flow__connection-path {
+  stroke: rgba(160, 160, 160, 0.6);
+  stroke-width: 2;
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+/* Edge labels */
+.react-flow__edge-text {
+  font-size: 10px;
+  fill: var(--text-color);
+}
