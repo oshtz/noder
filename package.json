@@ -1,6 +1,6 @@
 {
   "name": "noder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A node-based creative workflow canvas for chaining AI calls",
   "author": "noder contributors",
   "license": "MIT",
