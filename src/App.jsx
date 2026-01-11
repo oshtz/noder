@@ -9,7 +9,6 @@ import ReactFlow, {
 } from "reactflow";
 import { FaMagic, FaRobot } from "react-icons/fa";
 import { invoke } from '@tauri-apps/api/core';
-import { platform } from '@tauri-apps/plugin-os';
 import { getCurrentWindow } from '@tauri-apps/api/window'; // Import getCurrentWindow
 import CustomEdge from "./components/CustomEdge";
 import "reactflow/dist/style.css";
@@ -271,8 +270,15 @@ const compareVersions = (a, b) => {
   return 0;
 };
 
-const getUpdateAssetConfig = async () => {
-  const os = await platform();
+const getPlatform = () => {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('mac')) return 'darwin';
+  if (ua.includes('win')) return 'windows';
+  return 'unknown';
+};
+
+const getUpdateAssetConfig = () => {
+  const os = getPlatform();
   if (os === "darwin") {
     return {
       name: MAC_UPDATE_ASSET,
@@ -623,7 +629,7 @@ function App() {
         return null;
       }
 
-      const assetConfig = await getUpdateAssetConfig();
+      const assetConfig = getUpdateAssetConfig();
       const assets = Array.isArray(release?.assets) ? release.assets : [];
       const asset =
         assets.find((entry) => entry?.name === assetConfig.name) ??
@@ -671,7 +677,7 @@ function App() {
       setUpdateError(null);
 
       try {
-        const { extension, baseName } = await getUpdateAssetConfig();
+        const { extension, baseName } = getUpdateAssetConfig();
         const safeVersion = (info.version || "unknown").replace(
           /[^0-9A-Za-z.-]/g,
           "_"
@@ -684,7 +690,7 @@ function App() {
           dirName: UPDATE_DIR_NAME
         });
 
-        const os = await platform();
+        const os = getPlatform();
         const finalPath =
           os === "darwin"
             ? await invoke("extract_app_zip", { zipPath: downloadedPath })
