@@ -87,11 +87,11 @@ select option {
 }
 
 /* Global custom input styles */
-input[type="text"],
-input[type="password"],
-input[type="email"],
-input[type="number"],
-input[type="url"],
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='number'],
+input[type='url'],
 textarea {
   background-color: var(--input-bg, #1e1e1e);
   border: 1px solid var(--border-color, #404040);
@@ -104,20 +104,20 @@ textarea {
   outline: none;
 }
 
-input[type="text"]:hover,
-input[type="password"]:hover,
-input[type="email"]:hover,
-input[type="number"]:hover,
-input[type="url"]:hover,
+input[type='text']:hover,
+input[type='password']:hover,
+input[type='email']:hover,
+input[type='number']:hover,
+input[type='url']:hover,
 textarea:hover {
   border-color: var(--primary-color, #666);
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus,
-input[type="email"]:focus,
-input[type="number"]:focus,
-input[type="url"]:focus,
+input[type='text']:focus,
+input[type='password']:focus,
+input[type='email']:focus,
+input[type='number']:focus,
+input[type='url']:focus,
 textarea:focus {
   border-color: var(--primary-color, #666);
   box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 128, 128, 128), 0.2);
@@ -199,7 +199,10 @@ textarea::placeholder {
   gap: 12px;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .empty-workflow-button.is-primary {
@@ -257,50 +260,6 @@ textarea::placeholder {
   opacity: 0.85;
 }
 
-/* Remove old margin-based classes since we're using flex layout now */
-
-.flow-wrapper {
-  flex: 1;
-  position: relative;
-  height: 100%;
-  min-width: 0; /* Prevents flex item from overflowing */
-}
-
-/* When sidebar is open */
-.sidebar-open .flow-wrapper {
-  /* margin-left: 280px; */
-}
-
-/* When sidebar is closed */
-.sidebar-closed .flow-wrapper {
-  /* margin-left: 40px; */
-}
-
-.flow-wrapper {
-  flex: 1;
-  position: relative;
-  height: 100%;
-  min-width: 0; /* Prevents flex item from overflowing */
-}
-
-.sidebar {
-  position: relative;
-  height: 100vh;
-  background-color: var(--background-color);
-  border-right: 1px solid var(--border-color);
-  transition: width 0.3s ease;
-  width: 250px;
-  min-width: 250px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar.closed {
-  width: 30px;
-  min-width: 30px;
-}
-
 .flow-container {
   flex: 1;
   position: relative;
@@ -346,7 +305,9 @@ textarea::placeholder {
   font-weight: 600;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -364,7 +325,12 @@ body {
   display: flex;
 }
 
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .custom-drag-handle span,
 .settings-panel-title,
 .node-item-title,
@@ -443,11 +409,13 @@ h1, h2, h3, h4, h5, h6,
   color: var(--text-color);
   opacity: 0.9;
   white-space: nowrap;
-  transition: opacity 0.2s, background 0.2s;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
   flex-shrink: 0;
 }
 
-.node-floating-metadata[style*="cursor: pointer"]:hover {
+.node-floating-metadata[style*='cursor: pointer']:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.2);
 }
@@ -501,10 +469,12 @@ h1, h2, h3, h4, h5, h6,
   color: var(--text-color);
   opacity: 0.6;
   white-space: nowrap;
-  transition: opacity 0.2s, background 0.2s;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
 }
 
-.node-metadata-badge[style*="cursor: pointer"]:hover {
+.node-metadata-badge[style*='cursor: pointer']:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -536,7 +506,9 @@ h1, h2, h3, h4, h5, h6,
   cursor: pointer;
   font-size: 14px;
   opacity: 0;
-  transition: opacity 0.2s, background 0.2s;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
   padding: 4px 8px;
   color: var(--text-color);
   border-radius: 4px;
@@ -618,7 +590,7 @@ h1, h2, h3, h4, h5, h6,
   color: var(--text-color);
 }
 
-.settings-panel input:not([type="file"]),
+.settings-panel input:not([type='file']),
 .settings-panel select,
 .settings-panel button {
   font-family: 'IBM Plex Sans', sans-serif;
@@ -765,7 +737,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @keyframes edge-glow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.9);
     opacity: var(--edge-glow-min, 0.25);
   }
@@ -776,7 +749,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @keyframes edge-glow-bloom {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.85);
     opacity: var(--edge-glow-outer-min, 0.15);
   }
@@ -850,12 +824,15 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   flex-direction: column;
   box-shadow: none;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .group-node.selected {
-  box-shadow: 0 0 0 2px var(--group-color, var(--primary-color)),
-              0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 0 0 2px var(--group-color, var(--primary-color)),
+    0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .group-node-header {
@@ -881,7 +858,9 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 50%;
   border: 2px solid var(--border-color);
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
   padding: 0;
 }
 
@@ -913,7 +892,9 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
   padding: 0;
 }
 
@@ -1054,7 +1035,9 @@ h1, h2, h3, h4, h5, h6,
   overflow: visible; /* Changed from hidden to visible to show handles outside */
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .resizable-node:hover {
@@ -1258,7 +1241,10 @@ h1, h2, h3, h4, h5, h6,
   background: rgba(255, 255, 255, 0.04);
   color: #888;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .node-selector-favorite:hover {
@@ -1416,8 +1402,12 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes processing-pulse {
@@ -1457,7 +1447,7 @@ h1, h2, h3, h4, h5, h6,
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .play-button:hover {
@@ -1483,7 +1473,7 @@ h1, h2, h3, h4, h5, h6,
   cursor: pointer;
   transition: all 0.2s;
   font-size: 18px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   z-index: 5;
 }
 
@@ -1528,7 +1518,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .custom-handle.model-handle {
-  background-color: #4CAF50 !important;
+  background-color: #4caf50 !important;
 }
 
 .validation-errors-panel {
@@ -1541,7 +1531,7 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 8px;
   padding: 1rem;
   max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   font-size: 14px;
 }
 
@@ -1576,7 +1566,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .panel-actions button:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .error-list {
@@ -1587,9 +1577,9 @@ h1, h2, h3, h4, h5, h6,
 .error-item {
   margin: 0.5rem 0;
   padding: 0.5rem;
-  background: rgba(255,59,48,0.1);
+  background: rgba(255, 59, 48, 0.1);
   border-radius: 4px;
-  border: 1px solid rgba(255,59,48,0.2);
+  border: 1px solid rgba(255, 59, 48, 0.2);
 }
 
 .error-header {
@@ -1619,7 +1609,7 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dismiss-button:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Node Settings Popover Content */
@@ -1714,44 +1704,9 @@ h1, h2, h3, h4, h5, h6,
   overflow: hidden;
 }
 
-.flow-wrapper {
-  flex: 1;
-  position: relative;
-  height: 100%;
-  min-width: 0; /* Prevents flex item from overflowing */
-}
-
-/* When sidebar is open */
-.sidebar-open .flow-wrapper {
-  /* margin-left: 280px; */
-}
-
-/* When sidebar is closed */
-.sidebar-closed .flow-wrapper {
-  /* margin-left: 40px; */
-}
-
 .react-flow {
   width: 100%;
   height: 100%;
-}
-
-.sidebar {
-  position: relative;
-  height: 100vh;
-  background-color: var(--background-color);
-  border-right: 1px solid var(--border-color);
-  transition: width 0.3s ease;
-  width: 250px;
-  min-width: 250px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar.closed {
-  width: 30px;
-  min-width: 30px;
 }
 
 .sidebar-header {
@@ -2131,9 +2086,15 @@ h1, h2, h3, h4, h5, h6,
   pointer-events: none;
   opacity: 0.6;
   mix-blend-mode: soft-light;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><filter id='n1'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n1)' opacity='0.95'/></svg>"), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'><filter id='n2'><feTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='1' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n2)' opacity='0.85'/></svg>");
-  background-size: 140px 140px, 220px 220px;
-  background-position: 0 0, 0 0;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'><filter id='n1'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n1)' opacity='0.95'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'><filter id='n2'><feTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='1' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n2)' opacity='0.85'/></svg>");
+  background-size:
+    140px 140px,
+    220px 220px;
+  background-position:
+    0 0,
+    0 0;
   filter: contrast(1.35);
   animation: node-noise-drift 1.6s steps(6, end) infinite;
   z-index: 2;
@@ -2141,10 +2102,14 @@ h1, h2, h3, h4, h5, h6,
 
 @keyframes node-noise-drift {
   0% {
-    background-position: 0 0, 0 0;
+    background-position:
+      0 0,
+      0 0;
   }
   100% {
-    background-position: 64px -40px, -80px 72px;
+    background-position:
+      64px -40px,
+      -80px 72px;
   }
 }
 
@@ -2217,7 +2182,9 @@ h1, h2, h3, h4, h5, h6,
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1000;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .gallery-toggle-button:hover {
@@ -2283,6 +2250,7 @@ h1, h2, h3, h4, h5, h6,
 
 .node-selector-search-input {
   width: 100%;
+  box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid var(--node-border);
   border-radius: 6px;

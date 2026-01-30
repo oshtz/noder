@@ -1,0 +1,91 @@
+/* Upload Progress Component */
+
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.upload-progress--small {
+  font-size: 11px;
+}
+
+.upload-progress--medium {
+  font-size: 12px;
+}
+
+.upload-progress-label {
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  flex-shrink: 0;
+}
+
+.upload-progress-bar-container {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.upload-progress--small .upload-progress-bar-container {
+  height: 3px;
+}
+
+.upload-progress-bar {
+  height: 100%;
+  background: var(--primary-color, #6366f1);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Indeterminate animation */
+.upload-progress-bar--indeterminate {
+  width: 30%;
+  animation: upload-progress-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes upload-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(200%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.upload-progress-percentage {
+  color: var(--text-secondary, #888);
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Skeleton-like shimmer effect for indeterminate */
+.upload-progress-bar--indeterminate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: upload-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes upload-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
