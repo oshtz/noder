@@ -53,7 +53,7 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: 300px;
+  max-height: 350px;
   background: var(--node-bg);
   border: 1px solid var(--node-border);
   border-radius: 4px;
@@ -62,6 +62,44 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.model-picker-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--node-border);
+  background: var(--settings-bg);
+  flex-shrink: 0;
+}
+
+.model-picker-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px solid var(--node-border);
+  border-radius: 4px;
+  background: var(--node-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.model-picker-tab:hover {
+  border-color: var(--primary-color);
+}
+
+.model-picker-tab.is-active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.model-picker-tab svg {
+  width: 12px;
+  height: 12px;
 }
 
 .model-picker-loading,
@@ -119,12 +157,57 @@
   background: var(--settings-bg);
 }
 
+.model-picker-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .model-picker-item-name {
   font-weight: 600;
   font-size: 13px;
   color: var(--text-color);
-  margin-bottom: 4px;
   font-family: 'IBM Plex Mono', monospace;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-picker-source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.model-picker-source-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.model-picker-origin-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--settings-bg);
+  font-size: 10px;
+  color: var(--text-color);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.model-picker-origin-badge svg {
+  width: 10px;
+  height: 10px;
 }
 
 .model-picker-item-description {

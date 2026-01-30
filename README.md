@@ -108,7 +108,11 @@ npm run tauri build
 | `Ctrl+D` | Duplicate selected nodes |
 | `Ctrl+C` | Copy selected nodes |
 | `Ctrl+V` | Paste nodes |
-| `Ctrl+S` | Save workflow |
+| `Ctrl+G` | Group selected nodes |
+| `Ctrl+Shift+G` | Ungroup selected group |
+| `Ctrl+Enter` | Run workflow |
+
+> **Note:** On macOS, use `Cmd` instead of `Ctrl`
 
 ---
 

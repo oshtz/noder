@@ -1389,53 +1389,84 @@ async fn replicate_list_models(
     );
 
     // Use collection endpoint if collection_slug is provided, otherwise use general models endpoint
-    let url = if let Some(slug) = collection_slug {
-        format!("https://api.replicate.com/v1/collections/{}", slug)
-    } else {
-        "https://api.replicate.com/v1/models".to_string()
-    };
+    if let Some(slug) = collection_slug {
+        // Collection endpoint - returns all models in one response
+        let url = format!("https://api.replicate.com/v1/collections/{}", slug);
 
-    let response = client
-        .get(&url)
-        .headers(headers)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to list models: {}", e))?;
+        let response = client
+            .get(&url)
+            .headers(headers)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to list models: {}", e))?;
 
-    if !response.status().is_success() {
-        let error_text = response.text().await
+        if !response.status().is_success() {
+            let error_text = response.text().await
+                .map_err(|e| e.to_string())?;
+            return Err(format!("Replicate API error: {}", error_text));
+        }
+
+        let response_text = response.text().await
             .map_err(|e| e.to_string())?;
-        return Err(format!("Replicate API error: {}", error_text));
-    }
 
-    // Parse response - collections endpoint returns a different structure
-    let response_text = response.text().await
-        .map_err(|e| e.to_string())?;
-    
-    let models_response: ReplicateModelsResponse = if url.contains("/collections/") {
         // Collection endpoint returns { models: [...] }
         let collection_data: serde_json::Value = serde_json::from_str(&response_text)
             .map_err(|e| format!("Failed to parse collection response: {}", e))?;
-        
+
         let models = collection_data["models"].as_array()
             .ok_or("Collection response missing models array")?;
-        
+
         let parsed_models: Vec<ReplicateModel> = models.iter()
             .filter_map(|m| serde_json::from_value(m.clone()).ok())
             .collect();
-        
-        ReplicateModelsResponse {
+
+        Ok(ReplicateModelsResponse {
             next: None,
             previous: None,
             results: parsed_models
-        }
+        })
     } else {
-        // Regular models endpoint
-        serde_json::from_str(&response_text)
-            .map_err(|e| format!("Failed to parse models response: {}", e))?
-    };
+        // General models endpoint - paginated, fetch multiple pages
+        let mut all_models: Vec<ReplicateModel> = Vec::new();
+        let mut next_url: Option<String> = Some("https://api.replicate.com/v1/models".to_string());
+        let max_pages = 20; // Limit to ~2000 models to avoid timeout
+        let mut page_count = 0;
 
-    Ok(models_response)
+        while let Some(url) = next_url {
+            if page_count >= max_pages {
+                break;
+            }
+
+            let response = client
+                .get(&url)
+                .headers(headers.clone())
+                .send()
+                .await
+                .map_err(|e| format!("Failed to list models: {}", e))?;
+
+            if !response.status().is_success() {
+                let error_text = response.text().await
+                    .map_err(|e| e.to_string())?;
+                return Err(format!("Replicate API error: {}", error_text));
+            }
+
+            let response_text = response.text().await
+                .map_err(|e| e.to_string())?;
+
+            let page_response: ReplicateModelsResponse = serde_json::from_str(&response_text)
+                .map_err(|e| format!("Failed to parse models response: {}", e))?;
+
+            all_models.extend(page_response.results);
+            next_url = page_response.next;
+            page_count += 1;
+        }
+
+        Ok(ReplicateModelsResponse {
+            next: None,
+            previous: None,
+            results: all_models
+        })
+    }
 }
 
 #[tauri::command]
