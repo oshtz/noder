@@ -51,11 +51,16 @@ vi.mock('../api/openrouter', () => ({
 }));
 
 // Mock settings API
-vi.mock('../api/settings', () => ({
-  getApiKey: vi.fn((provider) => {
+const mockGetApiKey = vi.hoisted(() =>
+  vi.fn((provider) => {
     if (provider === 'openrouter') return Promise.resolve('test-openrouter-key');
     return Promise.resolve(null);
-  }),
+  })
+);
+
+vi.mock('../api/settings', () => ({
+  getApiKey: mockGetApiKey,
+  _getApiKey: mockGetApiKey,
 }));
 
 // Mock Tauri invoke

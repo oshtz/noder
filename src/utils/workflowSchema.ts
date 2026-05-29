@@ -28,6 +28,7 @@ export interface WorkflowApp {
 
 /** Workflow metadata */
 export interface WorkflowMetadata {
+  id?: string;
   name: string;
   description: string;
   version: string;
@@ -53,6 +54,7 @@ export interface WorkflowDocument {
 
 /** Input for building workflow metadata */
 export interface MetadataInput {
+  id?: string;
   name?: string;
   description?: string;
   version?: string;

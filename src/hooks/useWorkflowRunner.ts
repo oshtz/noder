@@ -291,6 +291,7 @@ export function useWorkflowRunner({
       let workflowResult: WorkflowResult | null = null;
       let workflowError: Error | null = null;
       const runFailedNodeIds = new Set<string>();
+      const outputPersistenceTasks: Promise<void>[] = [];
 
       try {
         setIsProcessing(true);
@@ -314,7 +315,9 @@ export function useWorkflowRunner({
             anthropicApiKey,
             replicateApiKey,
           },
-          initialNodeOutputs: initialNodeOutputs as Record<string, unknown>,
+          initialNodeOutputs: initialNodeOutputs as Parameters<
+            typeof executeWorkflow
+          >[0]['initialNodeOutputs'],
           skipNodeIds: effectiveSkipNodeIds,
           continueOnError: allowPartial,
           onNodeStart: (node: Node): void => {
@@ -433,7 +436,7 @@ export function useWorkflowRunner({
                 }
               };
 
-              persistAndSaveOutput();
+              outputPersistenceTasks.push(persistAndSaveOutput());
             }
 
             setEdges((eds) =>
@@ -524,9 +527,13 @@ export function useWorkflowRunner({
           },
         ]);
       } finally {
+        if (outputPersistenceTasks.length > 0) {
+          await Promise.allSettled(outputPersistenceTasks);
+        }
+
         if (workflowResult && workflowResult.success === false) {
           executionStateRef.current = {
-            nodeOutputs: (workflowResult.nodeOutputs || {}) as Record<string, unknown>,
+            nodeOutputs: (workflowResult.nodeOutputs || {}) as ExecutionState['nodeOutputs'],
             scopeNodeIds: Array.from(scopedNodeIdSet),
             failedNodeIds: Array.from(runFailedNodeIds),
           };

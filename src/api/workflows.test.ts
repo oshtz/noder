@@ -219,16 +219,18 @@ describe('workflows API', () => {
 
       // Mock FileReader to simulate error
       const originalFileReader = global.FileReader;
-      const mockFileReader = vi.fn(() => ({
-        onload: null,
-        onerror: null,
-        readAsText: function () {
+      class MockFileReader {
+        onload = null;
+        onerror: (() => void) | null = null;
+
+        readAsText() {
           setTimeout(() => {
             if (this.onerror) this.onerror();
           }, 0);
-        },
-      }));
-      global.FileReader = mockFileReader as unknown as typeof FileReader;
+        }
+      }
+
+      global.FileReader = MockFileReader as unknown as typeof FileReader;
 
       await expect(importWorkflowFromFile(file)).rejects.toThrow('Failed to read workflow file');
 

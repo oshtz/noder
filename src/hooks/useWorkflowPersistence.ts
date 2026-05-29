@@ -6,11 +6,13 @@ import {
   buildWorkflowDocument,
   migrateWorkflowDocument,
   LOCAL_WORKFLOW_KEY,
+  type BuildWorkflowInput,
   type WorkflowDocument,
   type WorkflowMetadata,
 } from '../utils/workflowSchema';
 import { toSafeWorkflowId } from '../utils/workflowId';
 import { sortNodesForReactFlow } from '../utils/createNode';
+import { isTauriRuntime } from '../utils/runtime';
 
 // ============================================================================
 // Types
@@ -74,7 +76,7 @@ export interface UseWorkflowPersistenceReturn {
   prepareWorkflowData: (
     id: string | undefined | null,
     name: string | undefined | null
-  ) => WorkflowDocument;
+  ) => BuildWorkflowInput;
   appendWorkflowHistory: (entry: WorkflowHistoryEntry) => void;
   getWorkflowHistory: () => WorkflowHistoryEntry[];
 }
@@ -151,7 +153,7 @@ export function useWorkflowPersistence({
    * Prepare workflow data for saving
    */
   const prepareWorkflowData = useCallback(
-    (id: string | undefined | null, name: string | undefined | null): WorkflowDocument => {
+    (id: string | undefined | null, name: string | undefined | null): BuildWorkflowInput => {
       const processedNodes = nodes.map((node, index) => ({
         ...node,
         data: {
@@ -483,6 +485,8 @@ export function useWorkflowPersistence({
 
   // Window close handler - auto-save before closing
   useEffect(() => {
+    if (!isTauriRuntime()) return undefined;
+
     const appWindow = getCurrentWindow();
     let removeCloseListener: (() => void) | undefined;
 

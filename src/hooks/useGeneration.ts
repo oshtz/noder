@@ -70,7 +70,7 @@ export interface BaseFormState {
 
 export interface BaseNodeData {
   content?: string;
-  output?: string;
+  output?: string | null;
   metadata?: string;
   [key: string]: unknown;
 }

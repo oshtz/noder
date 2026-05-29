@@ -11,9 +11,15 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import type { Edge, Node } from 'reactflow';
 import { buildDependencyGraph, topologicalSort, getNodeInputs } from './workflowRunner';
 import { HANDLE_TYPES } from '../constants/handleTypes';
-import { fetchModelSchema, buildReplicateInput, getInputMapping } from './replicateSchemaCache';
+import {
+  fetchModelSchema,
+  buildReplicateInput,
+  getInputMapping,
+  type NormalizedSchema,
+} from './replicateSchemaCache';
 import { deleteFileFromReplicate } from './replicateFiles';
 import { emit } from './eventBus';
 import { chatCompletion } from '../api/openrouter';
@@ -102,40 +108,47 @@ type NodeInputItem = {
 
 type NodeInputs = Record<string, NodeInputItem | NodeInputItem[]>;
 
-type NodeOutputValue = {
-  type: string;
-  value: unknown;
-  metadata?: Record<string, unknown>;
-  isChip?: boolean;
+type NodeOutputs = Record<string, unknown>;
+
+type NodeData = Record<string, unknown> & {
+  title?: string;
+  prompt?: string;
+  model?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+  negativePrompt?: string;
+  width?: number;
+  height?: number;
+  numOutputs?: number;
+  imageUrl?: string;
+  scale?: number;
+  videoUrl?: string;
+  duration?: number;
+  fps?: number;
+  url?: string;
+  filename?: string;
+  destinationFolder?: string;
+  mediaType?: string;
+  mediaPath?: string;
+  replicateUrl?: string | null;
+  replicateFileId?: string | null;
+  content?: string;
   chipId?: string;
-  success?: boolean;
-  timestamp?: string;
+  chipValues?: Record<string, string>;
 };
 
-type NodeOutputs = Record<string, NodeOutputValue | unknown>;
+type WorkflowNode = Node<NodeData> & { type: string };
 
-type NodeData = Record<string, unknown>;
-
-type WorkflowNode = {
-  id: string;
-  type: string;
-  data: NodeData;
-};
-
-type WorkflowEdge = {
-  source: string;
-  sourceHandle?: string | null;
-  target: string;
-  targetHandle?: string | null;
-};
+type WorkflowEdge = Edge;
 
 type ExecutionContext = Record<string, unknown>;
 
 type CollectedInputs = {
-  text: unknown[];
-  image: unknown[];
-  video: unknown[];
-  audio: unknown[];
+  text: string[];
+  image: string[];
+  video: string[];
+  audio: string[];
 };
 
 type InputMappingEntry = {
@@ -374,6 +387,12 @@ function replaceChipPlaceholders(prompt: string, chipValues: Record<string, stri
   return result;
 }
 
+function toInputString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
 /**
  * Collect chip values from inputs and node data
  * Returns an object mapping chipId -> content
@@ -495,7 +514,7 @@ function collectInputsByType(inputs: NodeInputs): CollectedInputs {
 
         const inputType = item?.type as keyof CollectedInputs | undefined;
         if (inputType && inputType in collected) {
-          collected[inputType].push(item.value);
+          collected[inputType].push(toInputString(item.value));
         }
       });
     } else if (data) {
@@ -505,7 +524,7 @@ function collectInputsByType(inputs: NodeInputs): CollectedInputs {
       // Single connection
       const inputType = data.type as keyof CollectedInputs | undefined;
       if (inputType && inputType in collected) {
-        collected[inputType].push(data.value);
+        collected[inputType].push(toInputString(data.value));
       }
     }
   });
@@ -513,10 +532,7 @@ function collectInputsByType(inputs: NodeInputs): CollectedInputs {
   return collected;
 }
 
-function getFirstInputValue(
-  collectedInputs: CollectedInputs,
-  type: keyof CollectedInputs
-): unknown {
+function getFirstInputValue(collectedInputs: CollectedInputs, type: keyof CollectedInputs): string {
   return collectedInputs[type]?.[0] || '';
 }
 
@@ -526,7 +542,7 @@ function validateConnectedInputs(
   node: WorkflowNode,
   modelId: string
 ): void {
-  const mapping = getInputMapping(schema) as InputMapping;
+  const mapping = getInputMapping(schema as NormalizedSchema) as InputMapping;
   const unsupported: string[] = [];
 
   // style_reference and img2img fields are supported (inpainting not yet implemented)
@@ -915,7 +931,7 @@ async function executeSaveMediaNode(
   for (const [handleId, inputData] of Object.entries(inputs)) {
     const inputValue = (inputData as NodeInputItem)?.value;
     if (inputValue) {
-      url = inputValue;
+      url = toInputString(inputValue);
       console.log(`[Executor] SaveMediaNode found input from handle: ${handleId}`);
       break;
     }
