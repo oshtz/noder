@@ -1,16 +1,71 @@
-name: Build Windows
+name: Build
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-windows:
+  validate:
     runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck frontend
+        run: npm run typecheck
+
+      - name: Run frontend tests
+        run: npm run test:run
+
+      - name: Run smoke tests
+        run: npm run test:smoke
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
+      - name: Check Tauri backend
+        run: cargo check
+        working-directory: src-tauri
+
+  build-windows:
+    needs: validate
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -187,7 +242,11 @@ jobs:
             noder-win.zip
 
   build-macos:
+    needs: validate
+    if: github.event_name != 'pull_request'
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
