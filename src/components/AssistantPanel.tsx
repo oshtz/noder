@@ -39,10 +39,9 @@ interface ModelCatalogEntry {
   featured: boolean;
 }
 
-interface ToolResult {
+type ToolResult = object & {
   error?: string;
-  [key: string]: unknown;
-}
+};
 
 interface AssistantPanelProps {
   /** Optional API key override - if not provided, reads from settings store */

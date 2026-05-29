@@ -337,7 +337,7 @@ describe('useAssistantConfig', () => {
           setNodes: options.setNodes,
           setEdges: options.setEdges,
           handleRemoveNode: options.handleRemoveNode,
-          setValidationErrors: options.setValidationErrors,
+          addValidationErrors: expect.any(Function),
           runWorkflow: options.runWorkflow,
           allowedNodeTypes: expect.any(Array),
           focusCanvas: expect.any(Function),

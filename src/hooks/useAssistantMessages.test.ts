@@ -275,8 +275,10 @@ describe('useAssistantMessages', () => {
       });
 
       // Start first send
-      const sendPromise = act(async () => {
-        result.current.handleSend();
+      let sendPromise: Promise<void> = Promise.resolve();
+      await act(async () => {
+        sendPromise = result.current.handleSend();
+        await Promise.resolve();
       });
 
       // Wait for loading to be true
@@ -300,7 +302,9 @@ describe('useAssistantMessages', () => {
         tool_calls: undefined,
       });
 
-      await sendPromise;
+      await act(async () => {
+        await sendPromise;
+      });
 
       // Should only have been called once
       expect(mockStreamOpenRouter).toHaveBeenCalledTimes(1);
@@ -418,8 +422,10 @@ describe('useAssistantMessages', () => {
         result.current.setDraft('Hello');
       });
 
-      const sendPromise = act(async () => {
-        result.current.handleSend();
+      let sendPromise: Promise<void> = Promise.resolve();
+      await act(async () => {
+        sendPromise = result.current.handleSend();
+        await Promise.resolve();
       });
 
       await waitFor(() => {
@@ -432,7 +438,9 @@ describe('useAssistantMessages', () => {
         tool_calls: undefined,
       });
 
-      await sendPromise;
+      await act(async () => {
+        await sendPromise;
+      });
     });
 
     it('should set isLoading to false after send completes', async () => {
@@ -889,7 +897,7 @@ describe('useAssistantMessages', () => {
 
       const options = createDefaultOptions({
         executeToolCall,
-        maxToolRounds: 1,
+        maxToolRounds: 0,
       });
       const { result } = renderHook(() => useAssistantMessages(options));
 
@@ -1222,8 +1230,10 @@ describe('useAssistantMessages', () => {
         result.current.setDraft('Test');
       });
 
-      const sendPromise = act(async () => {
-        result.current.handleSend();
+      let sendPromise: Promise<void> = Promise.resolve();
+      await act(async () => {
+        sendPromise = result.current.handleSend();
+        await Promise.resolve();
       });
 
       await waitFor(() => {
@@ -1242,7 +1252,9 @@ describe('useAssistantMessages', () => {
         tool_calls: undefined,
       });
 
-      await sendPromise;
+      await act(async () => {
+        await sendPromise;
+      });
     });
 
     it('should not duplicate activeToolCalls', async () => {
@@ -1265,8 +1277,10 @@ describe('useAssistantMessages', () => {
         result.current.setDraft('Test');
       });
 
-      const sendPromise = act(async () => {
-        result.current.handleSend();
+      let sendPromise: Promise<void> = Promise.resolve();
+      await act(async () => {
+        sendPromise = result.current.handleSend();
+        await Promise.resolve();
       });
 
       await waitFor(() => {
@@ -1287,7 +1301,9 @@ describe('useAssistantMessages', () => {
         tool_calls: undefined,
       });
 
-      await sendPromise;
+      await act(async () => {
+        await sendPromise;
+      });
     });
 
     it('should clear activeToolCalls after stream completes', async () => {

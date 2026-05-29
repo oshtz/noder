@@ -32,7 +32,7 @@ type WorkflowNode = Node<NodeData>;
 type WorkflowEdge = Edge<{ isProcessing?: boolean }>;
 
 // Tool call structure from OpenRouter
-interface ToolCall {
+export interface ToolCall {
   function?: {
     name: string;
     arguments?: string | Record<string, unknown>;
@@ -54,7 +54,7 @@ interface ToolExecutorConfig {
   setNodes: React.Dispatch<React.SetStateAction<WorkflowNode[]>>;
   setEdges: React.Dispatch<React.SetStateAction<WorkflowEdge[]>>;
   handleRemoveNode: (id: string) => void;
-  setValidationErrors: React.Dispatch<React.SetStateAction<EdgeValidationError[]>>;
+  addValidationErrors: (errors: EdgeValidationError[]) => void;
   runWorkflow: () => Promise<unknown>;
   focusCanvas?: () => void;
   allowedNodeTypes?: Set<string> | string[] | null;
@@ -193,20 +193,9 @@ interface SetPromptsResult {
   raw?: unknown;
 }
 
-type ToolResult =
-  | CreateWorkflowResult
-  | ConnectWorkflowResult
-  | ValidateWorkflowResult
-  | RunWorkflowResult
-  | GetStateResult
-  | GetNodeResult
-  | GetOutputsResult
-  | UpdateNodeResult
-  | DeleteNodesResult
-  | DeleteEdgesResult
-  | ClearWorkflowResult
-  | SetPromptsResult
-  | { error: string };
+export type ToolResult = object & {
+  error?: string;
+};
 
 // Utility functions
 const safeNumber = (value: unknown, fallback: number): number =>
@@ -348,7 +337,7 @@ export const createToolExecutor = ({
   setNodes,
   setEdges,
   handleRemoveNode,
-  setValidationErrors,
+  addValidationErrors,
   runWorkflow,
   focusCanvas,
   allowedNodeTypes,
@@ -462,7 +451,7 @@ export const createToolExecutor = ({
 
     const { validEdges, validationErrors } = validateEdges(newEdges as Edge[], nextNodes as Node[]);
     if (validationErrors.length) {
-      setValidationErrors((prev) => [...prev, ...validationErrors]);
+      addValidationErrors(validationErrors);
     }
 
     const nextEdges = shouldReplace ? validEdges : [...currentEdges, ...validEdges];
@@ -534,7 +523,7 @@ export const createToolExecutor = ({
       currentNodes as Node[]
     );
     if (validationErrors.length) {
-      setValidationErrors((prev) => [...prev, ...validationErrors]);
+      addValidationErrors(validationErrors);
     }
 
     setEdges([...currentEdges, ...(validEdges as WorkflowEdge[])]);
@@ -561,7 +550,7 @@ export const createToolExecutor = ({
     );
 
     if (validationErrors.length) {
-      setValidationErrors((prev) => [...prev, ...validationErrors]);
+      addValidationErrors(validationErrors);
     }
 
     return {

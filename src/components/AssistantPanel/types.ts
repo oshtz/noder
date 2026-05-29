@@ -43,10 +43,9 @@ export interface ModelCatalogEntry {
 // Tool Types
 // =============================================================================
 
-export interface ToolResult {
+export type ToolResult = object & {
   error?: string;
-  [key: string]: unknown;
-}
+};
 
 // =============================================================================
 // Component Props
