@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useCallback,
   useLayoutEffect,
   Component,
   ReactNode,
@@ -316,26 +317,73 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
   }, [isOpen, position.x, position.y]);
 
-  const handleKeyDown = (e: globalThis.KeyboardEvent): void => {
-    if (e.key === 'ArrowDown') {
-      if (!allNodes.length) return;
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.min(prev + 1, allNodes.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      if (!allNodes.length) return;
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter') {
-      if (!allNodes.length) return;
-      e.preventDefault();
-      const selectedNode = allNodes[selectedIndex];
-      if (selectedNode) {
-        createNode(selectedNode.type);
+  // Helper function to auto-connect the newly created node
+  const handleAutoConnect = useCallback(
+    (newNodeId: string): void => {
+      if (!pendingConnection) return;
+
+      const { sourceNode, sourceHandle, handleType } = pendingConnection;
+
+      // Dispatch connection event
+      emit('autoConnect', {
+        source: sourceNode,
+        sourceHandle: sourceHandle,
+        target: newNodeId,
+        handleType: handleType,
+      });
+
+      setPendingConnection(null);
+    },
+    [pendingConnection]
+  );
+
+  const createNode = useCallback(
+    (nodeType: string): void => {
+      const flowPosition = screenToFlowPosition({
+        x: clickPosition.x,
+        y: clickPosition.y,
+      });
+      const newNodeId = onAddNode(nodeType, flowPosition);
+
+      if (pendingConnection && newNodeId) {
+        setTimeout(() => handleAutoConnect(newNodeId), 100);
       }
-    } else if (e.key === 'Escape') {
+
       setIsOpen(false);
-    }
-  };
+    },
+    [
+      clickPosition.x,
+      clickPosition.y,
+      handleAutoConnect,
+      onAddNode,
+      pendingConnection,
+      screenToFlowPosition,
+    ]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: globalThis.KeyboardEvent): void => {
+      if (e.key === 'ArrowDown') {
+        if (!allNodes.length) return;
+        e.preventDefault();
+        setSelectedIndex((prev) => Math.min(prev + 1, allNodes.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        if (!allNodes.length) return;
+        e.preventDefault();
+        setSelectedIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter') {
+        if (!allNodes.length) return;
+        e.preventDefault();
+        const selectedNode = allNodes[selectedIndex];
+        if (selectedNode) {
+          createNode(selectedNode.type);
+        }
+      } else if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    },
+    [allNodes, selectedIndex, createNode]
+  );
 
   // Reset selected index when search term changes
   useEffect(() => {
@@ -402,39 +450,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, selectedIndex, allNodes]);
-
-  // Helper function to auto-connect the newly created node
-  const handleAutoConnect = (newNodeId: string): void => {
-    if (!pendingConnection) return;
-
-    const { sourceNode, sourceHandle, handleType } = pendingConnection;
-
-    // Dispatch connection event
-    emit('autoConnect', {
-      source: sourceNode,
-      sourceHandle: sourceHandle,
-      target: newNodeId,
-      handleType: handleType,
-    });
-
-    setPendingConnection(null);
-  };
-
-  const createNode = (nodeType: string): void => {
-    const flowPosition = screenToFlowPosition({
-      x: clickPosition.x,
-      y: clickPosition.y,
-    });
-    const newNodeId = onAddNode(nodeType, flowPosition);
-
-    if (pendingConnection && newNodeId) {
-      setTimeout(() => handleAutoConnect(newNodeId), 100);
-    }
-
-    setIsOpen(false);
-  };
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
 

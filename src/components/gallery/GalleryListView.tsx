@@ -75,7 +75,7 @@ export const GalleryListView: React.FC<GalleryListViewProps> = ({
       {/* Viewer */}
       <div
         className={`gallery-viewer ${imageTransition ? 'transitioning' : ''}`}
-        ref={viewerRef}
+        ref={viewerRef as RefObject<HTMLDivElement>}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}

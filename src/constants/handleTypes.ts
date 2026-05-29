@@ -1,11 +1,14 @@
 type HandleTypeDefinition = {
   type: string;
-  dataType: string;
+  dataType: HandleDataType;
   color: string;
   label: string;
 };
 
 type HandleTypeKey = 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'MODEL';
+
+export type HandleDataType = string;
+export type HandleType = HandleDataType;
 
 // Core data types for workflow connections
 // Only 4 types: text, image, video, audio

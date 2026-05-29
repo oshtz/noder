@@ -5,6 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Node, Edge, ReactFlowInstance } from 'reactflow';
 import { NODE_TYPE as MEDIA_NODE_TYPE } from '../nodes/core/MediaNode';
 import { nodeCreators } from '../nodes';
+import { isTauriRuntime } from '../utils/runtime';
 
 // ============================================================================
 // Types
@@ -71,6 +72,8 @@ export const useDragAndDrop = (
   const [dragCounter, setDragCounter] = useState(0);
 
   useEffect(() => {
+    if (!isTauriRuntime()) return undefined;
+
     const promises: Promise<() => void>[] = [];
 
     // Drag enter event
@@ -190,15 +193,13 @@ export const useDragAndDrop = (
             window.nodeId = maxId + 1;
 
             // First parse and validate the workflow
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const reconstructedNodes: Node[] = workflow.nodes
               .map((node) => {
                 // Deep clone the node to avoid reference issues
                 const clonedNode = JSON.parse(JSON.stringify(node));
 
                 // Create node using registry defaults
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const nodeCreator = (nodeCreators as any)[node.type];
+                const nodeCreator = nodeCreators[node.type];
                 if (!nodeCreator) return null;
 
                 const newNode = nodeCreator({

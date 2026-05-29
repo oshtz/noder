@@ -1,29 +1,35 @@
-import React, { ComponentType, lazy, Suspense } from 'react';
+import React, { ComponentType } from 'react';
+import type { Node } from 'reactflow';
 
-// Lazy-loaded node components for code splitting (larger components)
-const DisplayTextNode = lazy(() => import('./core/DisplayTextNode'));
-const MarkdownNode = lazy(() => import('./core/MarkdownNode'));
-const TextNode = lazy(() => import('./core/TextNode'));
-const ImageNode = lazy(() => import('./core/ImageNode'));
-const UpscalerNode = lazy(() => import('./core/UpscalerNode'));
-const VideoNode = lazy(() => import('./core/VideoNode'));
-const AudioNode = lazy(() => import('./core/AudioNode'));
-const MediaNode = lazy(() => import('./core/MediaNode'));
-// ChipNode and GroupNode are statically imported (small, commonly used)
-
-// Re-export constants and createNode functions (these are small and needed synchronously)
-import {
+import DisplayTextNode, {
   NODE_TYPE as DISPLAY_TEXT_TYPE,
   createNode as createDisplayTextNode,
 } from './core/DisplayTextNode';
-import { NODE_TYPE as MARKDOWN_TYPE, createNode as createMarkdownNode } from './core/MarkdownNode';
-import { NODE_TYPE as TEXT_TYPE, createNode as createTextNode } from './core/TextNode';
-import { NODE_TYPE as IMAGE_TYPE, createNode as createImageNode } from './core/ImageNode';
-import { NODE_TYPE as UPSCALER_TYPE, createNode as createUpscalerNode } from './core/UpscalerNode';
-import { NODE_TYPE as VIDEO_TYPE, createNode as createVideoNode } from './core/VideoNode';
-import { NODE_TYPE as AUDIO_TYPE, createNode as createAudioNode } from './core/AudioNode';
-import { NODE_TYPE as MEDIA_TYPE, createNode as createMediaNode } from './core/MediaNode';
-// ChipNode and GroupNode: use regular imports since they're small and commonly used
+import MarkdownNode, {
+  NODE_TYPE as MARKDOWN_TYPE,
+  createNode as createMarkdownNode,
+} from './core/MarkdownNode';
+import TextNode, { NODE_TYPE as TEXT_TYPE, createNode as createTextNode } from './core/TextNode';
+import ImageNode, {
+  NODE_TYPE as IMAGE_TYPE,
+  createNode as createImageNode,
+} from './core/ImageNode';
+import UpscalerNode, {
+  NODE_TYPE as UPSCALER_TYPE,
+  createNode as createUpscalerNode,
+} from './core/UpscalerNode';
+import VideoNode, {
+  NODE_TYPE as VIDEO_TYPE,
+  createNode as createVideoNode,
+} from './core/VideoNode';
+import AudioNode, {
+  NODE_TYPE as AUDIO_TYPE,
+  createNode as createAudioNode,
+} from './core/AudioNode';
+import MediaNode, {
+  NODE_TYPE as MEDIA_TYPE,
+  createNode as createMediaNode,
+} from './core/MediaNode';
 import ChipNodeComponent, {
   NODE_TYPE as CHIP_TYPE,
   createNode as createChipNode,
@@ -43,8 +49,10 @@ import { NodeErrorBoundary } from '../components/ErrorBoundary';
 
 interface HandleDefinition {
   id: string;
-  type: 'input' | 'output';
-  dataType: HandleDataType;
+  type: 'input' | 'output' | 'target' | 'source';
+  dataType?: HandleDataType;
+  position?: unknown;
+  style?: React.CSSProperties;
 }
 
 interface NodeTypeDefinition {
@@ -72,62 +80,45 @@ export interface NodeDefinition {
   handles?: HandleDefinition[];
 }
 
-interface CreateNodeParams {
+interface NodeCreatorParams {
   id: string;
   handleRemoveNode?: (id: string) => void;
   position?: { x: number; y: number };
   defaultModel?: string;
   data?: Record<string, unknown>;
+  style?: { width: number; height: number };
+  className?: string;
+  dragHandle?: string;
 }
 
-type NodeCreator = (params: CreateNodeParams) => {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: Record<string, unknown>;
-  style?: Record<string, unknown>;
+type CreatedNode = Node<Record<string, unknown>> & {
+  style?: React.CSSProperties;
+  selectable?: boolean;
+  draggable?: boolean;
 };
+
+type NodeCreator = (params: NodeCreatorParams) => CreatedNode;
 
 // =============================================================================
 // Error Boundary Wrapper
 // =============================================================================
 
 /**
- * Node loading fallback component
- */
-const NodeLoadingFallback: React.FC = () => (
-  <div
-    style={{
-      padding: '16px',
-      background: 'var(--node-bg)',
-      borderRadius: '12px',
-      minWidth: '150px',
-      minHeight: '100px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'var(--text-secondary)',
-      fontSize: '12px',
-    }}
-  >
-    Loading...
-  </div>
-);
-
-/**
- * Wrap a node component with NodeErrorBoundary and Suspense
+ * Wrap a node component with NodeErrorBoundary
  * This catches errors within individual nodes without crashing the entire canvas
- * and handles lazy loading with a fallback
  */
-function withNodeErrorBoundary<P extends NodeProps>(
-  NodeComponent: ComponentType<P>,
+const asNodeComponent = (component: unknown): ComponentType<NodeProps> =>
+  component as ComponentType<NodeProps>;
+
+const asNodeCreator = (creator: unknown): NodeCreator => creator as NodeCreator;
+
+function withNodeErrorBoundary(
+  NodeComponent: ComponentType<NodeProps>,
   nodeType: string
-): ComponentType<P> {
-  const WrappedNode = (props: P) => (
+): ComponentType<NodeProps> {
+  const WrappedNode = (props: NodeProps) => (
     <NodeErrorBoundary nodeId={props.id} nodeType={nodeType}>
-      <Suspense fallback={<NodeLoadingFallback />}>
-        <NodeComponent {...props} />
-      </Suspense>
+      <NodeComponent {...props} />
     </NodeErrorBoundary>
   );
   WrappedNode.displayName = `ErrorBoundary(${(NodeComponent as { displayName?: string }).displayName || NodeComponent.name || nodeType})`;
@@ -144,10 +135,7 @@ function withNodeErrorBoundary<P extends NodeProps>(
  */
 const builtInNodeTypes: Record<string, NodeTypeDefinition> = {
   [DISPLAY_TEXT_TYPE]: {
-    component: withNodeErrorBoundary(
-      DisplayTextNode as ComponentType<NodeProps>,
-      DISPLAY_TEXT_TYPE
-    ),
+    component: withNodeErrorBoundary(asNodeComponent(DisplayTextNode), DISPLAY_TEXT_TYPE),
     defaultData: {
       handles: [
         { id: 'text-in', type: 'input', dataType: HANDLE_TYPES.TEXT.dataType },
@@ -156,55 +144,55 @@ const builtInNodeTypes: Record<string, NodeTypeDefinition> = {
     },
   },
   [MARKDOWN_TYPE]: {
-    component: withNodeErrorBoundary(MarkdownNode as ComponentType<NodeProps>, MARKDOWN_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(MarkdownNode), MARKDOWN_TYPE),
     defaultData: {
       handles: [{ id: 'text-in', type: 'input', dataType: HANDLE_TYPES.TEXT.dataType }],
     },
   },
   [TEXT_TYPE]: {
-    component: withNodeErrorBoundary(TextNode as ComponentType<NodeProps>, TEXT_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(TextNode), TEXT_TYPE),
     defaultData: {
       handles: getNodeSchema(TEXT_TYPE)?.handles || [],
     },
   },
   [IMAGE_TYPE]: {
-    component: withNodeErrorBoundary(ImageNode as ComponentType<NodeProps>, IMAGE_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(ImageNode), IMAGE_TYPE),
     defaultData: {
       handles: getNodeSchema(IMAGE_TYPE)?.handles || [],
     },
   },
   [UPSCALER_TYPE]: {
-    component: withNodeErrorBoundary(UpscalerNode as ComponentType<NodeProps>, UPSCALER_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(UpscalerNode), UPSCALER_TYPE),
     defaultData: {
       handles: getNodeSchema(UPSCALER_TYPE)?.handles || [],
     },
   },
   [VIDEO_TYPE]: {
-    component: withNodeErrorBoundary(VideoNode as ComponentType<NodeProps>, VIDEO_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(VideoNode), VIDEO_TYPE),
     defaultData: {
       handles: getNodeSchema(VIDEO_TYPE)?.handles || [],
     },
   },
   [AUDIO_TYPE]: {
-    component: withNodeErrorBoundary(AudioNode as ComponentType<NodeProps>, AUDIO_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(AudioNode), AUDIO_TYPE),
     defaultData: {
       handles: getNodeSchema(AUDIO_TYPE)?.handles || [],
     },
   },
   [MEDIA_TYPE]: {
-    component: withNodeErrorBoundary(MediaNode as ComponentType<NodeProps>, MEDIA_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(MediaNode), MEDIA_TYPE),
     defaultData: {
       handles: getNodeSchema(MEDIA_TYPE)?.handles || [],
     },
   },
   [CHIP_TYPE]: {
-    component: withNodeErrorBoundary(ChipNodeComponent as ComponentType<NodeProps>, CHIP_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(ChipNodeComponent), CHIP_TYPE),
     defaultData: {
       handles: getNodeSchema(CHIP_TYPE)?.handles || [],
     },
   },
   [GROUP_TYPE]: {
-    component: withNodeErrorBoundary(GroupNodeComponent as ComponentType<NodeProps>, GROUP_TYPE),
+    component: withNodeErrorBoundary(asNodeComponent(GroupNodeComponent), GROUP_TYPE),
     defaultData: {
       handles: [],
     },
@@ -223,16 +211,16 @@ export const nodeTypes: Record<string, NodeTypeDefinition> = {
 };
 
 export const nodeCreators: Record<string, NodeCreator> = {
-  [TEXT_TYPE]: createTextNode,
-  [IMAGE_TYPE]: createImageNode,
-  [UPSCALER_TYPE]: createUpscalerNode,
-  [VIDEO_TYPE]: createVideoNode,
-  [AUDIO_TYPE]: createAudioNode,
-  [MEDIA_TYPE]: createMediaNode,
-  [CHIP_TYPE]: createChipNode,
-  [DISPLAY_TEXT_TYPE]: createDisplayTextNode,
-  [MARKDOWN_TYPE]: createMarkdownNode,
-  [GROUP_TYPE]: createGroupNode,
+  [TEXT_TYPE]: asNodeCreator(createTextNode),
+  [IMAGE_TYPE]: asNodeCreator(createImageNode),
+  [UPSCALER_TYPE]: asNodeCreator(createUpscalerNode),
+  [VIDEO_TYPE]: asNodeCreator(createVideoNode),
+  [AUDIO_TYPE]: asNodeCreator(createAudioNode),
+  [MEDIA_TYPE]: asNodeCreator(createMediaNode),
+  [CHIP_TYPE]: asNodeCreator(createChipNode),
+  [DISPLAY_TEXT_TYPE]: asNodeCreator(createDisplayTextNode),
+  [MARKDOWN_TYPE]: asNodeCreator(createMarkdownNode),
+  [GROUP_TYPE]: asNodeCreator(createGroupNode),
 };
 
 export const nodeDefinitions: NodeDefinition[] = [

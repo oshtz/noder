@@ -26,6 +26,25 @@ describe('WorkflowContext', () => {
     </WorkflowProvider>
   );
 
+  const expectHookRenderToThrow = (hook: () => unknown, message: string): void => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const preventExpectedErrorLog = (event: ErrorEvent): void => {
+      if (event.error instanceof Error && event.error.message === message) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('error', preventExpectedErrorLog);
+    try {
+      expect(() => {
+        renderHook(hook);
+      }).toThrow(message);
+    } finally {
+      window.removeEventListener('error', preventExpectedErrorLog);
+      consoleSpy.mockRestore();
+    }
+  };
+
   describe('WorkflowProvider', () => {
     it('should provide nodes to children', () => {
       const { result } = renderHook(() => useWorkflow(), { wrapper });
@@ -124,14 +143,10 @@ describe('WorkflowContext', () => {
 
   describe('useWorkflow', () => {
     it('should throw error when used outside provider', () => {
-      // Suppress console.error for this test
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      expect(() => {
-        renderHook(() => useWorkflow());
-      }).toThrow('useWorkflow must be used within a WorkflowProvider');
-
-      consoleSpy.mockRestore();
+      expectHookRenderToThrow(
+        () => useWorkflow(),
+        'useWorkflow must be used within a WorkflowProvider'
+      );
     });
 
     it('should return context value when inside provider', () => {
@@ -154,13 +169,10 @@ describe('WorkflowContext', () => {
     });
 
     it('should throw when used outside provider', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      expect(() => {
-        renderHook(() => useNodesRef());
-      }).toThrow('useWorkflow must be used within a WorkflowProvider');
-
-      consoleSpy.mockRestore();
+      expectHookRenderToThrow(
+        () => useNodesRef(),
+        'useWorkflow must be used within a WorkflowProvider'
+      );
     });
   });
 
@@ -172,13 +184,10 @@ describe('WorkflowContext', () => {
     });
 
     it('should throw when used outside provider', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      expect(() => {
-        renderHook(() => useEdgesRef());
-      }).toThrow('useWorkflow must be used within a WorkflowProvider');
-
-      consoleSpy.mockRestore();
+      expectHookRenderToThrow(
+        () => useEdgesRef(),
+        'useWorkflow must be used within a WorkflowProvider'
+      );
     });
   });
 

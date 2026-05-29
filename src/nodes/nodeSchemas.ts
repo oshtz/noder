@@ -7,14 +7,19 @@ import { HANDLE_TYPES } from '../constants/handleTypes';
 // ============================================================================
 
 export type FieldType = 'text' | 'textarea' | 'number' | 'slider' | 'select';
+export type RuntimeFieldType = FieldType | 'boolean' | 'media-input' | string;
+export type RuntimeValueType = 'string' | 'number' | 'boolean' | 'array' | string;
 
 export interface BaseField {
   key: string;
   label: string;
-  type: FieldType;
+  type: RuntimeFieldType;
   placeholder?: string;
-  default?: string | number;
+  default?: unknown;
   help?: string;
+  order?: number;
+  required?: boolean;
+  valueType?: RuntimeValueType;
 }
 
 export interface TextField extends BaseField {
@@ -38,6 +43,18 @@ export interface SelectField extends BaseField {
 }
 
 export type Field = TextField | NumberField | SelectField;
+export interface RuntimeField extends BaseField {
+  type: RuntimeFieldType;
+  mediaType?: string;
+  isArray?: boolean;
+  role?: string;
+  options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export type SchemaField = Field | RuntimeField;
 
 export type HandleType = 'source' | 'target';
 
@@ -58,10 +75,18 @@ export interface NodeDefinition {
   handles: Handle[];
 }
 
-export interface BuiltNodeSchema<T extends ZodRawShape = ZodRawShape> extends NodeDefinition {
+export interface BuiltNodeSchema<T extends ZodRawShape = ZodRawShape> extends Omit<
+  NodeDefinition,
+  'fields'
+> {
+  fields: SchemaField[];
   zod: ZodObject<T>;
   defaults: Record<string, unknown>;
+  allowPassthrough?: boolean;
 }
+
+export type NodeSchemaDefinition = BuiltNodeSchema;
+export type NodeSchema = NodeSchemaDefinition;
 
 // ============================================================================
 // Schema Building Functions
@@ -655,7 +680,7 @@ export const getNodeSchema = (type: NodeType | string): BuiltNodeSchema | undefi
   NODE_SCHEMAS[type as NodeType];
 
 export const parseNodeData = <T extends Record<string, unknown>>(
-  definition: BuiltNodeSchema,
+  definition: NodeSchemaDefinition,
   data: T | null | undefined = {} as T
 ): Record<string, unknown> => {
   const merged: Record<string, unknown> = { ...definition.defaults };

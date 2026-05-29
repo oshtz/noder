@@ -165,9 +165,18 @@
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--node-border, #3d3d3d) 70%, transparent);
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
   color: var(--text-color, #ffffff);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 85%, var(--primary-color, #ff6b6b) 15%), var(--bg-secondary, #1e1e1e));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 85%, var(--primary-color, #ff6b6b) 15%),
+    var(--bg-secondary, #1e1e1e)
+  );
   min-width: 36px;
   width: 36px;
   height: 36px;
@@ -181,7 +190,11 @@
 
 .workflow-button:hover {
   transform: translateY(-1px);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 78%, var(--accent-color, #ffb86b) 22%), var(--bg-secondary, #1e1e1e));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 78%, var(--accent-color, #ffb86b) 22%),
+    var(--bg-secondary, #1e1e1e)
+  );
   border-color: color-mix(in srgb, var(--node-border, #3d3d3d) 85%, transparent);
   box-shadow: none;
 }
@@ -334,7 +347,10 @@
   background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
   transform: translateX(0);
-  transition: transform 0.25s ease, width 0.25s ease, opacity 0.2s ease;
+  transition:
+    transform 0.25s ease,
+    width 0.25s ease,
+    opacity 0.2s ease;
   z-index: 0;
   pointer-events: none;
 }
@@ -418,7 +434,11 @@
   background: linear-gradient(145deg, var(--bg-tertiary, #303640), var(--bg-secondary, #2a2e37));
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
   border: 1px solid color-mix(in srgb, var(--border-color, #3d3d3d) 70%, transparent);
   box-shadow: none;
 }
@@ -436,7 +456,11 @@
 }
 
 .workflow-item:hover {
-  background: linear-gradient(150deg, color-mix(in srgb, var(--bg-tertiary, #303640) 85%, var(--accent-color, #ffb86b) 15%), var(--bg-secondary, #2a2e37));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--bg-tertiary, #303640) 85%, var(--accent-color, #ffb86b) 15%),
+    var(--bg-secondary, #2a2e37)
+  );
   border-color: color-mix(in srgb, var(--border-color, #3d3d3d) 85%, transparent);
   box-shadow: none;
   transform: translateY(-2px);
@@ -448,7 +472,11 @@
 }
 
 .workflow-item.active {
-  background: linear-gradient(150deg, color-mix(in srgb, var(--bg-tertiary, #303640) 80%, var(--primary-color, #ff6b6b) 20%), var(--bg-secondary, #2a2e37));
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--bg-tertiary, #303640) 80%, var(--primary-color, #ff6b6b) 20%),
+    var(--bg-secondary, #2a2e37)
+  );
   border-color: color-mix(in srgb, var(--primary-color, #ff6b6b) 40%, var(--border-color, #3d3d3d));
   box-shadow: none;
 }
@@ -711,7 +739,7 @@
   width: 100%;
 }
 
-.new-workflow-popover input[type="text"] {
+.new-workflow-popover input[type='text'] {
   flex: 1 1 auto;
   min-width: 0;
   height: 36px;
@@ -734,12 +762,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 85%, var(--primary-color, #ff6b6b) 15%), var(--bg-secondary, #1e1e1e));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 85%, var(--primary-color, #ff6b6b) 15%),
+    var(--bg-secondary, #1e1e1e)
+  );
   border: 1px solid color-mix(in srgb, var(--node-border, #3d3d3d) 70%, transparent);
 }
 
 .new-workflow-popover .workflow-button:hover {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 78%, var(--accent-color, #ffb86b) 22%), var(--bg-secondary, #1e1e1e));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 78%, var(--accent-color, #ffb86b) 22%),
+    var(--bg-secondary, #1e1e1e)
+  );
 }
 
 .new-workflow-popover .workflow-button.primary {

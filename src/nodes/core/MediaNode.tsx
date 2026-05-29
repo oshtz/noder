@@ -1,4 +1,4 @@
-import React, { useState, useEffect, CSSProperties } from 'react';
+import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import { Position } from 'reactflow';
 import { FaMusic } from 'react-icons/fa';
 import BaseNode from '../../components/BaseNode';
@@ -116,6 +116,26 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>(
     data.replicateUrl ? 'uploaded' : 'idle'
   );
+  const dataRef = useRef(data);
+  const uploadStateRef = useRef({
+    replicateFileId: data.replicateFileId || null,
+    replicateUrl: data.replicateUrl || null,
+    replicateExpiresAt: data.replicateExpiresAt || null,
+    uploadedMediaPath: data.uploadedMediaPath || null,
+  });
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    uploadStateRef.current = {
+      replicateFileId,
+      replicateUrl,
+      replicateExpiresAt,
+      uploadedMediaPath,
+    };
+  }, [replicateFileId, replicateUrl, replicateExpiresAt, uploadedMediaPath]);
 
   // Sync local state with data prop when it changes (e.g., from gallery drag-drop)
   useEffect(() => {
@@ -127,8 +147,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
       console.log('[MediaNode] Syncing mediaType from data prop:', data.mediaType);
       setMediaType(data.mediaType);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.mediaPath, data.mediaType]);
+  }, [data.mediaPath, data.mediaType, mediaPath, mediaType]);
 
   // Check if a path is a URL
   const isUrl = (path: string): boolean => {
@@ -141,11 +160,13 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
   // Load file as base64 for local preview, or use URL directly
   useEffect(() => {
     if (mediaPath) {
+      const nodeData = dataRef.current as MediaNodeData;
+
       // If it's a URL, use it directly
       if (isUrl(mediaPath)) {
         console.log('[MediaNode] Using URL directly:', mediaPath);
         setConvertedSrc(mediaPath);
-        (data as MediaNodeData).convertedSrc = mediaPath;
+        nodeData.convertedSrc = mediaPath;
         setLoading(false);
         setError('');
         return;
@@ -157,7 +178,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
       invoke<string>('read_file_as_base64', { filePath: mediaPath })
         .then((dataUrl) => {
           setConvertedSrc(dataUrl);
-          (data as MediaNodeData).convertedSrc = dataUrl;
+          nodeData.convertedSrc = dataUrl;
           setLoading(false);
         })
         .catch((err) => {
@@ -166,7 +187,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
           setLoading(false);
         });
     }
-  }, [mediaPath, data]);
+  }, [mediaPath]);
 
   // Auto-upload to Replicate when file changes (respects autoUpload setting)
   useEffect(() => {
@@ -176,11 +197,14 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
 
     const uploadFile = async (): Promise<void> => {
       try {
+        const nodeData = dataRef.current as MediaNodeData;
+        const uploadState = uploadStateRef.current;
+
         // Check if we have a valid cached URL for this file
         const cacheInfo: CacheInfo = {
-          replicateUrl: data.replicateUrl || replicateUrl,
-          replicateExpiresAt: data.replicateExpiresAt || replicateExpiresAt,
-          uploadedMediaPath: data.uploadedMediaPath || uploadedMediaPath,
+          replicateUrl: nodeData.replicateUrl || uploadState.replicateUrl,
+          replicateExpiresAt: nodeData.replicateExpiresAt || uploadState.replicateExpiresAt,
+          uploadedMediaPath: nodeData.uploadedMediaPath || uploadState.uploadedMediaPath,
         };
 
         const cacheValid = await isCacheValid(cacheInfo, mediaPath);
@@ -188,11 +212,14 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         if (cacheValid) {
           console.log(`[MediaNode] Using cached Replicate URL for node ${id}`);
           // Ensure local state matches cached data
-          if (data.replicateUrl && data.replicateUrl !== replicateUrl) {
-            setReplicateUrl(data.replicateUrl);
+          if (nodeData.replicateUrl && nodeData.replicateUrl !== uploadState.replicateUrl) {
+            setReplicateUrl(nodeData.replicateUrl);
           }
-          if (data.replicateFileId && data.replicateFileId !== replicateFileId) {
-            setReplicateFileId(data.replicateFileId);
+          if (
+            nodeData.replicateFileId &&
+            nodeData.replicateFileId !== uploadState.replicateFileId
+          ) {
+            setReplicateFileId(nodeData.replicateFileId);
           }
           setUploadStatus('uploaded');
           return;
@@ -202,8 +229,8 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         console.log(`[MediaNode] Auto-uploading file for node ${id}`);
 
         // Delete old file if exists
-        if (replicateFileId) {
-          await deleteFileFromReplicate(replicateFileId);
+        if (uploadState.replicateFileId) {
+          await deleteFileFromReplicate(uploadState.replicateFileId);
         }
 
         // Upload new file
@@ -216,10 +243,10 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         setUploadStatus('uploaded');
 
         // Store in node data and update parent state
-        (data as MediaNodeData).replicateFileId = result.id;
-        (data as MediaNodeData).replicateUrl = result.url;
-        (data as MediaNodeData).replicateExpiresAt = result.expiresAt;
-        (data as MediaNodeData).uploadedMediaPath = mediaPath;
+        nodeData.replicateFileId = result.id;
+        nodeData.replicateUrl = result.url;
+        nodeData.replicateExpiresAt = result.expiresAt;
+        nodeData.uploadedMediaPath = mediaPath;
 
         // Emit event to update the node in parent state
         emit('nodeDataUpdated', {
@@ -241,7 +268,6 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
     };
 
     uploadFile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaPath, mediaType, id, formState.autoUpload]);
 
   // Cleanup on unmount
@@ -254,7 +280,6 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replicateFileId, id]);
 
   // Listen for content changes from upload
@@ -262,10 +287,12 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
     const handleContentChange = (event: ContentChangedEvent): void => {
       if (event.detail.targetId === id) {
         const { type, value } = event.detail.content;
+        const nodeData = dataRef.current as MediaNodeData;
+
         setMediaType(type as MediaType);
         setMediaPath(value);
-        (data as MediaNodeData).mediaType = type as MediaType;
-        (data as MediaNodeData).mediaPath = value;
+        nodeData.mediaType = type as MediaType;
+        nodeData.mediaPath = value;
 
         // Reset Replicate state when new file is loaded
         setReplicateFileId(null);
@@ -281,7 +308,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
       handleContentChange as (event: unknown) => void
     );
     return () => offNodeContentChanged();
-  }, [id, data]);
+  }, [id]);
 
   // Use static handles from schema - no dynamic changes needed
   const staticHandles = handles;
@@ -378,7 +405,6 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
                   gap: '4px',
                 }}
               >
-                <span>✓</span>
                 <span>Uploaded</span>
               </div>
             )}
@@ -548,9 +574,9 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
           <div style={{ marginBottom: '8px', fontWeight: 500 }}>Upload Status:</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div>File: {mediaPath ? mediaPath.split(/[/\\]/).pop() : 'No file loaded'}</div>
-            {replicateUrl && <div style={{ color: '#4ade80' }}>✓ Uploaded to Replicate</div>}
-            {uploadStatus === 'uploading' && <div style={{ color: '#fbbf24' }}>⟳ Uploading...</div>}
-            {uploadStatus === 'error' && <div style={{ color: '#ef4444' }}>✗ Upload failed</div>}
+            {replicateUrl && <div style={{ color: '#4ade80' }}>Uploaded to Replicate</div>}
+            {uploadStatus === 'uploading' && <div style={{ color: '#fbbf24' }}>Uploading...</div>}
+            {uploadStatus === 'error' && <div style={{ color: '#ef4444' }}>Upload failed</div>}
           </div>
         </div>
       </NodeSettingsPopover>

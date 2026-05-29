@@ -71,11 +71,22 @@ export function useSidebarWorkflows({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
+  const loadWorkflows = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const workflowsList = (await invoke('list_workflows')) as Workflow[];
+      setWorkflows(workflowsList);
+    } catch (error) {
+      console.error('Failed to load workflows:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Load workflows on mount
   useEffect(() => {
     loadWorkflows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadWorkflows]);
 
   // Sort workflows based on selected criteria
   const sortedWorkflows = useMemo(() => {
@@ -102,18 +113,6 @@ export function useSidebarWorkflows({
         return sorted;
     }
   }, [workflows, sortBy]);
-
-  const loadWorkflows = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const workflowsList = (await invoke('list_workflows')) as Workflow[];
-      setWorkflows(workflowsList);
-    } catch (error) {
-      console.error('Failed to load workflows:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   const handleRename = useCallback(
     async (workflowId: string, newName: string): Promise<void> => {

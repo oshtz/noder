@@ -73,7 +73,8 @@
 }
 
 @keyframes pulse-handle {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -82,7 +83,8 @@
 }
 
 @keyframes pulse-icon {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 0.8;
   }
@@ -97,7 +99,10 @@
   stroke: rgba(160, 160, 160, 0.6);
   stroke-width: 2;
   z-index: 1000;
-  transition: stroke-width 0.2s ease, stroke 0.2s ease, opacity 0.2s ease;
+  transition:
+    stroke-width 0.2s ease,
+    stroke 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .react-flow__edge:hover .react-flow__edge-path {
@@ -135,7 +140,6 @@
 .react-flow__nodes {
   z-index: 3;
 }
-
 
 /* Animated edges - only when processing */
 @keyframes dashdraw {

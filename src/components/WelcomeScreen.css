@@ -93,7 +93,8 @@
 }
 
 @keyframes shimmer {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -176,7 +177,9 @@
   gap: 0.5rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .welcome-link:hover {
@@ -197,7 +200,11 @@
   border: 1px solid transparent;
   border-radius: 999px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -310,7 +317,10 @@
   background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
   transform: translateX(0);
-  transition: transform 0.25s ease, width 0.25s ease, opacity 0.2s ease;
+  transition:
+    transform 0.25s ease,
+    width 0.25s ease,
+    opacity 0.2s ease;
   z-index: 0;
   pointer-events: none;
 }

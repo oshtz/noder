@@ -110,8 +110,7 @@ export const sortNodesForReactFlow = <T extends Node>(nodes: T[]): T[] => {
       console.warn(
         `[sortNodesForReactFlow] Removing orphaned parentNode reference "${parentId}" from node "${node.id}"`
       );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { parentNode, parentId: _pId, extent, ...cleanNode } = node;
+      const { parentNode: _parentNode, parentId: _parentId, extent: _extent, ...cleanNode } = node;
       return cleanNode as T;
     }
     return node;

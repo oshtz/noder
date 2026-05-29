@@ -129,6 +129,7 @@ const ChipNode: React.FC<ChipNodeProps> = ({ id, data, selected = false }) => {
   const [isEditingChipId, setIsEditingChipId] = useState(false);
   const inputRef = useRef<HTMLDivElement>(null);
   const chipIdInputRef = useRef<HTMLInputElement>(null);
+  const hasInitializedInputRef = useRef(false);
 
   // Generate default chipId from node id if not set
   const effectiveChipId =
@@ -198,16 +199,17 @@ const ChipNode: React.FC<ChipNodeProps> = ({ id, data, selected = false }) => {
     if (data.chipId !== undefined && data.chipId !== chipId) {
       setChipId(data.chipId || '');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.content, data.chipId]);
+  }, [data.content, data.chipId, content, chipId]);
 
   // Set initial content on mount
   useEffect(() => {
+    if (hasInitializedInputRef.current) return;
+    hasInitializedInputRef.current = true;
+
     if (inputRef.current && content) {
       inputRef.current.innerText = content;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [content]);
 
   // Listen for input from connected nodes
   useEffect(() => {

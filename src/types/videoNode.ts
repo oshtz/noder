@@ -21,7 +21,9 @@ export interface VideoNodeHandle {
 // =============================================================================
 
 export interface VideoNodeData {
+  [key: string]: unknown;
   title: string;
+  videoUrl?: string;
   onRemove: (id: string) => void;
   handles: VideoNodeHandle[];
   model: string;

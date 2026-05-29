@@ -30,6 +30,7 @@ interface HandleDefinition {
 }
 
 interface AudioNodeData {
+  [key: string]: unknown;
   title: string;
   onRemove: (id: string) => void;
   handles: HandleDefinition[];

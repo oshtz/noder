@@ -31,20 +31,14 @@ import './WelcomeScreen.css';
 import noderLogo from '../../noderBG.png';
 import FaultyTerminal from './FaultyTerminal';
 import { useShowAssistantPanel } from '../stores/useSettingsStore';
+import type {
+  WorkflowTemplate as Template,
+  TemplateCategory as WorkflowTemplateCategory,
+} from '../utils/workflowTemplates';
 
 // =============================================================================
 // Types
 // =============================================================================
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  category: string;
-  nodes: unknown[];
-  edges: unknown[];
-}
 
 interface Workflow {
   id: string;
@@ -53,7 +47,7 @@ interface Workflow {
 }
 
 interface TemplateCategory {
-  id: string;
+  id: WorkflowTemplateCategory;
   label: string;
   icon: string;
 }
@@ -152,7 +146,7 @@ WelcomeBackdrop.displayName = 'WelcomeBackdrop';
 // =============================================================================
 
 const TemplateGallery = React.memo<TemplateGalleryProps>(({ templates, onLoadTemplate }) => {
-  const [selectedCategory, setSelectedCategory] = useState('beginner');
+  const [selectedCategory, setSelectedCategory] = useState<WorkflowTemplateCategory>('beginner');
   const categoriesRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [indicatorStyle, setIndicatorStyle] = useState<IndicatorStyle>({

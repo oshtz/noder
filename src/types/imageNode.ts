@@ -21,6 +21,7 @@ export interface ImageNodeHandle {
 // =============================================================================
 
 export interface ImageNodeData {
+  [key: string]: unknown;
   title: string;
   onRemove: (id: string) => void;
   handles: ImageNodeHandle[];

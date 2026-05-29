@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 import { invoke, type GitHubRelease as TauriGitHubRelease } from '../types/tauri';
 
 // ============================================================================
@@ -83,7 +84,6 @@ const isUpdateSupported = (): boolean =>
 
 const getCurrentVersion = async (): Promise<string | null> => {
   if (!isTauriRuntime()) return null;
-  const { getVersion } = await import('@tauri-apps/api/app');
   return getVersion();
 };
 

@@ -164,8 +164,8 @@ export function useNodeInputs<T extends Record<string, unknown>>(
 
   // Listen for content changes from connected nodes
   useEffect(() => {
-    const handleNodeContentChanged = (event: NodeContentChangedEvent): void => {
-      const { targetId, content, targetHandle } = event;
+    const handleNodeContentChanged = (event: CustomEvent<NodeContentChangedEvent>): void => {
+      const { targetId, content, targetHandle } = event.detail;
 
       // Only process events for this node
       if (targetId !== nodeId) return;

@@ -1,20 +1,16 @@
 import React, { useState, ChangeEvent } from 'react';
 import { ReplicateModelPicker } from './ReplicateModelPicker';
-import { ZodSchema } from 'zod';
+import { ZodObject, ZodRawShape, ZodSchema } from 'zod';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-type FieldType = 'text' | 'textarea' | 'select' | 'slider' | 'number' | 'boolean' | 'media-input';
-
-type ValueType = 'string' | 'number' | 'boolean' | 'array';
-
 interface FieldDefinition {
   key: string;
   label: string;
-  type?: FieldType;
-  valueType?: ValueType;
+  type?: string;
+  valueType?: string;
   placeholder?: string;
   help?: string;
   options?: string[];
@@ -111,7 +107,10 @@ export const SchemaForm: React.FC<SchemaFormProps> = ({
     };
 
     if (definition.zod) {
-      const parser = definition.allowPassthrough ? definition.zod.passthrough() : definition.zod;
+      const parser =
+        definition.allowPassthrough && definition.zod instanceof ZodObject
+          ? (definition.zod as ZodObject<ZodRawShape>).passthrough()
+          : definition.zod;
       const parsed = parser.safeParse(next);
       if (!parsed.success) {
         const fieldErrors = parsed.error.formErrors.fieldErrors as Record<string, string[]>;

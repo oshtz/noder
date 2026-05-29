@@ -85,7 +85,8 @@ export const getHandleInfo = (
 ): HandleInfo | null => {
   if (!nodeType || !handleId) return null;
 
-  const nodeDefinition = (nodeTypes as Record<string, NodeTypeDefinition>)[nodeType]?.defaultData;
+  const nodeDefinition = (nodeTypes as unknown as Record<string, NodeTypeDefinition>)[nodeType]
+    ?.defaultData;
 
   const matchesHandle = (handle: NodeHandle): boolean =>
     handle.id === handleId &&
@@ -242,8 +243,9 @@ export const getValidConnections = (
   return allNodes.flatMap((otherNode) => {
     if (otherNode.id === nodeId) return []; // Skip self
 
-    const nodeDefinition = (nodeTypes as Record<string, NodeTypeDefinition>)[otherNode.type || '']
-      ?.defaultData;
+    const nodeDefinition = (nodeTypes as unknown as Record<string, NodeTypeDefinition>)[
+      otherNode.type || ''
+    ]?.defaultData;
     const handlesFromNode = otherNode.data?.handles as NodeHandle[] | undefined;
     const handles =
       Array.isArray(handlesFromNode) && handlesFromNode.length
@@ -389,6 +391,8 @@ export const validateEdges = (edges: Edge[], nodes: Node[]): EdgeValidationResul
     const isValid = validations.every((validationName) => {
       const result = getValidator(validationName)({
         ...edge,
+        sourceHandle: edge.sourceHandle ?? null,
+        targetHandle: edge.targetHandle ?? null,
         sourceHandleType: 'output',
         targetHandleType: 'input',
         nodesSnapshot: nodes,
