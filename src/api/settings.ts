@@ -14,7 +14,7 @@ import type { AppSettings, FloatingButtonPosition } from '../types/tauri';
 // =============================================================================
 
 /** API provider names */
-export type ApiProvider = 'openai' | 'openrouter' | 'anthropic' | 'replicate' | 'gemini';
+export type ApiProvider = 'openai' | 'openrouter' | 'anthropic' | 'replicate' | 'fal' | 'gemini';
 
 /** Node types that have default models */
 export type NodeType = 'text' | 'image' | 'video' | 'audio' | 'upscaler';
@@ -25,6 +25,7 @@ type ApiKeySettingKey =
   | 'openrouter_api_key'
   | 'anthropic_api_key'
   | 'replicate_api_key'
+  | 'fal_api_key'
   | 'gemini_api_key';
 
 /** Settings key for default models */
@@ -49,6 +50,7 @@ export interface ConfiguredProviders {
   openrouter: boolean;
   anthropic: boolean;
   replicate: boolean;
+  fal: boolean;
   gemini: boolean;
 }
 
@@ -65,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   openrouter_api_key: null,
   anthropic_api_key: null,
   replicate_api_key: null,
+  fal_api_key: null,
   gemini_api_key: null,
 
   // Service URLs
@@ -90,6 +93,13 @@ export const DEFAULT_SETTINGS: Settings = {
 
   // Edge Appearance
   edge_type: 'bezier',
+
+  // Default Providers
+  default_text_provider: 'openrouter',
+  default_image_provider: 'replicate',
+  default_video_provider: 'replicate',
+  default_audio_provider: 'replicate',
+  default_upscaler_provider: 'replicate',
 };
 
 /** Map of API provider to settings key */
@@ -98,6 +108,7 @@ const API_KEY_MAP: Record<ApiProvider, ApiKeySettingKey> = {
   openrouter: 'openrouter_api_key',
   anthropic: 'anthropic_api_key',
   replicate: 'replicate_api_key',
+  fal: 'fal_api_key',
   gemini: 'gemini_api_key',
 };
 
@@ -277,6 +288,7 @@ export async function getConfiguredProviders(): Promise<ConfiguredProviders> {
     openrouter: !!settings.openrouter_api_key,
     anthropic: !!settings.anthropic_api_key,
     replicate: !!settings.replicate_api_key,
+    fal: !!settings.fal_api_key,
     gemini: !!settings.gemini_api_key,
   };
 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { invoke } from '../types/tauri';
+import { isTauriRuntime } from '../utils/runtime';
 
 // ============================================================================
 // Types
@@ -359,6 +360,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
       // Load settings from Tauri backend
       loadFromTauri: async () => {
+        if (!isTauriRuntime()) {
+          const savedTheme = localStorage.getItem('noder-theme');
+          set({ isLoaded: true, ...(savedTheme ? { currentTheme: savedTheme } : {}) });
+          return;
+        }
+
         try {
           const settings = await invoke('load_settings');
 
@@ -388,6 +395,10 @@ export const useSettingsStore = create<SettingsStore>()(
               settings.show_assistant_panel !== undefined && settings.show_assistant_panel !== null
                 ? settings.show_assistant_panel
                 : DEFAULT_SETTINGS.showAssistantPanel,
+            showEditorToolbar:
+              settings.show_editor_toolbar !== undefined && settings.show_editor_toolbar !== null
+                ? settings.show_editor_toolbar
+                : DEFAULT_SETTINGS.showEditorToolbar,
             runButtonUnlocked:
               settings.run_button_unlocked !== undefined && settings.run_button_unlocked !== null
                 ? settings.run_button_unlocked
@@ -446,7 +457,7 @@ export const useSettingsStore = create<SettingsStore>()(
           const state = get();
 
           // Don't save if not yet loaded
-          if (!state.isLoaded || state.isSaving) return;
+          if (!state.isLoaded || state.isSaving || !isTauriRuntime()) return;
 
           // Debounce
           if (timeoutId) clearTimeout(timeoutId);
@@ -476,6 +487,7 @@ export const useSettingsStore = create<SettingsStore>()(
                   // UI Preferences
                   show_templates: state.showTemplates,
                   show_assistant_panel: state.showAssistantPanel,
+                  show_editor_toolbar: state.showEditorToolbar,
                   run_button_unlocked: state.runButtonUnlocked,
                   run_button_position: state.runButtonPosition,
 
@@ -511,7 +523,7 @@ export const useSettingsStore = create<SettingsStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // Only persist non-sensitive UI preferences locally
-        // API keys are handled by Tauri's secure storage
+        // API keys are handled by the desktop settings file
         showTemplates: state.showTemplates,
         showAssistantPanel: state.showAssistantPanel,
         showEditorToolbar: state.showEditorToolbar,
