@@ -50,10 +50,21 @@ jobs:
             "src-tauri/capabilities/**/*.json"
           )
           $prettierOptions = @(
-            "--config",
-            ".prettierrc",
+            "--no-config",
             "--ignore-path",
-            ".prettierignore"
+            ".prettierignore",
+            "--single-quote",
+            "--tab-width",
+            "2",
+            "--trailing-comma",
+            "es5",
+            "--bracket-spacing",
+            "--arrow-parens",
+            "always",
+            "--print-width",
+            "100",
+            "--end-of-line",
+            "lf"
           )
 
           npm run format:check
