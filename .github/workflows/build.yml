@@ -40,7 +40,29 @@ jobs:
         run: npm run lint
 
       - name: Check formatting
-        run: npm run format:check
+        shell: pwsh
+        run: |
+          $patterns = @(
+            "src/**/*.{js,jsx,ts,tsx,css}",
+            "*.{js,json,md}",
+            ".github/**/*.{yml,yaml}",
+            "src-tauri/tauri.conf.json",
+            "src-tauri/capabilities/**/*.json"
+          )
+
+          npm run format:check
+          if ($LASTEXITCODE -eq 0) {
+            exit 0
+          }
+
+          Write-Host "Prettier reported formatting differences. Listing files:"
+          $changedFiles = & npx prettier --list-different @patterns
+          foreach ($changedFile in $changedFiles) {
+            if (-not [string]::IsNullOrWhiteSpace($changedFile)) {
+              Write-Host "::error file=$changedFile::Prettier formatting differs"
+            }
+          }
+          exit 1
 
       - name: Typecheck frontend
         run: npm run typecheck
