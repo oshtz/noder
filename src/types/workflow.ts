@@ -67,7 +67,7 @@ export interface EdgeData {
   targetNodeHeight?: number;
 }
 
-export interface WorkflowEdge extends Edge<EdgeData> {}
+export type WorkflowEdge = Edge<EdgeData>;
 
 // ============================================================================
 // RunWorkflow Types (for useWorkflowRunner hook)

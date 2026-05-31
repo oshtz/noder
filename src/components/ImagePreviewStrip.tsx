@@ -180,14 +180,6 @@ export const ImagePreviewStrip: React.FC<ImagePreviewStripProps> = ({ nodeId }) 
   }, [collectImageUrls, updateTrigger]);
 
   /**
-   * Initial load
-   */
-  useEffect(() => {
-    collectImageUrls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /**
    * Handle image load errors with logging
    */
   const handleImageError = useCallback((url: string, index: number): void => {

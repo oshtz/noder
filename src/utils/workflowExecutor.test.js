@@ -64,7 +64,7 @@ const createMarkdownNode = (id, overrides = {}) => ({
   },
 });
 
-const createImageNode = (id, overrides = {}) => ({
+const _createImageNode = (id, overrides = {}) => ({
   id,
   type: 'image',
   data: {
@@ -74,7 +74,7 @@ const createImageNode = (id, overrides = {}) => ({
   },
 });
 
-const createVideoNode = (id, overrides = {}) => ({
+const _createVideoNode = (id, overrides = {}) => ({
   id,
   type: 'video',
   data: {
@@ -84,7 +84,7 @@ const createVideoNode = (id, overrides = {}) => ({
   },
 });
 
-const createAudioNode = (id, overrides = {}) => ({
+const _createAudioNode = (id, overrides = {}) => ({
   id,
   type: 'audio',
   data: {
@@ -94,7 +94,7 @@ const createAudioNode = (id, overrides = {}) => ({
   },
 });
 
-const createUpscalerNode = (id, overrides = {}) => ({
+const _createUpscalerNode = (id, overrides = {}) => ({
   id,
   type: 'upscaler',
   data: {

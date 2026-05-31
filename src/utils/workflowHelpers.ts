@@ -137,7 +137,7 @@ export const prepareEdges = (
   if (validationErrorsRef) {
     validationErrorsRef.current = [
       ...(validationErrorsRef.current || []),
-      ...(validationResults.validationErrors || []),
+      ...((validationResults.validationErrors || []) as unknown as ValidationError[]),
     ];
   }
 

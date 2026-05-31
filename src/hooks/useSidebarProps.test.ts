@@ -537,14 +537,16 @@ describe('useSidebarProps', () => {
       expect(result.current.sidebarProps.onWorkflowLoad).toBe(loadWorkflow);
     });
 
-    it('should contain onSave mapped to saveCurrentWorkflow', () => {
+    it('should call saveCurrentWorkflow through onSave', async () => {
       const saveCurrentWorkflow = vi.fn().mockResolvedValue(undefined);
       const config = createDefaultConfig();
       config.saveCurrentWorkflow = saveCurrentWorkflow;
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      expect(result.current.sidebarProps.onSave).toBe(saveCurrentWorkflow);
+      await result.current.sidebarProps.onSave();
+
+      expect(saveCurrentWorkflow).toHaveBeenCalledTimes(1);
     });
 
     it('should contain onSaveWorkflow mapped to saveWorkflow', () => {

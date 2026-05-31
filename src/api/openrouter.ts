@@ -37,7 +37,7 @@ export interface ChatMessage {
 export interface ToolFunction {
   name: string;
   description?: string;
-  parameters?: Record<string, unknown>;
+  parameters?: unknown;
 }
 
 /** Tool definition */

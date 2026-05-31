@@ -97,6 +97,24 @@ const TextNode: React.FC<TextNodeProps> = ({ id, data, selected = false }) => {
   const [showChipPreview, setShowChipPreview] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(data.imageUrl || null);
   const [audioUrl, setAudioUrl] = useState<string | null>(data.audioUrl || null);
+  const formDataSnapshot = useMemo(
+    () => ({
+      prompt: data.prompt,
+      systemPrompt: data.systemPrompt,
+      model: data.model,
+      temperature: data.temperature,
+      maxTokens: data.maxTokens,
+      destinationFolder: data.destinationFolder,
+    }),
+    [
+      data.prompt,
+      data.systemPrompt,
+      data.model,
+      data.temperature,
+      data.maxTokens,
+      data.destinationFolder,
+    ]
+  );
 
   // Generation hook
   const {
@@ -127,7 +145,7 @@ const TextNode: React.FC<TextNodeProps> = ({ id, data, selected = false }) => {
 
   // Sync form state with data changes
   useEffect(() => {
-    const next = parseNodeData(definition, data) as TextFormState;
+    const next = parseNodeData(definition, formDataSnapshot) as TextFormState;
     setFormState((prev) => {
       if (
         prev.prompt === next.prompt &&
@@ -141,15 +159,7 @@ const TextNode: React.FC<TextNodeProps> = ({ id, data, selected = false }) => {
       }
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    data.prompt,
-    data.systemPrompt,
-    data.model,
-    data.temperature,
-    data.maxTokens,
-    data.destinationFolder,
-  ]);
+  }, [formDataSnapshot]);
 
   // Listen for input from connected nodes
   useEffect(() => {

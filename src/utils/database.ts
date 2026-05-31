@@ -1,4 +1,5 @@
 import Database from '@tauri-apps/plugin-sql';
+import { isTauriRuntime } from './runtime';
 
 type ExecuteResult = {
   lastInsertId?: number | null;
@@ -74,11 +75,17 @@ export type GetWorkflowHistoryOptions = {
 };
 
 let db: SqlDatabase | null = null;
+let webOutputId = 1;
+const webOutputs: OutputRow[] = [];
 
 /**
  * Initialize the SQLite database and create tables if they don't exist
  */
 export async function initDatabase(): Promise<SqlDatabase> {
+  if (!isTauriRuntime()) {
+    throw new Error('SQLite database is unavailable outside the Tauri desktop runtime');
+  }
+
   if (db) {
     console.log('[Database] Already initialized, returning existing connection');
     return db;
@@ -173,6 +180,23 @@ export async function initDatabase(): Promise<SqlDatabase> {
  * Save an output to the database
  */
 export async function saveOutput(output: OutputInput): Promise<number | null | undefined> {
+  if (!isTauriRuntime()) {
+    const id = webOutputId++;
+    webOutputs.unshift({
+      id,
+      type: output.type,
+      value: output.value,
+      original_url: output.originalUrl || null,
+      prompt: output.prompt || null,
+      model: output.model || null,
+      node_id: output.nodeId || null,
+      workflow_id: output.workflowId || null,
+      timestamp: output.timestamp || Date.now(),
+      created_at: new Date().toISOString(),
+    });
+    return id;
+  }
+
   console.log('[Database] saveOutput called with:', output);
   const database = await initDatabase();
 
@@ -219,6 +243,11 @@ export async function getOutputs({
   limit = 100,
   offset = 0,
 }: GetOutputsOptions = {}): Promise<OutputRow[]> {
+  if (!isTauriRuntime()) {
+    const filtered = type ? webOutputs.filter((output) => output.type === type) : webOutputs;
+    return filtered.slice(offset, offset + limit);
+  }
+
   console.log('[Database] getOutputs called with:', { type, limit, offset });
   const database = await initDatabase();
 
@@ -258,6 +287,10 @@ export async function getOutputs({
  * Get a single output by ID
  */
 export async function getOutputById(id: number): Promise<OutputRow | null> {
+  if (!isTauriRuntime()) {
+    return webOutputs.find((output) => output.id === id) || null;
+  }
+
   const database = await initDatabase();
 
   try {
@@ -273,6 +306,12 @@ export async function getOutputById(id: number): Promise<OutputRow | null> {
  * Delete an output by ID
  */
 export async function deleteOutput(id: number): Promise<void> {
+  if (!isTauriRuntime()) {
+    const index = webOutputs.findIndex((output) => output.id === id);
+    if (index >= 0) webOutputs.splice(index, 1);
+    return;
+  }
+
   const database = await initDatabase();
 
   try {
@@ -288,6 +327,11 @@ export async function deleteOutput(id: number): Promise<void> {
  * Delete all outputs
  */
 export async function clearAllOutputs(): Promise<void> {
+  if (!isTauriRuntime()) {
+    webOutputs.splice(0, webOutputs.length);
+    return;
+  }
+
   const database = await initDatabase();
 
   try {
@@ -303,6 +347,14 @@ export async function clearAllOutputs(): Promise<void> {
  * Get output count by type
  */
 export async function getOutputStats(): Promise<OutputStatsRow[]> {
+  if (!isTauriRuntime()) {
+    const counts = webOutputs.reduce<Record<string, number>>((acc, output) => {
+      acc[output.type] = (acc[output.type] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([type, count]) => ({ type, count }));
+  }
+
   const database = await initDatabase();
 
   try {
@@ -326,6 +378,10 @@ export async function getOutputStats(): Promise<OutputStatsRow[]> {
 export async function saveWorkflowToHistory(
   workflow: WorkflowHistoryInput
 ): Promise<number | null | undefined> {
+  if (!isTauriRuntime()) {
+    return null;
+  }
+
   const database = await initDatabase();
 
   try {
@@ -356,6 +412,10 @@ export async function getWorkflowHistory({
   limit = 50,
   offset = 0,
 }: GetWorkflowHistoryOptions = {}): Promise<WorkflowHistoryEntry[]> {
+  if (!isTauriRuntime()) {
+    return [];
+  }
+
   const database = await initDatabase();
 
   try {
@@ -382,6 +442,10 @@ export async function getWorkflowHistory({
  * Delete a workflow from history
  */
 export async function deleteWorkflow(id: number): Promise<void> {
+  if (!isTauriRuntime()) {
+    return;
+  }
+
   const database = await initDatabase();
 
   try {

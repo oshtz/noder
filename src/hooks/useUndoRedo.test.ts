@@ -566,16 +566,14 @@ describe('useUndoRedo', () => {
 
   describe('maxHistory limit', () => {
     it('should respect maxHistory limit', () => {
-      const { result, rerender } = renderHook(
-        ({ nodes }) =>
-          useUndoRedo({
-            nodes,
-            edges: testEdges,
-            setNodes: mockSetNodes,
-            setEdges: mockSetEdges,
-            maxHistory: 3,
-          }),
-        { initialProps: { nodes: testNodes } }
+      const { result } = renderHook(() =>
+        useUndoRedo({
+          nodes: testNodes,
+          edges: testEdges,
+          setNodes: mockSetNodes,
+          setEdges: mockSetEdges,
+          maxHistory: 3,
+        })
       );
 
       // Add more than maxHistory snapshots
@@ -583,7 +581,7 @@ describe('useUndoRedo', () => {
         const newNodes = [
           { id: `node-${i}`, type: 'text', position: { x: i * 100, y: 100 }, data: {} } as Node,
         ];
-        rerender({ nodes: newNodes });
+        testNodes.splice(0, testNodes.length, ...newNodes);
         act(() => {
           result.current.takeSnapshot(true);
         });

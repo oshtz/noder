@@ -57,7 +57,7 @@ export const GalleryThumbnails: React.FC<GalleryThumbnailsProps> = ({
         <FaChevronLeft size={16} />
       </button>
 
-      <div className="gallery-thumbnails" ref={thumbnailsRef}>
+      <div className="gallery-thumbnails" ref={thumbnailsRef as RefObject<HTMLDivElement>}>
         {outputs.map((output, index) => (
           <div
             key={output.id || index}

@@ -4,6 +4,7 @@
  */
 
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
+import { isTauriRuntime } from '../utils/runtime';
 
 // =============================================================================
 // Common Types
@@ -28,6 +29,7 @@ export interface AppSettings {
   default_save_location?: string | null;
   show_templates?: boolean | null;
   show_assistant_panel?: boolean | null;
+  show_editor_toolbar?: boolean | null;
   run_button_unlocked?: boolean | null;
   run_button_position?: FloatingButtonPosition | null;
   default_text_model?: string | null;
@@ -401,6 +403,11 @@ export async function invoke<K extends keyof TauriCommands>(
   command: K,
   ...args: TauriCommands[K]['args'] extends never ? [] : [TauriCommands[K]['args']]
 ): Promise<TauriCommands[K]['return']> {
+  if (!isTauriRuntime()) {
+    throw new Error(
+      `Tauri command "${String(command)}" is unavailable outside the desktop runtime`
+    );
+  }
   if (args.length === 0) {
     return tauriInvoke(command) as Promise<TauriCommands[K]['return']>;
   }

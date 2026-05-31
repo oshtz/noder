@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> -•-
-  <a href="#installation">Installation</a> -•-
-  <a href="#quick-start">Quick Start</a> -•-
-  <a href="#documentation">Documentation</a> -•-
+  <a href="#features">Features</a> |
+  <a href="#installation">Installation</a> |
+  <a href="#quick-start">Quick Start</a> |
+  <a href="#documentation">Documentation</a> |
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -26,9 +26,9 @@
 
 ## Overview
 
-**noder** is an open-source, local-first desktop application for building AI-powered creative workflows using a visual node-based interface. Connect text, image, video, and audio generation nodes to create complex pipelines—all running on your machine with your own API keys.
+**noder** is an open-source, local-first desktop application for building AI-powered creative workflows using a visual node-based interface. Connect text, image, video, and audio generation nodes to create complex pipelines - all running on your machine with your own API keys.
 
-Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/), noder provides a fast, native experience while keeping your data and credentials secure on your local machine.
+Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/), noder provides a fast, native experience while keeping your data and credentials local to your machine.
 
 ---
 
@@ -157,14 +157,14 @@ noder supports the following API providers:
 | **Replicate** | Image/Video/Audio/Text generation | [replicate.com](https://replicate.com/) |
 | **OpenRouter** | AI Assistant panel | [openrouter.ai](https://openrouter.ai/) |
 
-API keys are stored securely in your local app data directory and never transmitted except to their respective APIs.
+API keys are stored in the local app data settings file and are never transmitted except to their respective APIs. Treat the local machine profile as trusted; OS keychain-backed credential storage is not implemented yet.
 
 ### Data Storage
 
 All data is stored locally:
 - **Workflows:** `~/.noder/workflows/` (or platform equivalent)
 - **Outputs:** SQLite database in app data directory
-- **Settings:** Encrypted in app data directory
+- **Settings:** JSON settings file in app data directory
 
 ---
 
@@ -177,8 +177,14 @@ npm install
 # Start development server (Vite + Tauri)
 npm run start
 
-# Run Vite dev server only (web)
+# Run Vite dev server only (web shell; Tauri-only features use fallbacks)
 npm run dev
+
+# Typecheck production source
+npm run typecheck
+
+# Run smoke tests used by CI
+npm run test:smoke
 
 # Run tests
 npm run test
@@ -191,16 +197,16 @@ npm run tauri build
 
 ```
 noder/
-├── src/                    # React frontend
-│   ├── components/         # UI components
-│   ├── nodes/              # Node type definitions
-│   ├── hooks/              # Custom React hooks
-│   ├── utils/              # Utility functions
-│   └── constants/          # Constants and themes
-├── src-tauri/              # Rust backend (Tauri)
-│   └── src/                # Rust source code
-├── public/                 # Static assets
-└── .github/workflows/      # CI/CD configuration
+|-- src/                    # React frontend
+|   |-- components/         # UI components
+|   |-- nodes/              # Node type definitions
+|   |-- hooks/              # Custom React hooks
+|   |-- utils/              # Utility functions
+|   `-- constants/          # Constants and themes
+|-- src-tauri/              # Rust backend (Tauri)
+|   `-- src/                # Rust source code
+|-- public/                 # Static assets
+`-- .github/workflows/      # CI/CD configuration
 ```
 
 ---

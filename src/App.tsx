@@ -24,7 +24,7 @@ import { sortNodesForReactFlow } from './utils/createNode';
 import { normalizeTemplates, markEdgeGlows, prepareEdges } from './utils/workflowHelpers';
 
 // Type imports
-import type { Node, Edge } from 'reactflow';
+import type { Node, Edge, NodeTypes } from 'reactflow';
 import type { Workflow } from './hooks/useWorkflowPersistence';
 import type { ValidationError } from './types/components';
 import type { WorkflowTemplate } from './utils/workflowTemplates';
@@ -52,7 +52,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useDatabase } from './hooks/useDatabase';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useUpdateSystem } from './hooks/useUpdateSystem';
-import { useSettings } from './hooks/useSettings';
 import { useWorkflowExecution } from './hooks/useWorkflowExecution';
 import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowRunner } from './hooks/useWorkflowRunner';
@@ -77,13 +76,12 @@ import { setGlobalWorkflowRefs } from './context/WorkflowContext';
 // Node/Edge Types
 // =============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const nodeTypes: any = Object.fromEntries(
+const nodeTypes = Object.fromEntries(
   Object.entries(registeredNodeTypes).map(([type, def]) => [
     type,
     (def as unknown as { component: React.ComponentType }).component,
   ])
-);
+) as NodeTypes;
 
 const edgeTypes = { custom: CustomEdge };
 
@@ -111,11 +109,11 @@ function App(): React.ReactElement {
   const [edges, setEdges] = useState<Edge[]>([]);
   const pendingEdgesRef = useRef<Edge[]>(initialEdges);
 
-  // Settings hook (for legacy UI preferences)
-  const { showEditorToolbar, setShowEditorToolbar, edgeType } = useSettings();
-
-  // Get settings from Zustand store
+  // Settings
   const showAssistantPanel = useShowAssistantPanel();
+  const showEditorToolbar = useSettingsStore((s) => s.showEditorToolbar);
+  const setShowEditorToolbar = useSettingsStore((s) => s.setShowEditorToolbar);
+  const edgeType = useSettingsStore((s) => s.edgeType);
   const defaultTextModel = useSettingsStore((s) => s.defaultTextModel);
   const defaultImageModel = useSettingsStore((s) => s.defaultImageModel);
   const defaultVideoModel = useSettingsStore((s) => s.defaultVideoModel);
@@ -591,8 +589,7 @@ function App(): React.ReactElement {
                 category: string;
               }) => void
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            templates={workflowTemplatesState as any}
+            templates={workflowTemplatesState}
           />
         </Suspense>
       )}
@@ -710,8 +707,7 @@ function App(): React.ReactElement {
           <Suspense fallback={<div className="loading-placeholder">Loading assistant...</div>}>
             <AssistantPanel
               systemPrompt={assistantSystemPrompt}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              executeToolCall={executeToolCall as any}
+              executeToolCall={executeToolCall}
             />
           </Suspense>
         </ErrorBoundary>

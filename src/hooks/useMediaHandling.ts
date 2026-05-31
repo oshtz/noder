@@ -37,6 +37,15 @@ export interface UseMediaHandlingReturn {
 // Hook Implementation
 // ============================================================================
 
+const createFileReader = (): FileReader => {
+  const Reader = FileReader as unknown as { new (): FileReader } & (() => FileReader);
+  try {
+    return new Reader();
+  } catch {
+    return Reader();
+  }
+};
+
 export function useMediaHandling({
   reactFlowInstance,
   handleAddNode,
@@ -275,7 +284,7 @@ export function useMediaHandling({
           const blob = item.getAsFile();
           if (!blob) continue;
 
-          const reader = new FileReader();
+          const reader = createFileReader();
           reader.onload = async (event): Promise<void> => {
             try {
               const base64Data = event.target?.result as string;
@@ -418,7 +427,7 @@ export function useMediaHandling({
         const file = imageFiles[i];
         if (!file) continue;
 
-        const reader = new FileReader();
+        const reader = createFileReader();
         const fileName = file.name;
 
         reader.onload = async (event): Promise<void> => {

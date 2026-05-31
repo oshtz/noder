@@ -85,7 +85,7 @@ describe('assistantToolExecutor', () => {
     setNodes: ReturnType<typeof vi.fn>;
     setEdges: ReturnType<typeof vi.fn>;
     handleRemoveNode: ReturnType<typeof vi.fn>;
-    setValidationErrors: ReturnType<typeof vi.fn>;
+    addValidationErrors: ReturnType<typeof vi.fn>;
     runWorkflow: ReturnType<typeof vi.fn>;
     focusCanvas: ReturnType<typeof vi.fn>;
     allowedNodeTypes: Set<string> | null;
@@ -99,7 +99,7 @@ describe('assistantToolExecutor', () => {
       setNodes: vi.fn(),
       setEdges: vi.fn(),
       handleRemoveNode: vi.fn(),
-      setValidationErrors: vi.fn(),
+      addValidationErrors: vi.fn(),
       runWorkflow: vi.fn(),
       focusCanvas: vi.fn(),
       allowedNodeTypes: null,

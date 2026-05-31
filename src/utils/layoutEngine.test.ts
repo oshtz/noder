@@ -13,43 +13,45 @@ import type { Node, Edge } from 'reactflow';
 
 // Mock dagre since it's a heavy dependency
 vi.mock('@dagrejs/dagre', () => {
-  const mockGraph = {
-    nodes: new Map<string, { width: number; height: number; x?: number; y?: number }>(),
-    edges: [] as { source: string; target: string }[],
-    options: {} as Record<string, unknown>,
+  const createMockGraph = () => {
+    const graph = {
+      nodes: new Map<string, { width: number; height: number; x?: number; y?: number }>(),
+      edges: [] as { source: string; target: string }[],
+      options: {} as Record<string, unknown>,
 
-    setDefaultEdgeLabel: vi.fn(() => ({})),
-    setGraph: vi.fn(function (this: typeof mockGraph, opts: Record<string, unknown>) {
-      this.options = opts;
-    }),
-    setNode: vi.fn(function (
-      this: typeof mockGraph,
-      id: string,
-      data: { width: number; height: number }
-    ) {
-      this.nodes.set(id, { ...data, x: 0, y: 0 });
-    }),
-    setEdge: vi.fn(function (this: typeof mockGraph, source: string, target: string) {
-      this.edges.push({ source, target });
-    }),
-    node: vi.fn(function (this: typeof mockGraph, id: string) {
-      const node = this.nodes.get(id);
-      if (!node) return { x: 0, y: 0 };
-      // Simulate dagre layout - returns center position
-      const idx = Array.from(this.nodes.keys()).indexOf(id);
-      return {
-        x: 150 + idx * 300, // Spread nodes horizontally
-        y: 150 + idx * 100, // And vertically
-        width: node.width,
-        height: node.height,
-      };
-    }),
+      setDefaultEdgeLabel: vi.fn(() => ({})),
+      setGraph: vi.fn((opts: Record<string, unknown>) => {
+        graph.options = opts;
+      }),
+      setNode: vi.fn((id: string, data: { width: number; height: number }) => {
+        graph.nodes.set(id, { ...data, x: 0, y: 0 });
+      }),
+      setEdge: vi.fn((source: string, target: string) => {
+        graph.edges.push({ source, target });
+      }),
+      node: vi.fn((id: string) => {
+        const node = graph.nodes.get(id);
+        if (!node) return { x: 0, y: 0 };
+        // Simulate dagre layout - returns center position
+        const idx = Array.from(graph.nodes.keys()).indexOf(id);
+        return {
+          x: 150 + idx * 300, // Spread nodes horizontally
+          y: 150 + idx * 100, // And vertically
+          width: node.width,
+          height: node.height,
+        };
+      }),
+    };
+
+    return graph;
   };
 
   return {
     default: {
       graphlib: {
-        Graph: vi.fn(() => mockGraph),
+        Graph: vi.fn(function () {
+          return createMockGraph();
+        }),
       },
       layout: vi.fn(() => {
         // Layout is called but the mock graph already handles positioning

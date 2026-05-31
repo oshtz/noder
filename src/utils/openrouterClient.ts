@@ -26,7 +26,7 @@ export interface Tool {
   function: {
     name: string;
     description?: string;
-    parameters?: Record<string, unknown>;
+    parameters?: unknown;
   };
 }
 
@@ -237,8 +237,7 @@ export const streamOpenRouter = async ({
   const toolCalls: Map<number, StreamToolCall> = new Map();
 
   try {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
 

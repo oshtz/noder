@@ -5,11 +5,11 @@ import { visualizer } from 'rollup-plugin-visualizer';
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig(async ({ mode }) => ({
   plugins: [
     react(),
     // Bundle analyzer - generates bundle-stats.html when building
-    process.env.ANALYZE &&
+    (process.env.ANALYZE || mode === 'analyze') &&
       visualizer({
         open: true,
         filename: 'bundle-stats.html',
@@ -44,11 +44,39 @@ export default defineConfig(async () => ({
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
     // Tauri supports es2021
-    target: process.env.TAURI_PLATFORM == 'windows' ? 'chrome105' : 'safari13',
+    target: 'es2021',
     // don't minify for debug builds
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react-vendor',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 4,
+            },
+            {
+              name: 'flow-vendor',
+              test: /node_modules[\\/](@reactflow|reactflow|d3-|d3)[\\/]/,
+              priority: 3,
+            },
+            {
+              name: 'markdown-vendor',
+              test: /node_modules[\\/](react-markdown|remark-|rehype-|unified|micromark|mdast-|hast-|vfile)[\\/]/,
+              priority: 2,
+            },
+            {
+              name: 'ui-vendor',
+              test: /node_modules[\\/](react-icons|ogl|zod|zustand|lz-string|@tauri-apps)[\\/]/,
+              priority: 1,
+            },
+          ],
+        },
+      },
+    },
   },
   resolve: {
     alias: {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -77,7 +76,6 @@ describe('SettingsModal', () => {
   });
 
   it('closes when overlay is clicked', async () => {
-    const user = userEvent.setup();
     const onClose = vi.fn();
     render(<SettingsModal {...buildProps({ onClose })} />);
     const dialog = screen.getByRole('dialog');

@@ -21,6 +21,7 @@ export interface TextNodeHandle {
 // =============================================================================
 
 export interface TextNodeData {
+  [key: string]: unknown;
   title: string;
   onRemove: (id: string) => void;
   handles: TextNodeHandle[];

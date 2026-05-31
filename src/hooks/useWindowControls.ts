@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { isTauriRuntime } from '../utils/runtime';
 
 /**
  * Hook that sets up window control button handlers for Tauri's custom titlebar.
@@ -7,6 +8,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
  */
 export function useWindowControls(): void {
   useEffect(() => {
+    if (!isTauriRuntime()) return undefined;
+
     const appWindow = getCurrentWindow();
     const minimizeBtn = document.getElementById('titlebar-minimize');
     const maximizeBtn = document.getElementById('titlebar-maximize');

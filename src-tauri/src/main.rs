@@ -115,21 +115,6 @@ struct WhatsAppReceivedMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct ReplicateInput {
-    prompt: Option<String>,
-    #[serde(flatten)]
-    other: serde_json::Map<String, serde_json::Value>
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct ReplicatePredictionRequest {
-    version: Option<String>,
-    input: serde_json::Value,
-    webhook: Option<String>,
-    webhook_events_filter: Option<Vec<String>>
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ReplicatePrediction {
     id: String,
     status: String,
@@ -171,6 +156,7 @@ struct FloatingButtonPosition {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppSettings {
     replicate_api_key: Option<String>,
+    fal_api_key: Option<String>,
     openai_api_key: Option<String>,
     openrouter_api_key: Option<String>,
     anthropic_api_key: Option<String>,
@@ -180,6 +166,7 @@ struct AppSettings {
     default_save_location: Option<String>,
     show_templates: Option<bool>,
     show_assistant_panel: Option<bool>,
+    show_editor_toolbar: Option<bool>,
     run_button_unlocked: Option<bool>,
     run_button_position: Option<FloatingButtonPosition>,
     // Default models for node types
@@ -189,7 +176,12 @@ struct AppSettings {
     default_audio_model: Option<String>,
     default_upscaler_model: Option<String>,
     // Edge appearance
-    edge_type: Option<String>
+    edge_type: Option<String>,
+    default_text_provider: Option<String>,
+    default_image_provider: Option<String>,
+    default_video_provider: Option<String>,
+    default_audio_provider: Option<String>,
+    default_upscaler_provider: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -284,6 +276,7 @@ fn escape_powershell_literal(value: &str) -> String {
     value.replace('\'', "''")
 }
 
+#[cfg(target_os = "macos")]
 fn escape_bash_literal(value: &str) -> String {
     value.replace('\'', "'\\''")
 }
@@ -1143,6 +1136,7 @@ async fn load_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, Stri
     if !settings_file.exists() {
         return Ok(AppSettings {
             replicate_api_key: None,
+            fal_api_key: None,
             openai_api_key: None,
             openrouter_api_key: None,
             anthropic_api_key: None,
@@ -1152,6 +1146,7 @@ async fn load_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, Stri
             default_save_location: None,
             show_templates: None,
             show_assistant_panel: None,
+            show_editor_toolbar: None,
             run_button_unlocked: None,
             run_button_position: None,
             default_text_model: None,
@@ -1159,7 +1154,12 @@ async fn load_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, Stri
             default_video_model: None,
             default_audio_model: None,
             default_upscaler_model: None,
-            edge_type: None
+            edge_type: None,
+            default_text_provider: None,
+            default_image_provider: None,
+            default_video_provider: None,
+            default_audio_provider: None,
+            default_upscaler_provider: None
         });
     }
 
@@ -1476,8 +1476,6 @@ async fn replicate_upload_file(
     filename: String,
     content_type: String
 ) -> Result<ReplicateFileUpload, String> {
-    use base64::{Engine as _, engine::general_purpose};
-    
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
     let api_key = settings.replicate_api_key
@@ -1785,6 +1783,9 @@ fn main() {
     let whatsapp_state_clone = whatsapp_state.clone();
 
     Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_sql::Builder::default().build())
         .manage(whatsapp_state_clone)
         .setup(|app| {

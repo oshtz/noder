@@ -40,7 +40,7 @@ export const GalleryGridView: React.FC<GalleryGridViewProps> = ({
   databaseInitialized,
 }) => {
   return (
-    <div className="gallery-grid" ref={gridRef}>
+    <div className="gallery-grid" ref={gridRef as RefObject<HTMLDivElement>}>
       {outputs.map((output, index) => (
         <div
           key={output.id || index}

@@ -1,7 +1,11 @@
 /* Spinner animation for loading states */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner-animation {
@@ -390,7 +394,8 @@
   align-items: center;
 }
 
-.type-tag, .date-tag {
+.type-tag,
+.date-tag {
   padding: 3px 8px;
   border-radius: 10px;
   font-size: 10px;
@@ -515,7 +520,9 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .compare-target-button.active {
@@ -536,7 +543,9 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .compare-swap:disabled {
@@ -679,7 +688,9 @@
   position: relative;
   cursor: pointer;
   color: var(--text-color);
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .compare-thumb img {
@@ -695,7 +706,7 @@
 }
 
 .compare-thumb.selected-left {
-  border-color: #2196F3;
+  border-color: #2196f3;
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.25);
 }
 
@@ -790,12 +801,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   animation: shimmer 1.5s infinite;
 }
 
@@ -1314,31 +1320,31 @@
   .gallery-panel {
     width: calc(100vw - 40px) !important;
   }
-  
+
   .gallery-header {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .header-center {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .search-container {
     max-width: 100%;
   }
-  
+
   .gallery-grid {
     column-count: 3;
     column-gap: 12px;
     padding: 16px;
   }
-  
+
   .gallery-info {
     width: 240px;
   }
-  
+
   .nav-arrow {
     width: 40px;
     height: 40px;

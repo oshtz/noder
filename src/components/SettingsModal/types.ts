@@ -34,9 +34,9 @@ export interface UpdateState {
 }
 
 export interface UpdateActions {
-  onCheck?: () => void;
-  onDownload?: () => void;
-  onInstall?: () => void;
+  onCheck?: () => void | Promise<unknown>;
+  onDownload?: (info?: unknown) => void | Promise<string | null>;
+  onInstall?: () => void | Promise<void>;
 }
 
 // =============================================================================

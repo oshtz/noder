@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as db from '../utils/database';
+import { isTauriRuntime } from '../utils/runtime';
 
 // Re-export types from database module for convenience
 export type {
@@ -39,6 +40,10 @@ export const useDatabase = (): UseDatabaseReturn => {
   useEffect(() => {
     const init = async () => {
       console.log('[useDatabase] Starting database initialization...');
+      if (!isTauriRuntime()) {
+        setIsInitialized(true);
+        return;
+      }
       try {
         await db.initDatabase();
         console.log('[useDatabase] Database initialized successfully');

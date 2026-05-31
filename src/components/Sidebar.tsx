@@ -12,7 +12,6 @@ import React, {
   KeyboardEvent,
   MouseEvent,
 } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import {
   FaPen,
   FaTrash,
@@ -38,7 +37,10 @@ import { IconType } from 'react-icons';
 import Popover from './Popover';
 import { SkeletonWorkflowList } from './Skeleton';
 import type { UpdateState, UpdateActions } from './SettingsModal';
+import type { Database, Output } from './gallery';
 import { toSafeWorkflowId } from '../utils/workflowId';
+import { isTauriRuntime } from '../utils/runtime';
+import { invoke } from '../types/tauri';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import './Sidebar.css';
 
@@ -243,6 +245,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const loadWorkflows = async (): Promise<void> => {
     setIsLoadingWorkflows(true);
+    if (!isTauriRuntime()) {
+      setWorkflows([]);
+      setIsLoadingWorkflows(false);
+      return;
+    }
+
     try {
       const workflowsList = (await invoke('list_workflows')) as Workflow[];
       setWorkflows(workflowsList);
@@ -290,6 +298,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       alert('A workflow with this name already exists.');
       return;
     }
+    if (!isTauriRuntime()) {
+      setWorkflows((prev) =>
+        prev.map((workflow) =>
+          workflow.id === workflowId ? { ...workflow, id: nextId, name: trimmedName } : workflow
+        )
+      );
+      setEditingId(null);
+      return;
+    }
+
     try {
       await invoke('rename_workflow', { id: workflowId, newName: trimmedName });
       setEditingId(null);
@@ -307,6 +325,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       // 2. Optimistically remove from UI immediately
       setWorkflows((prev) => prev.filter((w) => w.id !== workflowId));
+
+      if (!isTauriRuntime()) {
+        if (isActiveWorkflow) {
+          const remainingWorkflows = previousWorkflows.filter((w) => w.id !== workflowId);
+          if (remainingWorkflows.length > 0) {
+            await handleLoad(remainingWorkflows[0]);
+          }
+        }
+        return;
+      }
 
       try {
         // 3. Call Tauri backend
@@ -328,6 +356,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleLoad = async (workflow: Workflow): Promise<void> => {
+    if (!isTauriRuntime()) {
+      onWorkflowLoad(workflow);
+      return;
+    }
+
     try {
       const loadedWorkflowData = (await invoke('load_workflow', { id: workflow.id })) as {
         data?: unknown;
@@ -381,6 +414,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     // 5. Load the newly created workflow immediately
     onWorkflowLoad(newWorkflow);
+
+    if (!isTauriRuntime()) return;
 
     try {
       // 6. Save to backend
@@ -751,9 +786,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="sidebar-popover-content" style={{ width: '1100px', maxWidth: '90vw' }}>
               <Suspense fallback={<div className="loading-placeholder">Loading gallery...</div>}>
                 <OutputGallery
-                  outputs={workflowOutputs}
+                  outputs={workflowOutputs as unknown as Output[]}
                   onClose={() => setActivePopover(null)}
-                  database={database}
+                  database={database as Database | null}
                   onDraggingChange={setIsGalleryDragging}
                   onGalleryDragStart={onGalleryDragStart}
                   onGalleryDragEnd={onGalleryDragEnd}

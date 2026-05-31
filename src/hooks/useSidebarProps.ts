@@ -29,7 +29,7 @@ export interface SidebarPropsConfig {
 
   // Actions
   loadWorkflow: (workflow: Workflow, options?: { onBeforeLoad?: () => void }) => Promise<void>;
-  saveCurrentWorkflow: () => Promise<void>;
+  saveCurrentWorkflow: () => Promise<unknown>;
   saveWorkflow: () => Promise<unknown>;
   exportWorkflow: () => void;
   handleLoadTemplate: (template: WorkflowTemplate) => void;
@@ -59,7 +59,7 @@ export interface SidebarPropsConfig {
   updateError: string | null;
   lastUpdateCheck: number | null;
   checkForUpdate: () => Promise<unknown>;
-  downloadUpdate: (info: unknown) => Promise<string | null>;
+  downloadUpdate: (info?: unknown) => Promise<string | null>;
   installUpdate: () => Promise<void>;
 }
 
@@ -194,7 +194,9 @@ export function useSidebarProps({
       onWorkflowLoad: loadWorkflow as unknown as (workflow: { id: string; name: string }) => void,
       activeWorkflow: activeWorkflow as unknown as { id: string; name: string } | null,
       hasUnsavedChanges,
-      onSave: saveCurrentWorkflow,
+      onSave: async () => {
+        await saveCurrentWorkflow();
+      },
       isOpen: sidebarOpen,
       onToggle: handleToggle,
       workflowOutputs: workflowOutputs as unknown as {

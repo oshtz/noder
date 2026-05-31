@@ -28,6 +28,14 @@ export interface CustomEdgeData {
 // Edge path result type - ReactFlow returns [path, labelX, labelY, offsetX, offsetY]
 type EdgePathResult = [string, number, number, number, number];
 
+type EdgeGlowStyle = React.CSSProperties & {
+  '--edge-glow-color': string;
+  '--edge-glow-min': string;
+  '--edge-glow-max': string;
+  '--edge-glow-outer-min': string;
+  '--edge-glow-outer-max': string;
+};
+
 // Get the edge path based on edge type setting
 const getEdgePath = (
   edgeType: EdgeType,
@@ -151,8 +159,7 @@ const CustomEdge: React.FC<EdgeProps<CustomEdgeData>> = ({
     (storedHandleColor && storedHandleColor !== '#555' ? storedHandleColor : null) ||
     'rgba(200, 200, 200, 0.85)';
 
-  const glowStyle: React.CSSProperties = {
-    // @ts-expect-error CSS custom properties
+  const glowStyle: EdgeGlowStyle = {
     '--edge-glow-color': glowColor,
     '--edge-glow-min': selected ? '0.45' : '0.25',
     '--edge-glow-max': selected ? '0.95' : '0.7',

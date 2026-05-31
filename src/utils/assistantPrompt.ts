@@ -1,4 +1,4 @@
-import type { Field, BuiltNodeSchema } from '../nodes/nodeSchemas';
+import type { SchemaField, BuiltNodeSchema } from '../nodes/nodeSchemas';
 
 // Handle type definitions
 export interface Handle {
@@ -23,7 +23,7 @@ export interface NodeTypeData {
 
 // Re-export types for consumers
 export type NodeSchema = BuiltNodeSchema;
-export type NodeSchemaField = Field;
+export type NodeSchemaField = SchemaField;
 
 // Template node structure
 interface TemplateNode {
@@ -83,18 +83,23 @@ const summarizeHandles = (handles: Handle[] = []): HandleSummary => {
   };
 };
 
-const formatField = (field: Field): string => {
+const formatField = (field: SchemaField): string => {
   const parts: string[] = [];
   if (field.type) {
     parts.push(field.type);
   }
-  if (field.type === 'select' && Array.isArray(field.options) && field.options.length) {
+  if (
+    field.type === 'select' &&
+    'options' in field &&
+    Array.isArray(field.options) &&
+    field.options.length
+  ) {
     parts.push(`options: ${field.options.join('|')}`);
   }
   if (field.type === 'number' || field.type === 'slider') {
-    if (typeof field.min === 'number') parts.push(`min: ${field.min}`);
-    if (typeof field.max === 'number') parts.push(`max: ${field.max}`);
-    if (typeof field.step === 'number') parts.push(`step: ${field.step}`);
+    if ('min' in field && typeof field.min === 'number') parts.push(`min: ${field.min}`);
+    if ('max' in field && typeof field.max === 'number') parts.push(`max: ${field.max}`);
+    if ('step' in field && typeof field.step === 'number') parts.push(`step: ${field.step}`);
   }
   if (field.default !== undefined) {
     parts.push(`default: ${JSON.stringify(field.default)}`);

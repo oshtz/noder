@@ -61,9 +61,10 @@ export function useImageNodeSchema({
     setSchemaError(null);
 
     fetchModelSchema(trimmedModelId)
-      .then((schema: ModelSchema) => {
+      .then((schema) => {
         if (isCancelled) return;
-        const nextFields = buildDynamicFieldsFromSchema(schema);
+        const modelSchema = schema as unknown as ModelSchema;
+        const nextFields = buildDynamicFieldsFromSchema(modelSchema);
         setDynamicFields(nextFields);
         setSchemaStatus('loaded');
 
@@ -129,9 +130,9 @@ export function useImageNodeSchema({
     setDynamicFields([]);
 
     fetchModelSchema(trimmedModelId)
-      .then((schema: ModelSchema) => {
+      .then((schema) => {
         console.log('[useImageNodeSchema] Refetched schema:', schema);
-        const nextFields = buildDynamicFieldsFromSchema(schema);
+        const nextFields = buildDynamicFieldsFromSchema(schema as unknown as ModelSchema);
         console.log('[useImageNodeSchema] Built dynamic fields:', nextFields);
         setDynamicFields(nextFields);
         setSchemaStatus('loaded');
@@ -147,7 +148,7 @@ export function useImageNodeSchema({
     dynamicFields,
     schemaStatus,
     schemaError,
-    activeDefinition,
+    activeDefinition: activeDefinition as NodeSchemaDefinition & { allowPassthrough?: boolean },
     refreshSchema,
   };
 }

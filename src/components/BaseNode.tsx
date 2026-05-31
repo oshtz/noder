@@ -38,16 +38,17 @@ interface NodeData {
   executionOrder?: number;
   onRemove?: (id: string) => void;
   onMetadataClick?: () => void;
-  [key: string]: unknown;
 }
 
 interface BaseNodeProps {
+  [key: string]: unknown;
   id: string;
   data: NodeData;
   selected?: boolean;
   children?: ReactNode;
   handles?: HandleDefinition[];
   className?: string;
+  error?: string | null;
   onSettingsClick?: () => void;
   contentStyle?: CSSProperties;
   dragHandleStyle?: CSSProperties;
@@ -274,7 +275,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
               position={handle.position}
               id={handle.id}
               style={{
-                color: getHandleColor(handle.dataType),
+                color: getHandleColor(handle.dataType || 'text'),
                 width: 32,
                 height: 32,
                 border: 'none',

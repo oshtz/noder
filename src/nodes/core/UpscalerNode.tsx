@@ -24,6 +24,7 @@ interface HandleDefinition {
 }
 
 interface UpscalerNodeData {
+  [key: string]: unknown;
   title: string;
   onRemove: (id: string) => void;
   handles: HandleDefinition[];

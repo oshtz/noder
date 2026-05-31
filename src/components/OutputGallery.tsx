@@ -92,6 +92,7 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
   const viewerRef = useRef<HTMLDivElement>(null);
   const panStartRef = useRef<PanPosition>({ x: 0, y: 0 });
   const gridRef = useRef<HTMLDivElement>(null);
+  const initialLoadRequestedRef = useRef(false);
 
   // Use file converter hook
   const { convertedSrcs, loadingImages, convertLocalFile, getDisplaySrc } = useLocalFileConverter();
@@ -394,11 +395,11 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
   );
 
   useEffect(() => {
-    if (database?.isInitialized && allOutputs.length === 0) {
+    if (database?.isInitialized && allOutputs.length === 0 && !initialLoadRequestedRef.current) {
+      initialLoadRequestedRef.current = true;
       loadOutputs(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [database?.isInitialized]);
+  }, [database?.isInitialized, allOutputs.length, loadOutputs]);
 
   useEffect(() => {
     if (outputs && outputs.length > 0) {

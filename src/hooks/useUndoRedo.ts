@@ -10,7 +10,7 @@ import { sortNodesForReactFlow } from '../utils/createNode';
 // =============================================================================
 
 /** Enable performance profiling in development */
-const ENABLE_PROFILING = process.env.NODE_ENV === 'development';
+const ENABLE_PROFILING = import.meta.env.DEV;
 
 /** Threshold in bytes to consider using compression */
 const COMPRESSION_THRESHOLD = 100 * 1024; // 100KB
@@ -163,6 +163,18 @@ const shouldStoreFullSnapshot = (index: number): boolean => {
   return index === 0 || index % FULL_SNAPSHOT_INTERVAL === 0;
 };
 
+const createFullStoredSnapshot = (snapshot: HistorySnapshot): FullStoredSnapshot => {
+  const jsonStr = JSON.stringify(snapshot);
+  const { data, compressed } = maybeCompress(jsonStr);
+
+  return {
+    type: 'full',
+    data,
+    compressed,
+    timestamp: snapshot.timestamp,
+  };
+};
+
 export interface UseUndoRedoOptions {
   nodes: Node[];
   edges: Edge[];
@@ -214,6 +226,7 @@ export const useUndoRedo = ({
 
   // Debounce timer for position changes
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const applyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Store the last saved state to detect meaningful changes
   const lastSavedStateRef = useRef<HistorySnapshot | null>(null);
@@ -309,14 +322,7 @@ export const useUndoRedo = ({
 
       // Always store first snapshot or every Nth as full
       if (shouldStoreFullSnapshot(index)) {
-        const jsonStr = JSON.stringify(snapshot);
-        const { data, compressed } = maybeCompress(jsonStr);
-        return {
-          type: 'full',
-          data,
-          compressed,
-          timestamp: snapshot.timestamp,
-        };
+        return createFullStoredSnapshot(snapshot);
       }
 
       // Create a diff from the previous state
@@ -325,14 +331,7 @@ export const useUndoRedo = ({
 
       if (!previousState) {
         // Fallback to full snapshot if we can't reconstruct
-        const jsonStr = JSON.stringify(snapshot);
-        const { data, compressed } = maybeCompress(jsonStr);
-        return {
-          type: 'full',
-          data,
-          compressed,
-          timestamp: snapshot.timestamp,
-        };
+        return createFullStoredSnapshot(snapshot);
       }
 
       // Find nearest full snapshot for base index
@@ -350,13 +349,7 @@ export const useUndoRedo = ({
       // If diff is larger than a full snapshot, store full instead
       const fullJsonStr = JSON.stringify(snapshot);
       if (patchStr.length > fullJsonStr.length * 0.8) {
-        const { data: fullData, compressed: fullCompressed } = maybeCompress(fullJsonStr);
-        return {
-          type: 'full',
-          data: fullData,
-          compressed: fullCompressed,
-          timestamp: snapshot.timestamp,
-        };
+        return createFullStoredSnapshot(snapshot);
       }
 
       return {
@@ -368,6 +361,28 @@ export const useUndoRedo = ({
       };
     },
     [reconstructSnapshot]
+  );
+
+  const trimHistory = useCallback(
+    (snapshots: StoredSnapshot[]): StoredSnapshot[] => {
+      if (snapshots.length <= maxHistory) {
+        return snapshots;
+      }
+
+      const startIndex = snapshots.length - maxHistory;
+      return snapshots
+        .slice(startIndex)
+        .map((storedSnapshot, retainedIndex): StoredSnapshot | null => {
+          if (storedSnapshot.type === 'full') {
+            return storedSnapshot;
+          }
+
+          const reconstructed = reconstructSnapshot(snapshots, startIndex + retainedIndex);
+          return reconstructed ? createFullStoredSnapshot(reconstructed) : null;
+        })
+        .filter((storedSnapshot): storedSnapshot is StoredSnapshot => storedSnapshot !== null);
+    },
+    [maxHistory, reconstructSnapshot]
   );
 
   /**
@@ -427,7 +442,7 @@ export const useUndoRedo = ({
 
         setPastStates((prev) => {
           const storedSnapshot = createStoredSnapshot(snapshot, prev);
-          const newPast = [...prev, storedSnapshot].slice(-maxHistory);
+          const newPast = trimHistory([...prev, storedSnapshot]);
 
           // Log stats in dev mode
           if (ENABLE_PROFILING) {
@@ -464,7 +479,7 @@ export const useUndoRedo = ({
         debounceTimerRef.current = setTimeout(saveSnapshot, debounceMs);
       }
     },
-    [createSnapshot, createStoredSnapshot, hasStateChanged, maxHistory, debounceMs]
+    [createSnapshot, createStoredSnapshot, hasStateChanged, debounceMs, trimHistory]
   );
 
   /**
@@ -496,8 +511,12 @@ export const useUndoRedo = ({
     profiler.end('undo');
 
     // Allow new snapshots after a short delay
-    setTimeout(() => {
+    if (applyTimerRef.current) {
+      clearTimeout(applyTimerRef.current);
+    }
+    applyTimerRef.current = setTimeout(() => {
       isApplyingRef.current = false;
+      applyTimerRef.current = null;
     }, 50);
 
     return true;
@@ -524,7 +543,7 @@ export const useUndoRedo = ({
     const currentSnapshot = createSnapshot();
     setPastStates((prev) => {
       const stored = createStoredSnapshot(currentSnapshot, prev);
-      return [...prev, stored].slice(-maxHistory);
+      return trimHistory([...prev, stored]);
     });
 
     // Get next state
@@ -542,8 +561,12 @@ export const useUndoRedo = ({
     profiler.end('redo');
 
     // Allow new snapshots after a short delay
-    setTimeout(() => {
+    if (applyTimerRef.current) {
+      clearTimeout(applyTimerRef.current);
+    }
+    applyTimerRef.current = setTimeout(() => {
       isApplyingRef.current = false;
+      applyTimerRef.current = null;
     }, 50);
 
     return true;
@@ -552,9 +575,9 @@ export const useUndoRedo = ({
     createSnapshot,
     createStoredSnapshot,
     reconstructSnapshot,
-    maxHistory,
     setNodes,
     setEdges,
+    trimHistory,
   ]);
 
   /**
@@ -599,6 +622,19 @@ export const useUndoRedo = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      if (applyTimerRef.current) {
+        clearTimeout(applyTimerRef.current);
+        applyTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     undo,

@@ -12,6 +12,9 @@ import { createToolExecutor } from '../utils/assistantToolExecutor';
 import { ASSISTANT_ALLOWED_NODE_TYPES } from '../constants/app';
 import type { WorkflowTemplate } from '../utils/workflowTemplates';
 import type { ValidationError } from '../types/components';
+import type { NodeSchema } from '../utils/assistantPrompt';
+import type { EdgeValidationError } from '../utils/handleValidation';
+import type { ToolCall, ToolResult } from '../utils/assistantToolExecutor';
 
 // ============================================================================
 // Types
@@ -43,7 +46,7 @@ export interface UseAssistantConfigOptions {
 
 export interface UseAssistantConfigReturn {
   assistantSystemPrompt: string;
-  executeToolCall: (toolCall: unknown) => unknown;
+  executeToolCall: (toolCall: ToolCall) => Promise<ToolResult>;
   assistantNodeDefinitions: NodeDefinition[];
 }
 
@@ -79,12 +82,13 @@ export function useAssistantConfig({
    * Node schemas for assistant (only allowed types)
    */
   const assistantNodeSchemas = useMemo(() => {
-    const entries = assistantNodeDefinitions
-      .map((node: NodeDefinition) => {
-        const schema = getNodeSchema(node.type);
-        return schema ? [node.type, schema] : null;
-      })
-      .filter(Boolean) as [string, unknown][];
+    const entries: Array<[string, NodeSchema]> = [];
+    assistantNodeDefinitions.forEach((node: NodeDefinition) => {
+      const schema = getNodeSchema(node.type);
+      if (schema) {
+        entries.push([node.type, schema]);
+      }
+    });
     return Object.fromEntries(entries);
   }, [assistantNodeDefinitions]);
 
@@ -109,11 +113,31 @@ export function useAssistantConfig({
       buildAssistantSystemPrompt({
         nodeDefinitions: assistantNodeDefinitions,
         nodeTypes: assistantNodeTypes,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        nodeSchemas: assistantNodeSchemas as any,
+        nodeSchemas: assistantNodeSchemas,
         workflowTemplates: workflowTemplates,
       }),
     [assistantNodeDefinitions, assistantNodeSchemas, assistantNodeTypes, workflowTemplates]
+  );
+
+  const addValidationErrors = useCallback(
+    (errors: EdgeValidationError[]): void => {
+      if (!errors.length) return;
+      setValidationErrors((prev) => [
+        ...prev,
+        ...errors.map((error) => ({
+          type: 'connection',
+          message: error.errors.join(', '),
+          edge: {
+            source: error.edge.source,
+            target: error.edge.target,
+            sourceHandle: error.edge.sourceHandle ?? undefined,
+            targetHandle: error.edge.targetHandle ?? undefined,
+          },
+          errors: error.errors,
+        })),
+      ]);
+    },
+    [setValidationErrors]
   );
 
   /**
@@ -127,8 +151,7 @@ export function useAssistantConfig({
         setNodes,
         setEdges,
         handleRemoveNode,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setValidationErrors: setValidationErrors as any,
+        addValidationErrors,
         runWorkflow,
         allowedNodeTypes: ASSISTANT_ALLOWED_NODE_TYPES,
         focusCanvas: () => {
@@ -146,9 +169,9 @@ export function useAssistantConfig({
       edgesRef,
       reactFlowInstance,
       runWorkflow,
+      addValidationErrors,
       setEdges,
       setNodes,
-      setValidationErrors,
     ]
   );
 
@@ -156,8 +179,7 @@ export function useAssistantConfig({
    * Execute a tool call from the assistant
    */
   const executeToolCall = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (toolCall: unknown) => toolExecutor.executeToolCall(toolCall as any),
+    (toolCall: ToolCall) => toolExecutor.executeToolCall(toolCall),
     [toolExecutor]
   );
 
