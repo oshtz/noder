@@ -49,6 +49,12 @@ jobs:
             "src-tauri/tauri.conf.json",
             "src-tauri/capabilities/**/*.json"
           )
+          $prettierOptions = @(
+            "--config",
+            ".prettierrc",
+            "--ignore-path",
+            ".prettierignore"
+          )
 
           npm run format:check
           if ($LASTEXITCODE -eq 0) {
@@ -56,7 +62,7 @@ jobs:
           }
 
           Write-Host "Prettier reported formatting differences. Listing files:"
-          $changedFiles = & npx prettier --list-different @patterns
+          $changedFiles = & npx prettier @prettierOptions --list-different @patterns
           foreach ($changedFile in $changedFiles) {
             if (-not [string]::IsNullOrWhiteSpace($changedFile)) {
               Write-Host "::error file=$changedFile::Prettier formatting differs"
