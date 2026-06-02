@@ -41,6 +41,7 @@ import HelperLines from './components/HelperLines';
 import EditorToolbar from './components/EditorToolbar';
 import EmptyWorkflowOverlay from './components/EmptyWorkflowOverlay';
 import KeyboardShortcutsOverlay from './components/KeyboardShortcutsOverlay';
+import AppFeedback from './components/AppFeedback';
 
 // Lazy-loaded components for code splitting
 const AssistantPanel = lazy(() => import('./components/AssistantPanel'));
@@ -727,6 +728,7 @@ function App(): React.ReactElement {
         isOpen={showShortcutsOverlay}
         onClose={() => setShowShortcutsOverlay(false)}
       />
+      <AppFeedback />
     </div>
   );
 }

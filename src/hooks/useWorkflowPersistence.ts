@@ -13,6 +13,7 @@ import {
 import { toSafeWorkflowId } from '../utils/workflowId';
 import { sortNodesForReactFlow } from '../utils/createNode';
 import { isTauriRuntime } from '../utils/runtime';
+import { notifyError, notifySuccess, promptForText } from '../utils/appFeedback';
 
 // ============================================================================
 // Types
@@ -196,7 +197,12 @@ export function useWorkflowPersistence({
    * Save workflow with a name prompt
    */
   const saveWorkflow = useCallback(async (): Promise<void> => {
-    const workflowName = prompt('Enter a name for this workflow:');
+    const workflowName = await promptForText({
+      title: 'Save Workflow',
+      message: 'Name this workflow before saving it.',
+      confirmLabel: 'Save',
+      required: true,
+    });
     if (!workflowName) return;
     const trimmedName = workflowName.trim();
     if (!trimmedName) return;
@@ -227,8 +233,10 @@ export function useWorkflowPersistence({
         return [...prev, savedWorkflow];
       });
       setHasUnsavedChanges(false);
+      notifySuccess(`Saved "${trimmedName}".`, 'Workflow Saved');
     } catch (error) {
       console.error('Failed to save workflow:', error);
+      notifyError('Failed to save workflow. Please try again.');
     }
   }, [prepareWorkflowData]);
 
@@ -259,9 +267,10 @@ export function useWorkflowPersistence({
       URL.revokeObjectURL(url);
 
       console.log('[Export] Workflow exported successfully:', workflowName);
+      notifySuccess(`Exported "${workflowName}".`, 'Workflow Exported');
     } catch (error) {
       console.error('[Export] Failed to export workflow:', error);
-      alert('Failed to export workflow. Please try again.');
+      notifyError('Failed to export workflow. Please try again.');
     }
   }, [activeWorkflow, workflowMetadata, prepareWorkflowData]);
 

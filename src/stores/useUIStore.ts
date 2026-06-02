@@ -53,7 +53,49 @@ export interface UIState {
     sourceHandle?: string;
     targetHandle?: string;
   }>;
+
+  // App feedback
+  notifications: AppNotification[];
+  activeDialog: AppDialog | null;
 }
+
+export type NotificationType = 'info' | 'success' | 'warning' | 'error';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  message: string;
+  title?: string;
+}
+
+export interface ConfirmDialogOptions {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: 'default' | 'danger';
+}
+
+export interface PromptDialogOptions {
+  title: string;
+  message: string;
+  defaultValue?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  required?: boolean;
+}
+
+export type AppDialog =
+  | (ConfirmDialogOptions & {
+      id: string;
+      kind: 'confirm';
+      resolve: (value: boolean) => void;
+    })
+  | (PromptDialogOptions & {
+      id: string;
+      kind: 'prompt';
+      resolve: (value: string | null) => void;
+    });
 
 export interface UIActions {
   // Sidebar
@@ -91,6 +133,13 @@ export interface UIActions {
   dismissValidationError: (index: number) => void;
   clearValidationErrors: () => void;
 
+  // App feedback
+  addNotification: (notification: Omit<AppNotification, 'id'>) => string;
+  dismissNotification: (id: string) => void;
+  showConfirmDialog: (options: ConfirmDialogOptions) => Promise<boolean>;
+  showPromptDialog: (options: PromptDialogOptions) => Promise<string | null>;
+  resolveDialog: (value: boolean | string | null) => void;
+
   // Reset
   reset: () => void;
 }
@@ -115,6 +164,8 @@ const DEFAULT_STATE: UIState = {
   selectedNodeId: null,
   helperLines: { horizontal: null, vertical: null },
   validationErrors: [],
+  notifications: [],
+  activeDialog: null,
 };
 
 // ============================================================================
@@ -123,7 +174,7 @@ const DEFAULT_STATE: UIState = {
 
 export const useUIStore = create<UIStore>()(
   persist(
-    (set, _get) => ({
+    (set, get) => ({
       ...DEFAULT_STATE,
 
       // Sidebar
@@ -188,6 +239,42 @@ export const useUIStore = create<UIStore>()(
           validationErrors: state.validationErrors.filter((_, i) => i !== index),
         })),
       clearValidationErrors: () => set({ validationErrors: [] }),
+
+      // App feedback
+      addNotification: (notification) => {
+        const id = `notification-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        set((state) => ({
+          notifications: [...state.notifications, { ...notification, id }].slice(-5),
+        }));
+        window.setTimeout(() => get().dismissNotification(id), 7000);
+        return id;
+      },
+      dismissNotification: (id) =>
+        set((state) => ({
+          notifications: state.notifications.filter((notification) => notification.id !== id),
+        })),
+      showConfirmDialog: (options) =>
+        new Promise<boolean>((resolve) => {
+          const id = `dialog-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          set({ activeDialog: { ...options, id, kind: 'confirm', resolve } });
+        }),
+      showPromptDialog: (options) =>
+        new Promise<string | null>((resolve) => {
+          const id = `dialog-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          set({ activeDialog: { ...options, id, kind: 'prompt', resolve } });
+        }),
+      resolveDialog: (value) => {
+        const dialog = get().activeDialog;
+        if (!dialog) return;
+
+        if (dialog.kind === 'confirm') {
+          dialog.resolve(Boolean(value));
+        } else {
+          dialog.resolve(typeof value === 'string' ? value : null);
+        }
+
+        set({ activeDialog: null });
+      },
 
       // Reset
       reset: () => set(DEFAULT_STATE),

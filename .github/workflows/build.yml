@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup Rust
@@ -51,6 +51,9 @@ jobs:
       - name: Run smoke tests
         run: npm run test:smoke
 
+      - name: Run release workflow smoke check
+        run: npm run test:release-smoke
+
       - name: Build frontend
         run: npm run build
 
@@ -70,12 +73,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup Rust
@@ -91,6 +94,46 @@ jobs:
 
       - name: Build Tauri app
         run: npm run tauri:build -- --no-bundle
+
+      - name: Sign Windows app executable
+        id: windows_signing
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_CERTIFICATE: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE }}
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_CERTIFICATE) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_CODESIGN_PASSWORD)) {
+            Write-Warning "Missing Windows signing secrets. Continuing with unsigned Windows binaries."
+            "signed=false" >> $env:GITHUB_OUTPUT
+            return
+          }
+
+          $certPath = Join-Path $env:RUNNER_TEMP "windows-codesign.pfx"
+          [Convert]::FromBase64String($env:WINDOWS_CODESIGN_CERTIFICATE) | Set-Content -Path $certPath -AsByteStream
+          $securePassword = ConvertTo-SecureString $env:WINDOWS_CODESIGN_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\My -Password $securePassword
+          if (-not $certificate) {
+            throw "Failed to import Windows signing certificate"
+          }
+
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signtool) {
+            throw "signtool.exe not found"
+          }
+
+          & $signtool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /sha1 $certificate.Thumbprint "src-tauri\target\release\noder.exe"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to sign noder.exe"
+          }
+          & $signtool.FullName verify /pa /v "src-tauri\target\release\noder.exe"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to verify noder.exe signature"
+          }
+
+          "signed=true" >> $env:GITHUB_OUTPUT
+          "thumbprint=$($certificate.Thumbprint)" >> $env:GITHUB_OUTPUT
 
       - name: Install Enigma Virtual Box
         shell: pwsh
@@ -189,8 +232,28 @@ jobs:
             throw "Failed to create portable exe"
           }
 
+      - name: Sign Windows portable exe
+        if: steps.windows_signing.outputs.signed == 'true'
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signtool) {
+            throw "signtool.exe not found"
+          }
+
+          & $signtool.FullName sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /sha1 "${{ steps.windows_signing.outputs.thumbprint }}" "src-tauri\target\release\noder-portable.exe"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to sign noder-portable.exe"
+          }
+          & $signtool.FullName verify /pa /v "src-tauri\target\release\noder-portable.exe"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to verify noder-portable.exe signature"
+          }
+
       - name: Upload portable exe
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: noder-portable
           path: src-tauri/target/release/noder-portable.exe
@@ -215,11 +278,31 @@ jobs:
           Compress-Archive -Path "$zipDir\*" -DestinationPath "noder-win.zip" -Force
           Write-Host "Created noder-win.zip"
 
+      - name: Generate Windows checksums
+        shell: pwsh
+        run: |
+          $files = @(
+            "src-tauri\target\release\noder-portable.exe",
+            "noder-win.zip"
+          )
+          $lines = foreach ($file in $files) {
+            $hash = Get-FileHash -Algorithm SHA256 -Path $file
+            "$($hash.Hash.ToLowerInvariant())  $(Split-Path -Leaf $file)"
+          }
+          $lines | Set-Content -Path "SHA256SUMS-windows.txt" -Encoding ascii
+          Get-Content "SHA256SUMS-windows.txt"
+
       - name: Upload zip bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: noder-win-zip
           path: noder-win.zip
+
+      - name: Upload Windows checksums
+        uses: actions/upload-artifact@v5
+        with:
+          name: noder-windows-checksums
+          path: SHA256SUMS-windows.txt
 
       - name: Determine release tag
         id: release_tag
@@ -241,12 +324,13 @@ jobs:
 
       - name: Upload Windows builds to GitHub release
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: |
             src-tauri/target/release/noder-portable.exe
             noder-win.zip
+            SHA256SUMS-windows.txt
 
   build-macos:
     needs: validate
@@ -257,12 +341,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup Rust
@@ -323,7 +407,7 @@ jobs:
         run: npm run tauri:build -- --bundles app,dmg
 
       - name: Upload dmg
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: noder-macOS-dmg
           path: src-tauri/target/release/bundle/dmg/*.dmg
@@ -361,16 +445,31 @@ jobs:
           ls -la
           echo "Created noder.app.zip for auto-update"
 
+      - name: Generate macOS checksums
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          shasum -a 256 src-tauri/target/release/bundle/dmg/*.dmg src-tauri/target/release/bundle/macos/noder.app.zip > SHA256SUMS-macos.txt
+          cat SHA256SUMS-macos.txt
+
+      - name: Upload macOS checksums
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v5
+        with:
+          name: noder-macOS-checksums
+          path: SHA256SUMS-macos.txt
+
       - name: Upload dmg to GitHub release
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: src-tauri/target/release/bundle/dmg/*.dmg
 
       - name: Upload app.zip to GitHub release
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          files: src-tauri/target/release/bundle/macos/noder.app.zip
+          files: |
+            src-tauri/target/release/bundle/macos/noder.app.zip
+            SHA256SUMS-macos.txt

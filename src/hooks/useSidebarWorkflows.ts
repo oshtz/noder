@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { toSafeWorkflowId } from '../utils/workflowId';
+import { confirmAction, notifyError } from '../utils/appFeedback';
 
 // =============================================================================
 // Types
@@ -121,7 +122,7 @@ export function useSidebarWorkflows({
 
       const nextId = toSafeWorkflowId(trimmedName);
       if (workflows.some((wf) => wf.id === nextId && wf.id !== workflowId)) {
-        alert('A workflow with this name already exists.');
+        notifyError('A workflow with this name already exists.');
         return;
       }
 
@@ -138,7 +139,13 @@ export function useSidebarWorkflows({
 
   const handleDelete = useCallback(
     async (workflowId: string): Promise<void> => {
-      if (!window.confirm('Are you sure you want to delete this workflow?')) {
+      const shouldDelete = await confirmAction({
+        title: 'Delete Workflow',
+        message: 'This workflow will be permanently removed.',
+        confirmLabel: 'Delete',
+        tone: 'danger',
+      });
+      if (!shouldDelete) {
         return;
       }
 

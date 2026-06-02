@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { confirmAction } from '../utils/appFeedback';
 
 export interface AutoUpdateConfig {
   updateSupported: boolean;
@@ -35,7 +36,11 @@ export function useAutoUpdate({
 
       autoUpdatePromptRef.current = true;
       const version = (info as { version?: string })?.version || 'new version';
-      const shouldInstall = window.confirm(`Update ${version} is ready. Restart to apply it now?`);
+      const shouldInstall = await confirmAction({
+        title: 'Update Ready',
+        message: `Update ${version} is ready. Restart to apply it now?`,
+        confirmLabel: 'Restart',
+      });
       if (shouldInstall) await installUpdate();
     };
 

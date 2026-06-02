@@ -42,7 +42,7 @@ Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/),
 - **Local-First Architecture** - All workflows, settings, and API keys stay on your machine
 - **Keyboard Shortcuts** - Power-user features including copy/paste nodes, duplicate, and more
 - **Dark/Light Themes** - Comfortable editing in any lighting condition
-- **Cross-Platform** - Native apps for Windows and macOS (signed & notarized)
+- **Cross-Platform** - Native apps for Windows and macOS, with signed/notarized macOS builds and optional Windows Authenticode signing in CI
 
 ---
 
@@ -58,12 +58,27 @@ Download the latest release from the [Releases](https://github.com/oshtz/noder/r
 | Windows (Portable) | `noder-portable.exe` | Single-file executable |
 | macOS (DMG) | `noder_x.x.x_x64.dmg` | Installer |
 | macOS (App Bundle) | `noder.app.zip` | Direct app bundle |
+| Checksums | `SHA256SUMS-windows.txt`, `SHA256SUMS-macos.txt` | SHA-256 hashes for release assets |
 
 **Windows:** Extract `noder-win.zip` and run `noder.exe`. No installation required.
 
 **macOS:** Download the DMG, open it, and drag noder to your Applications folder. The app is signed and notarized for Gatekeeper.
 
-> **Note for Windows Portable Users:** The portable executable (`noder-portable.exe`) may trigger a false positive in Windows Defender (Win32/Wacatac.B!ml). This is caused by [Enigma Virtual Box](https://enigmaprotector.com/en/aboutvb.html), the tool used to package the app into a single file. The virtualization techniques it uses are similar to patterns flagged by antivirus heuristics. **This is a false positive and can be safely ignored.** If you prefer to avoid the warning, use `noder-win.zip` instead.
+Verify downloads with the matching checksum file:
+
+```powershell
+# Windows
+Get-FileHash -Algorithm SHA256 .\noder-win.zip
+Get-Content .\SHA256SUMS-windows.txt
+```
+
+```bash
+# macOS
+shasum -a 256 noder*.dmg noder.app.zip
+cat SHA256SUMS-macos.txt
+```
+
+> **Note for Windows Users:** Windows builds are Authenticode-signed when the release workflow has signing secrets configured. Unsigned portable builds may still trigger SmartScreen or antivirus heuristics, especially because `noder-portable.exe` is packaged with [Enigma Virtual Box](https://enigmaprotector.com/en/aboutvb.html). If you prefer to avoid portable-exe warnings, use `noder-win.zip`.
 
 ### Build from Source
 
@@ -157,7 +172,7 @@ noder supports the following API providers:
 | **Replicate** | Image/Video/Audio/Text generation | [replicate.com](https://replicate.com/) |
 | **OpenRouter** | AI Assistant panel | [openrouter.ai](https://openrouter.ai/) |
 
-API keys are stored in the local app data settings file and are never transmitted except to their respective APIs. Treat the local machine profile as trusted; OS keychain-backed credential storage is not implemented yet.
+API keys are stored in the operating system credential store through the desktop backend and are never transmitted except to their respective APIs. Older plaintext keys in `settings.json` are migrated into secure storage the next time settings load successfully.
 
 ### Data Storage
 

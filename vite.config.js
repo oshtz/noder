@@ -87,6 +87,7 @@ export default defineConfig(async ({ mode }) => ({
     environment: 'jsdom',
     setupFiles: './src/test-setup.js',
     clearMocks: true,
+    maxWorkers: 4,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html'],

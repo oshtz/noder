@@ -6,6 +6,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSidebarWorkflows, Workflow, WorkflowSortBy } from './useSidebarWorkflows';
 import { invoke } from '@tauri-apps/api/core';
+import { confirmAction, notifyError } from '../utils/appFeedback';
+
+vi.mock('../utils/appFeedback', () => ({
+  confirmAction: vi.fn(),
+  notifyError: vi.fn(),
+}));
 
 // invoke is mocked in test-setup.js
 
@@ -42,11 +48,8 @@ describe('useSidebarWorkflows', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // Mock window.alert
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
-
-    // Mock window.confirm - default to true
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(confirmAction).mockResolvedValue(true);
+    vi.mocked(notifyError).mockImplementation(() => {});
 
     // Default mock for invoke - resolve with empty array
     vi.mocked(invoke).mockResolvedValue([]);
@@ -517,7 +520,7 @@ describe('useSidebarWorkflows', () => {
 
   describe('handleDelete', () => {
     it('should call delete_workflow when confirmed', async () => {
-      vi.mocked(window.confirm).mockReturnValue(true);
+      vi.mocked(confirmAction).mockResolvedValue(true);
       vi.mocked(invoke).mockResolvedValueOnce(mockWorkflows).mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() =>
@@ -539,7 +542,7 @@ describe('useSidebarWorkflows', () => {
     });
 
     it('should not delete if user cancels confirmation', async () => {
-      vi.mocked(window.confirm).mockReturnValue(false);
+      vi.mocked(confirmAction).mockResolvedValue(false);
       vi.mocked(invoke).mockResolvedValue(mockWorkflows);
 
       const { result } = renderHook(() =>
@@ -561,7 +564,7 @@ describe('useSidebarWorkflows', () => {
     });
 
     it('should rollback on delete error', async () => {
-      vi.mocked(window.confirm).mockReturnValue(true);
+      vi.mocked(confirmAction).mockResolvedValue(true);
       vi.mocked(invoke)
         .mockResolvedValueOnce(mockWorkflows)
         .mockRejectedValueOnce(new Error('Delete failed'));

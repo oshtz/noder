@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWorkflowPersistence } from './useWorkflowPersistence';
 import type { Node, Edge, ReactFlowInstance } from 'reactflow';
+import { notifyError, notifySuccess, promptForText } from '../utils/appFeedback';
 
 // Mock @tauri-apps/api/window
 vi.mock('@tauri-apps/api/window', () => ({
@@ -60,6 +61,12 @@ vi.mock('../utils/workflowId', () => ({
   toSafeWorkflowId: vi.fn((name) => name.toLowerCase().replace(/\s+/g, '-')),
 }));
 
+vi.mock('../utils/appFeedback', () => ({
+  notifyError: vi.fn(),
+  notifySuccess: vi.fn(),
+  promptForText: vi.fn(),
+}));
+
 describe('useWorkflowPersistence', () => {
   let mockSetNodes: ReturnType<typeof vi.fn>;
   let mockSetEdges: ReturnType<typeof vi.fn>;
@@ -85,6 +92,9 @@ describe('useWorkflowPersistence', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(promptForText).mockResolvedValue('Test Workflow');
+    vi.mocked(notifyError).mockImplementation(() => {});
+    vi.mocked(notifySuccess).mockImplementation(() => {});
 
     mockSetNodes = vi.fn();
     mockSetEdges = vi.fn();
@@ -259,10 +269,7 @@ describe('useWorkflowPersistence', () => {
 
   describe('saveWorkflow', () => {
     it('should not save if user cancels prompt', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => null)
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce(null);
       const { result } = renderHookWithDefaults();
       const { invoke } = await import('../types/tauri');
 
@@ -274,10 +281,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should not save if user enters empty name', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => '   ')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('   ');
       const { result } = renderHookWithDefaults();
       const { invoke } = await import('../types/tauri');
 
@@ -289,10 +293,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should save workflow with trimmed name', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => '  My Workflow  ')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('  My Workflow  ');
       const { result } = renderHookWithDefaults(createTestNodes(), createTestEdges());
       const { invoke } = await import('../types/tauri');
 
@@ -309,10 +310,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should update activeWorkflow after save', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'New Workflow')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('New Workflow');
       const { result } = renderHookWithDefaults();
 
       await act(async () => {
@@ -324,10 +322,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should add workflow to openWorkflows', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'New Workflow')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('New Workflow');
       const { result } = renderHookWithDefaults();
 
       await act(async () => {
@@ -339,10 +334,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should update existing workflow in openWorkflows', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'existing')
-      );
+      vi.mocked(promptForText).mockResolvedValue('existing');
       const { result } = renderHookWithDefaults();
 
       // First save
@@ -359,10 +351,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should update activeWorkflow after save', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'Test')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('Test');
       const { result } = renderHookWithDefaults();
 
       await act(async () => {
@@ -375,10 +364,7 @@ describe('useWorkflowPersistence', () => {
     });
 
     it('should handle save error gracefully', async () => {
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'Test')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('Test');
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const { invoke } = await import('../types/tauri');
       vi.mocked(invoke).mockRejectedValueOnce(new Error('Save failed'));
@@ -1031,10 +1017,7 @@ describe('useWorkflowPersistence', () => {
       const { result } = renderHookWithDefaults(nodes, edges);
 
       // Save a workflow first
-      vi.stubGlobal(
-        'prompt',
-        vi.fn(() => 'Test Workflow')
-      );
+      vi.mocked(promptForText).mockResolvedValueOnce('Test Workflow');
       await act(async () => {
         await result.current.saveWorkflow();
       });

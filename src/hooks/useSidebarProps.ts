@@ -3,6 +3,7 @@ import type { Node, Edge } from 'reactflow';
 import { LOCAL_WORKFLOW_KEY } from '../utils/workflowSchema';
 import type { Workflow } from './useWorkflowPersistence';
 import type { WorkflowTemplate } from '../utils/workflowTemplates';
+import { confirmAction } from '../utils/appFeedback';
 
 export interface UpdateState {
   supported: boolean;
@@ -140,14 +141,20 @@ export function useSidebarProps({
   downloadUpdate,
   installUpdate,
 }: SidebarPropsConfig): SidebarPropsResult {
-  const handleClearWorkflow = useCallback(() => {
-    if (window.confirm('Are you sure you want to clear the current workflow?')) {
-      setNodes([]);
-      setEdges([]);
-      localStorage.removeItem('noder-nodes');
-      localStorage.removeItem('noder-edges');
-      localStorage.removeItem(LOCAL_WORKFLOW_KEY);
-    }
+  const handleClearWorkflow = useCallback(async () => {
+    const shouldClear = await confirmAction({
+      title: 'Clear Workflow',
+      message: 'This will remove the current canvas contents.',
+      confirmLabel: 'Clear',
+      tone: 'danger',
+    });
+    if (!shouldClear) return;
+
+    setNodes([]);
+    setEdges([]);
+    localStorage.removeItem('noder-nodes');
+    localStorage.removeItem('noder-edges');
+    localStorage.removeItem(LOCAL_WORKFLOW_KEY);
   }, [setNodes, setEdges]);
 
   const handleGoHome = useCallback(() => {

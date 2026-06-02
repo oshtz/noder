@@ -12,6 +12,10 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 
+mod settings;
+
+use settings::load_settings;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AnthropicRequest {
     model: String,
@@ -145,43 +149,6 @@ struct ReplicateModelsResponse {
     next: Option<String>,
     previous: Option<String>,
     results: Vec<ReplicateModel>
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct FloatingButtonPosition {
-    x: f32,
-    y: f32
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct AppSettings {
-    replicate_api_key: Option<String>,
-    fal_api_key: Option<String>,
-    openai_api_key: Option<String>,
-    openrouter_api_key: Option<String>,
-    anthropic_api_key: Option<String>,
-    gemini_api_key: Option<String>,
-    ollama_base_url: Option<String>,
-    lm_studio_base_url: Option<String>,
-    default_save_location: Option<String>,
-    show_templates: Option<bool>,
-    show_assistant_panel: Option<bool>,
-    show_editor_toolbar: Option<bool>,
-    run_button_unlocked: Option<bool>,
-    run_button_position: Option<FloatingButtonPosition>,
-    // Default models for node types
-    default_text_model: Option<String>,
-    default_image_model: Option<String>,
-    default_video_model: Option<String>,
-    default_audio_model: Option<String>,
-    default_upscaler_model: Option<String>,
-    // Edge appearance
-    edge_type: Option<String>,
-    default_text_provider: Option<String>,
-    default_image_provider: Option<String>,
-    default_video_provider: Option<String>,
-    default_audio_provider: Option<String>,
-    default_upscaler_provider: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1112,67 +1079,6 @@ async fn stop_whatsapp_listener(
 }
 
 #[tauri::command]
-async fn save_settings(app_handle: tauri::AppHandle, settings: AppSettings) -> Result<(), String> {
-    let app_data = app_handle.path().app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-
-    let settings_file = app_data.join("settings.json");
-    let json = serde_json::to_string_pretty(&settings)
-        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-
-    fs::write(settings_file, json)
-        .map_err(|e| format!("Failed to write settings file: {}", e))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn load_settings(app_handle: tauri::AppHandle) -> Result<AppSettings, String> {
-    let app_data = app_handle.path().app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-
-    let settings_file = app_data.join("settings.json");
-
-    if !settings_file.exists() {
-        return Ok(AppSettings {
-            replicate_api_key: None,
-            fal_api_key: None,
-            openai_api_key: None,
-            openrouter_api_key: None,
-            anthropic_api_key: None,
-            gemini_api_key: None,
-            ollama_base_url: Some("http://localhost:11434".to_string()),
-            lm_studio_base_url: Some("http://localhost:1234".to_string()),
-            default_save_location: None,
-            show_templates: None,
-            show_assistant_panel: None,
-            show_editor_toolbar: None,
-            run_button_unlocked: None,
-            run_button_position: None,
-            default_text_model: None,
-            default_image_model: None,
-            default_video_model: None,
-            default_audio_model: None,
-            default_upscaler_model: None,
-            edge_type: None,
-            default_text_provider: None,
-            default_image_provider: None,
-            default_video_provider: None,
-            default_audio_provider: None,
-            default_upscaler_provider: None
-        });
-    }
-
-    let content = fs::read_to_string(settings_file)
-        .map_err(|e| format!("Failed to read settings file: {}", e))?;
-
-    let settings: AppSettings = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse settings: {}", e))?;
-
-    Ok(settings)
-}
-
-#[tauri::command]
 async fn replicate_create_prediction(
     app_handle: tauri::AppHandle,
     model: String,
@@ -1816,8 +1722,8 @@ fn main() {
             init_whatsapp,
             listen_whatsapp_messages,
             stop_whatsapp_listener,
-            save_settings,
-            load_settings,
+            settings::save_settings,
+            settings::load_settings,
             replicate_create_prediction,
             replicate_get_prediction,
             replicate_cancel_prediction,

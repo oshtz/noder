@@ -6,6 +6,7 @@ import { Node, Edge, ReactFlowInstance } from 'reactflow';
 import { NODE_TYPE as MEDIA_NODE_TYPE } from '../nodes/core/MediaNode';
 import { nodeCreators } from '../nodes';
 import { isTauriRuntime } from '../utils/runtime';
+import { notifyError } from '../utils/appFeedback';
 
 // ============================================================================
 // Types
@@ -236,7 +237,7 @@ export const useDragAndDrop = (
             setEdges(processedEdges);
           } catch (error) {
             console.error('Error loading workflow:', error);
-            alert('Error loading workflow file');
+            notifyError('Error loading workflow file');
           }
         }
       })

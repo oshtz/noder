@@ -40,6 +40,7 @@ import type { UpdateState, UpdateActions } from './SettingsModal';
 import type { Database, Output } from './gallery';
 import { toSafeWorkflowId } from '../utils/workflowId';
 import { isTauriRuntime } from '../utils/runtime';
+import { confirmAction, notifyError } from '../utils/appFeedback';
 import { invoke } from '../types/tauri';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import './Sidebar.css';
@@ -295,7 +296,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (!trimmedName) return;
     const nextId = toSafeWorkflowId(trimmedName);
     if (workflows.some((workflow) => workflow.id === nextId && workflow.id !== workflowId)) {
-      alert('A workflow with this name already exists.');
+      notifyError('A workflow with this name already exists.');
       return;
     }
     if (!isTauriRuntime()) {
@@ -318,7 +319,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleDelete = async (workflowId: string): Promise<void> => {
-    if (window.confirm('Are you sure you want to delete this workflow?')) {
+    const shouldDelete = await confirmAction({
+      title: 'Delete Workflow',
+      message: 'This workflow will be permanently removed.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+
+    if (shouldDelete) {
       // 1. Save previous state for rollback
       const previousWorkflows = [...workflows];
       const isActiveWorkflow = activeWorkflow?.id === workflowId;

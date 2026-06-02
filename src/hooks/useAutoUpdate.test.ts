@@ -1,25 +1,27 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAutoUpdate, AutoUpdateConfig } from './useAutoUpdate';
+import { confirmAction } from '../utils/appFeedback';
+
+vi.mock('../utils/appFeedback', () => ({
+  confirmAction: vi.fn(),
+}));
 
 describe('useAutoUpdate', () => {
   let mockCheckForUpdate: ReturnType<typeof vi.fn>;
   let mockDownloadUpdate: ReturnType<typeof vi.fn>;
   let mockInstallUpdate: ReturnType<typeof vi.fn>;
-  let mockConfirm: ReturnType<typeof vi.fn>;
-  let originalConfirm: typeof window.confirm;
+  let mockConfirmAction: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockCheckForUpdate = vi.fn();
     mockDownloadUpdate = vi.fn();
     mockInstallUpdate = vi.fn();
-    mockConfirm = vi.fn();
-    originalConfirm = window.confirm;
-    window.confirm = mockConfirm;
+    mockConfirmAction = vi.mocked(confirmAction);
+    mockConfirmAction.mockResolvedValue(false);
   });
 
   afterEach(() => {
-    window.confirm = originalConfirm;
     vi.clearAllMocks();
   });
 
@@ -101,19 +103,23 @@ describe('useAutoUpdate', () => {
         expect(mockDownloadUpdate).toHaveBeenCalled();
       });
 
-      expect(mockConfirm).not.toHaveBeenCalled();
+      expect(mockConfirmAction).not.toHaveBeenCalled();
     });
 
     it('should prompt user after successful download', async () => {
       const updateInfo = { version: '1.2.0' };
       mockCheckForUpdate.mockResolvedValue(updateInfo);
       mockDownloadUpdate.mockResolvedValue('/path/to/update');
-      mockConfirm.mockReturnValue(false);
+      mockConfirmAction.mockResolvedValue(false);
 
       renderHook(() => useAutoUpdate(createConfig()));
 
       await waitFor(() => {
-        expect(mockConfirm).toHaveBeenCalledWith('Update 1.2.0 is ready. Restart to apply it now?');
+        expect(mockConfirmAction).toHaveBeenCalledWith({
+          title: 'Update Ready',
+          message: 'Update 1.2.0 is ready. Restart to apply it now?',
+          confirmLabel: 'Restart',
+        });
       });
     });
 
@@ -121,14 +127,16 @@ describe('useAutoUpdate', () => {
       const updateInfo = {}; // No version property
       mockCheckForUpdate.mockResolvedValue(updateInfo);
       mockDownloadUpdate.mockResolvedValue('/path/to/update');
-      mockConfirm.mockReturnValue(false);
+      mockConfirmAction.mockResolvedValue(false);
 
       renderHook(() => useAutoUpdate(createConfig()));
 
       await waitFor(() => {
-        expect(mockConfirm).toHaveBeenCalledWith(
-          'Update new version is ready. Restart to apply it now?'
-        );
+        expect(mockConfirmAction).toHaveBeenCalledWith({
+          title: 'Update Ready',
+          message: 'Update new version is ready. Restart to apply it now?',
+          confirmLabel: 'Restart',
+        });
       });
     });
 
@@ -136,7 +144,7 @@ describe('useAutoUpdate', () => {
       const updateInfo = { version: '1.2.0' };
       mockCheckForUpdate.mockResolvedValue(updateInfo);
       mockDownloadUpdate.mockResolvedValue('/path/to/update');
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
       mockInstallUpdate.mockResolvedValue(undefined);
 
       renderHook(() => useAutoUpdate(createConfig()));
@@ -150,12 +158,12 @@ describe('useAutoUpdate', () => {
       const updateInfo = { version: '1.2.0' };
       mockCheckForUpdate.mockResolvedValue(updateInfo);
       mockDownloadUpdate.mockResolvedValue('/path/to/update');
-      mockConfirm.mockReturnValue(false);
+      mockConfirmAction.mockResolvedValue(false);
 
       renderHook(() => useAutoUpdate(createConfig()));
 
       await waitFor(() => {
-        expect(mockConfirm).toHaveBeenCalled();
+        expect(mockConfirmAction).toHaveBeenCalled();
       });
 
       expect(mockInstallUpdate).not.toHaveBeenCalled();
@@ -165,13 +173,13 @@ describe('useAutoUpdate', () => {
       const updateInfo = { version: '1.2.0' };
       mockCheckForUpdate.mockResolvedValue(updateInfo);
       mockDownloadUpdate.mockResolvedValue('/path/to/update');
-      mockConfirm.mockReturnValue(false);
+      mockConfirmAction.mockResolvedValue(false);
 
       // First render
       const { unmount } = renderHook(() => useAutoUpdate(createConfig()));
 
       await waitFor(() => {
-        expect(mockConfirm).toHaveBeenCalledTimes(1);
+        expect(mockConfirmAction).toHaveBeenCalledTimes(1);
       });
 
       unmount();
@@ -231,7 +239,7 @@ describe('useAutoUpdate', () => {
       // Wait a bit to ensure any async operations would have run
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      expect(mockConfirm).not.toHaveBeenCalled();
+      expect(mockConfirmAction).not.toHaveBeenCalled();
     });
   });
 });

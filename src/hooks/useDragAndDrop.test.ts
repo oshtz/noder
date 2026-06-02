@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { Node, ReactFlowInstance } from 'reactflow';
+import { notifyError } from '../utils/appFeedback';
 
 // ============================================================================
 // Mock Setup
@@ -35,6 +36,10 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 // Mock @tauri-apps/api/core
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
+}));
+
+vi.mock('../utils/appFeedback', () => ({
+  notifyError: vi.fn(),
 }));
 
 // Mock MediaNode
@@ -839,9 +844,6 @@ describe('useDragAndDrop', () => {
       const { readTextFile } = await import('@tauri-apps/plugin-fs');
       vi.mocked(readTextFile).mockResolvedValueOnce('not valid json');
 
-      const alertMock = vi.fn();
-      vi.stubGlobal('alert', alertMock);
-
       renderHookWithDefaults(mockReactFlowInstance as ReactFlowInstance);
 
       await waitFor(() => {
@@ -855,7 +857,7 @@ describe('useDragAndDrop', () => {
         });
       });
 
-      expect(alertMock).toHaveBeenCalledWith('Error loading workflow file');
+      expect(notifyError).toHaveBeenCalledWith('Error loading workflow file');
     });
 
     it('should preserve savedContent for display nodes', async () => {

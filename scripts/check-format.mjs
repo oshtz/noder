@@ -99,9 +99,10 @@ const failures = [];
 for (const relativePath of sortedFiles) {
   const filePath = path.join(rootDir, relativePath);
   const source = await fs.readFile(filePath, 'utf8');
+  const normalizedSource = source.replace(/\r\n?/g, '\n');
 
   try {
-    const isFormatted = await prettier.check(source, {
+    const isFormatted = await prettier.check(normalizedSource, {
       ...prettierOptions,
       filepath: filePath,
     });

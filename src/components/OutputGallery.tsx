@@ -29,6 +29,7 @@ import {
 } from './gallery';
 
 import { useLocalFileConverter } from '../hooks/gallery';
+import { confirmAction, notifyError } from '../utils/appFeedback';
 
 interface OutputGalleryProps {
   outputs?: Output[];
@@ -417,11 +418,13 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
     async (outputId: string): Promise<void> => {
       if (!database?.isInitialized || !outputId) return;
 
-      if (
-        !window.confirm(
-          'Are you sure you want to delete this output? This action cannot be undone.'
-        )
-      ) {
+      const shouldDelete = await confirmAction({
+        title: 'Delete Output',
+        message: 'This output will be permanently removed.',
+        confirmLabel: 'Delete',
+        tone: 'danger',
+      });
+      if (!shouldDelete) {
         return;
       }
 
@@ -437,7 +440,7 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
         }
       } catch (error) {
         console.error('Failed to delete output:', error);
-        alert('Failed to delete output. Please try again.');
+        notifyError('Failed to delete output. Please try again.');
       }
     },
     [database, allOutputs, selectedIndex]

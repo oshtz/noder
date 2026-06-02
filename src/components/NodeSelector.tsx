@@ -15,6 +15,7 @@ import { useNodes, Node } from 'reactflow';
 import { invoke } from '@tauri-apps/api/core';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { emit, on } from '../utils/eventBus';
+import { notifyError } from '../utils/appFeedback';
 
 // =============================================================================
 // Types
@@ -273,7 +274,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
             setTimeout(() => applyUploadToNode(), 50);
           } catch (error) {
             console.error('Error saving uploaded file:', error);
-            alert(`Failed to upload ${file.name}: ${(error as Error).message}`);
+            notifyError(`Failed to upload ${file.name}: ${(error as Error).message}`);
           }
         };
         reader.readAsDataURL(file);

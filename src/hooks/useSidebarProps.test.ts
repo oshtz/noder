@@ -5,19 +5,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSidebarProps, type SidebarPropsConfig } from './useSidebarProps';
+import { confirmAction } from '../utils/appFeedback';
+
+vi.mock('../utils/appFeedback', () => ({
+  confirmAction: vi.fn(),
+}));
 
 // Mock the workflowSchema module
 vi.mock('../utils/workflowSchema', () => ({
   LOCAL_WORKFLOW_KEY: 'noder-workflow',
 }));
 
-// Store original implementations
-const originalConfirm = window.confirm;
 const originalRemoveItem = Storage.prototype.removeItem;
 
 describe('useSidebarProps', () => {
   let mockRemoveItem: ReturnType<typeof vi.fn>;
-  let mockConfirm: ReturnType<typeof vi.fn>;
+  let mockConfirmAction: ReturnType<typeof vi.fn>;
 
   const createDefaultConfig = (): SidebarPropsConfig => ({
     activeWorkflow: { id: 'test-workflow', name: 'Test Workflow', data: undefined },
@@ -54,9 +57,8 @@ describe('useSidebarProps', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock window.confirm
-    mockConfirm = vi.fn(() => true);
-    window.confirm = mockConfirm;
+    mockConfirmAction = vi.mocked(confirmAction);
+    mockConfirmAction.mockResolvedValue(true);
 
     // Mock localStorage.removeItem
     mockRemoveItem = vi.fn();
@@ -65,7 +67,6 @@ describe('useSidebarProps', () => {
 
   afterEach(() => {
     // Restore original implementations
-    window.confirm = originalConfirm;
     Storage.prototype.removeItem = originalRemoveItem;
   });
 
@@ -204,101 +205,104 @@ describe('useSidebarProps', () => {
   });
 
   describe('handleClearWorkflow', () => {
-    it('should show confirmation dialog when onClearWorkflow is called', () => {
+    it('should show confirmation dialog when onClearWorkflow is called', async () => {
       const config = createDefaultConfig();
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
-      expect(mockConfirm).toHaveBeenCalledWith(
-        'Are you sure you want to clear the current workflow?'
-      );
+      expect(mockConfirmAction).toHaveBeenCalledWith({
+        title: 'Clear Workflow',
+        message: 'This will remove the current canvas contents.',
+        confirmLabel: 'Clear',
+        tone: 'danger',
+      });
     });
 
-    it('should call setNodes with empty array when confirmed', () => {
+    it('should call setNodes with empty array when confirmed', async () => {
       const setNodes = vi.fn();
       const config = createDefaultConfig();
       config.setNodes = setNodes;
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(setNodes).toHaveBeenCalledWith([]);
     });
 
-    it('should call setEdges with empty array when confirmed', () => {
+    it('should call setEdges with empty array when confirmed', async () => {
       const setEdges = vi.fn();
       const config = createDefaultConfig();
       config.setEdges = setEdges;
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(setEdges).toHaveBeenCalledWith([]);
     });
 
-    it('should remove noder-nodes from localStorage when confirmed', () => {
+    it('should remove noder-nodes from localStorage when confirmed', async () => {
       const config = createDefaultConfig();
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(mockRemoveItem).toHaveBeenCalledWith('noder-nodes');
     });
 
-    it('should remove noder-edges from localStorage when confirmed', () => {
+    it('should remove noder-edges from localStorage when confirmed', async () => {
       const config = createDefaultConfig();
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(mockRemoveItem).toHaveBeenCalledWith('noder-edges');
     });
 
-    it('should remove noder-workflow from localStorage when confirmed', () => {
+    it('should remove noder-workflow from localStorage when confirmed', async () => {
       const config = createDefaultConfig();
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(mockRemoveItem).toHaveBeenCalledWith('noder-workflow');
     });
 
-    it('should not clear workflow when confirmation is cancelled', () => {
+    it('should not clear workflow when confirmation is cancelled', async () => {
       const setNodes = vi.fn();
       const setEdges = vi.fn();
       const config = createDefaultConfig();
       config.setNodes = setNodes;
       config.setEdges = setEdges;
-      mockConfirm.mockReturnValue(false);
+      mockConfirmAction.mockResolvedValue(false);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(setNodes).not.toHaveBeenCalled();
@@ -852,7 +856,7 @@ describe('useSidebarProps', () => {
   });
 
   describe('integration scenarios', () => {
-    it('should handle complete workflow clear and go home sequence', () => {
+    it('should handle complete workflow clear and go home sequence', async () => {
       const setNodes = vi.fn();
       const setEdges = vi.fn();
       const setWelcomePinned = vi.fn();
@@ -862,13 +866,13 @@ describe('useSidebarProps', () => {
       config.setEdges = setEdges;
       config.setWelcomePinned = setWelcomePinned;
       config.setShowWelcome = setShowWelcome;
-      mockConfirm.mockReturnValue(true);
+      mockConfirmAction.mockResolvedValue(true);
 
       const { result } = renderHook(() => useSidebarProps(config));
 
       // Clear workflow
-      act(() => {
-        result.current.sidebarProps.onClearWorkflow();
+      await act(async () => {
+        await result.current.sidebarProps.onClearWorkflow();
       });
 
       expect(setNodes).toHaveBeenCalledWith([]);
