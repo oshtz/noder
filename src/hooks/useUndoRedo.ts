@@ -73,7 +73,7 @@ const profiler = {
         const entries = performance.getEntriesByName(`undo-redo-${label}`);
         if (entries.length > 0) {
           const duration = entries[entries.length - 1].duration;
-          console.debug(`[UndoRedo] ${label}: ${duration.toFixed(2)}ms`);
+          logger.debug(`[UndoRedo] ${label}: ${duration.toFixed(2)}ms`);
         }
       } catch {
         // Ignore measurement errors
@@ -84,13 +84,13 @@ const profiler = {
     const jsonString = JSON.stringify(snapshot);
     const sizeBytes = new Blob([jsonString]).size;
     if (ENABLE_PROFILING) {
-      console.debug(`[UndoRedo] Snapshot size: ${(sizeBytes / 1024).toFixed(2)}KB`);
+      logger.debug(`[UndoRedo] Snapshot size: ${(sizeBytes / 1024).toFixed(2)}KB`);
     }
     return sizeBytes;
   },
   logStats(full: number, diff: number, bytes: number): void {
     if (ENABLE_PROFILING) {
-      console.debug(
+      logger.debug(
         `[UndoRedo] Stats: ${full} full, ${diff} diff, ${(bytes / 1024).toFixed(2)}KB total`
       );
     }

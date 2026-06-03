@@ -87,7 +87,7 @@ export interface UseNodeInputsReturn<T extends Record<string, unknown>> {
  *   initialFormState: { prompt: '', model: 'default-model' },
  *   acceptedInputTypes: ['text', 'prompt'],
  *   onContentReceived: (type, value) => {
- *     console.log(`Received ${type}: ${value}`);
+ *     handleReceivedInput(type, value);
  *   },
  * });
  * ```

@@ -33,7 +33,7 @@ module.exports = {
 
     // General rules
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-    'no-console': 'off',
+    'no-console': 'error',
     'prefer-const': 'warn',
     'no-var': 'error',
     'eqeqeq': ['warn', 'always', { null: 'ignore' }],
@@ -75,6 +75,13 @@ module.exports = {
       },
     },
     {
+      // Centralized logging internals are the only app source files allowed to touch console directly.
+      files: ['src/utils/logger.ts', 'src/utils/errorLogger.ts'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
       // Test files - relax strict rules (must come after TS override to take precedence)
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.test.js', '**/*.test.jsx'],
       rules: {
@@ -82,6 +89,7 @@ module.exports = {
         '@typescript-eslint/no-non-null-assertion': 'off',
         '@typescript-eslint/no-empty-function': 'off',
         'no-throw-literal': 'off',
+        'no-console': 'off',
       },
     },
   ],

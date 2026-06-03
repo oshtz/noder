@@ -621,7 +621,7 @@ export function useWorkflowPersistence({
     // valid edges from localStorage during initialization race conditions.
     // Only skip if we haven't loaded initial edges yet (to allow saving empty workflows intentionally).
     if (nodes.length > 0 && edges.length === 0 && !hasLoadedInitialEdges.current) {
-      console.debug(
+      logger.debug(
         '[Persistence] Skipping save: nodes exist but edges empty during initialization'
       );
       return;
