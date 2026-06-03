@@ -316,6 +316,17 @@ export interface DownloadUpdateArgs {
   dirName?: string | null;
 }
 
+/** Arguments for fetch_update_manifest command */
+export interface FetchUpdateManifestArgs {
+  url: string;
+}
+
+/** Arguments for verify_update_sha256 command */
+export interface VerifyUpdateSha256Args {
+  filePath: string;
+  expectedSha256: string;
+}
+
 /** Arguments for apply_update command */
 export interface ApplyUpdateArgs {
   updatePath: string;
@@ -374,7 +385,9 @@ export interface TauriCommands {
 
   // Update commands
   fetch_github_release: { args: FetchGitHubReleaseArgs; return: GitHubRelease };
+  fetch_update_manifest: { args: FetchUpdateManifestArgs; return: string };
   download_update: { args: DownloadUpdateArgs; return: string };
+  verify_update_sha256: { args: VerifyUpdateSha256Args; return: void };
   apply_update: { args: ApplyUpdateArgs; return: void };
   extract_app_zip: { args: ExtractAppZipArgs; return: string };
 }

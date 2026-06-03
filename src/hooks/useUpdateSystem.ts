@@ -24,12 +24,16 @@ export interface UpdateInfo {
   notes: string | null;
   publishedAt: string | null;
   downloadUrl: string;
+  assetName?: string | null;
+  checksumUrl?: string | null;
+  expectedSha256?: string | null;
 }
 
 export interface AssetConfig {
   name: string;
   extension: string;
   baseName: string;
+  checksumName: string;
 }
 
 export interface GitHubAsset {
@@ -70,7 +74,10 @@ const UPDATE_REPO = 'oshtz/noder';
 const UPDATE_DIR_NAME = 'noder-updates';
 const WINDOWS_UPDATE_ASSET = 'noder-portable.exe';
 const MAC_UPDATE_ASSET = 'noder.app.zip';
+const WINDOWS_CHECKSUM_ASSET = 'SHA256SUMS-windows.txt';
+const MAC_CHECKSUM_ASSET = 'SHA256SUMS-macos.txt';
 const UPDATE_APP_NAME = 'noder';
+const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 
 // ============================================================================
 // Helper Functions
@@ -80,8 +87,10 @@ const isTauriRuntime = (): boolean =>
   typeof window !== 'undefined' &&
   !!(window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
 
-const isUpdateSupported = (): boolean =>
-  isTauriRuntime() && !(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
+const isUpdateSupported = (): boolean => {
+  const env = (import.meta as { env?: { DEV?: boolean; MODE?: string } }).env;
+  return isTauriRuntime() && (env?.MODE === 'test' || !env?.DEV);
+};
 
 const getCurrentVersion = async (): Promise<string | null> => {
   if (!isTauriRuntime()) return null;
@@ -123,6 +132,37 @@ const getPlatform = (): Platform => {
   return 'unknown';
 };
 
+const getAssetBaseName = (value: string | null | undefined): string => {
+  if (!value) return '';
+  const withoutQuery = value.trim().split(/[?#]/)[0] ?? '';
+  const normalized = withoutQuery.replace(/\\/g, '/').replace(/^\*/, '');
+  return normalized.substring(normalized.lastIndexOf('/') + 1);
+};
+
+export const parseSha256Manifest = (
+  manifest: string | null | undefined,
+  assetName: string
+): string | null => {
+  const requestedName = getAssetBaseName(assetName).toLowerCase();
+  if (!manifest || !requestedName) return null;
+
+  for (const line of manifest.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const match = /^([a-f0-9]{64})\s+(.+)$/i.exec(trimmed);
+    if (!match) continue;
+
+    const digest = match[1].toLowerCase();
+    const manifestName = getAssetBaseName(match[2]).toLowerCase();
+    if (SHA256_PATTERN.test(digest) && manifestName === requestedName) {
+      return digest;
+    }
+  }
+
+  return null;
+};
+
 const getUpdateAssetConfig = (): AssetConfig => {
   const os = getPlatform();
   if (os === 'darwin') {
@@ -130,6 +170,7 @@ const getUpdateAssetConfig = (): AssetConfig => {
       name: MAC_UPDATE_ASSET,
       extension: '.app.zip',
       baseName: UPDATE_APP_NAME,
+      checksumName: MAC_CHECKSUM_ASSET,
     };
   }
   if (os === 'windows') {
@@ -137,6 +178,7 @@ const getUpdateAssetConfig = (): AssetConfig => {
       name: WINDOWS_UPDATE_ASSET,
       extension: '.exe',
       baseName: UPDATE_APP_NAME,
+      checksumName: WINDOWS_CHECKSUM_ASSET,
     };
   }
 
@@ -218,11 +260,28 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
         throw new Error('No compatible update asset found for this platform.');
       }
 
+      const assetName = asset.name || getAssetBaseName(asset.browser_download_url);
+      const checksumAsset = assets.find((entry) => entry?.name === assetConfig.checksumName);
+      if (!checksumAsset?.browser_download_url) {
+        throw new Error('No checksum manifest found for this platform.');
+      }
+
+      const checksumManifest = await invoke('fetch_update_manifest', {
+        url: checksumAsset.browser_download_url,
+      });
+      const expectedSha256 = parseSha256Manifest(String(checksumManifest), assetName);
+      if (!expectedSha256) {
+        throw new Error(`Checksum manifest did not include ${assetName}.`);
+      }
+
       const info: UpdateInfo = {
         version: latestVersion,
         notes: release?.body ?? null,
         publishedAt: release?.published_at ?? null,
         downloadUrl: asset.browser_download_url,
+        assetName,
+        checksumUrl: checksumAsset.browser_download_url,
+        expectedSha256,
       };
 
       setUpdateInfo(info);
@@ -247,6 +306,11 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
         setUpdateStatus('error');
         return null;
       }
+      if (!info.expectedSha256) {
+        setUpdateError('Update checksum is missing.');
+        setUpdateStatus('error');
+        return null;
+      }
 
       setUpdateStatus('downloading');
       setUpdateError(null);
@@ -260,6 +324,11 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
           url: info.downloadUrl,
           fileName,
           dirName: UPDATE_DIR_NAME,
+        });
+
+        await invoke('verify_update_sha256', {
+          filePath: downloadedPath,
+          expectedSha256: info.expectedSha256,
         });
 
         const os = getPlatform();

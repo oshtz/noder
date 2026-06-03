@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { useUpdateSystem, type UpdateInfo } from './useUpdateSystem';
+import { parseSha256Manifest, useUpdateSystem, type UpdateInfo } from './useUpdateSystem';
 
 // Mock dependencies
 vi.mock('../types/tauri', () => ({
@@ -55,6 +55,7 @@ describe('useUpdateSystem', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     vi.useRealTimers();
     consoleErrorSpy.mockRestore();
 
@@ -74,7 +75,7 @@ describe('useUpdateSystem', () => {
       configurable: true,
     });
     // Mock import.meta.env.DEV as false
-    vi.stubGlobal('import', { meta: { env: { DEV: false } } });
+    vi.stubEnv('DEV', false);
   };
 
   // Helper to set user agent
@@ -222,6 +223,60 @@ describe('useUpdateSystem', () => {
 
       expect(mockInvoke).not.toHaveBeenCalled();
     });
+
+    it('should attach the platform checksum from the release manifest', async () => {
+      vi.stubEnv('DEV', false);
+      Object.defineProperty(window, '__TAURI_INTERNALS__', {
+        value: { invoke: vi.fn() },
+        writable: true,
+        configurable: true,
+      });
+      setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      mockGetVersion.mockResolvedValue('1.0.0');
+
+      const expectedSha256 = 'b'.repeat(64);
+      const checksumUrl =
+        'https://github.com/oshtz/noder/releases/download/v2.0.0/SHA256SUMS-windows.txt';
+
+      mockInvoke.mockImplementation(async (command) => {
+        if (command === 'fetch_github_release') {
+          return {
+            tag_name: 'v2.0.0',
+            body: 'Release notes',
+            published_at: '2024-01-20T00:00:00Z',
+            assets: [
+              {
+                name: 'noder-portable.exe',
+                browser_download_url:
+                  'https://github.com/oshtz/noder/releases/download/v2.0.0/noder-portable.exe',
+              },
+              {
+                name: 'SHA256SUMS-windows.txt',
+                browser_download_url: checksumUrl,
+              },
+            ],
+          };
+        }
+
+        if (command === 'fetch_update_manifest') {
+          return `${expectedSha256}  noder-portable.exe\n`;
+        }
+
+        throw new Error(`Unexpected command: ${String(command)}`);
+      });
+
+      const { result } = renderHook(() => useUpdateSystem());
+
+      let updateResult: UpdateInfo | null = null;
+      await act(async () => {
+        updateResult = await result.current.checkForUpdate();
+      });
+
+      expect(updateResult?.expectedSha256).toBe(expectedSha256);
+      expect(updateResult?.checksumUrl).toBe(checksumUrl);
+      expect(result.current.updateInfo?.expectedSha256).toBe(expectedSha256);
+      expect(mockInvoke).toHaveBeenCalledWith('fetch_update_manifest', { url: checksumUrl });
+    });
   });
 
   // ============================================================================
@@ -268,6 +323,77 @@ describe('useUpdateSystem', () => {
 
       // Should still return null since updateSupported is false
       expect(downloadResult).toBeNull();
+    });
+
+    it('should verify the downloaded update before marking it ready', async () => {
+      vi.stubEnv('DEV', false);
+      Object.defineProperty(window, '__TAURI_INTERNALS__', {
+        value: { invoke: vi.fn() },
+        writable: true,
+        configurable: true,
+      });
+      setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      mockGetVersion.mockResolvedValue('1.0.0');
+
+      const expectedSha256 = 'a'.repeat(64);
+      const mockInfo: UpdateInfo = {
+        version: '2.0.0',
+        notes: 'New version',
+        publishedAt: '2024-01-20T00:00:00Z',
+        downloadUrl: 'https://example.com/noder-portable.exe',
+        expectedSha256,
+      };
+      const downloadedPath = 'C:\\Users\\USER\\AppData\\Roaming\\noder\\noder-updates\\noder.exe';
+
+      mockInvoke.mockImplementation(async (command) => {
+        if (command === 'download_update') return downloadedPath;
+        if (command === 'verify_update_sha256') return null;
+        throw new Error(`Unexpected command: ${String(command)}`);
+      });
+
+      const { result } = renderHook(() => useUpdateSystem());
+
+      let downloadResult: string | null = null;
+      await act(async () => {
+        downloadResult = await result.current.downloadUpdate(mockInfo);
+      });
+
+      expect(downloadResult).toBe(downloadedPath);
+      expect(mockInvoke).toHaveBeenCalledWith('verify_update_sha256', {
+        filePath: downloadedPath,
+        expectedSha256,
+      });
+      expect(result.current.updateStatus).toBe('ready');
+    });
+
+    it('should not download updates without an expected checksum', async () => {
+      vi.stubEnv('DEV', false);
+      Object.defineProperty(window, '__TAURI_INTERNALS__', {
+        value: { invoke: vi.fn() },
+        writable: true,
+        configurable: true,
+      });
+      setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      mockGetVersion.mockResolvedValue('1.0.0');
+
+      const mockInfo: UpdateInfo = {
+        version: '2.0.0',
+        notes: 'New version',
+        publishedAt: '2024-01-20T00:00:00Z',
+        downloadUrl: 'https://example.com/noder-portable.exe',
+      };
+
+      const { result } = renderHook(() => useUpdateSystem());
+
+      let downloadResult: string | null = null;
+      await act(async () => {
+        downloadResult = await result.current.downloadUpdate(mockInfo);
+      });
+
+      expect(downloadResult).toBeNull();
+      expect(mockInvoke).not.toHaveBeenCalledWith('download_update', expect.anything());
+      expect(result.current.updateStatus).toBe('error');
+      expect(result.current.updateError).toBe('Update checksum is missing.');
     });
   });
 
@@ -843,6 +969,38 @@ describe('useUpdateSystem', () => {
 // ============================================================================
 // Helper Function Unit Tests (via module internals testing)
 // ============================================================================
+
+describe('checksum manifest parsing', () => {
+  it('should find a checksum by asset basename when manifest entries include paths', () => {
+    const expectedSha256 = 'c'.repeat(64);
+    const manifest = [
+      `${'1'.repeat(64)}  src-tauri/target/release/bundle/macos/Noder_2.0.0_universal.dmg`,
+      `${expectedSha256}  src-tauri/target/release/bundle/macos/noder.app.zip`,
+    ].join('\n');
+
+    expect(parseSha256Manifest(manifest, 'noder.app.zip')).toBe(expectedSha256);
+  });
+
+  it('should handle binary-mode checksum entries', () => {
+    const expectedSha256 = 'd'.repeat(64);
+
+    expect(parseSha256Manifest(`${expectedSha256} *noder-portable.exe`, 'noder-portable.exe')).toBe(
+      expectedSha256
+    );
+  });
+
+  it('should reject malformed digests for matching assets', () => {
+    const manifest = 'not-a-sha256  noder-portable.exe';
+
+    expect(parseSha256Manifest(manifest, 'noder-portable.exe')).toBeNull();
+  });
+
+  it('should return null when the requested asset is not in the manifest', () => {
+    const manifest = `${'e'.repeat(64)}  noder-win.zip`;
+
+    expect(parseSha256Manifest(manifest, 'noder-portable.exe')).toBeNull();
+  });
+});
 
 describe('version normalization and comparison (behavioral tests)', () => {
   it('hook should handle various version formats without crashing', async () => {

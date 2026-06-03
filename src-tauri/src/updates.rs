@@ -1,11 +1,15 @@
 use std::fs;
+use std::io::{self, Read};
 use std::path::Path;
 use std::process::Command;
 
 use reqwest::header::USER_AGENT;
+use sha2::{Digest, Sha256};
 use tauri::Manager;
 
 use crate::path_utils::{sanitize_component, sanitize_filename};
+
+const MAX_UPDATE_MANIFEST_BYTES: u64 = 1024 * 1024;
 
 fn escape_powershell_literal(value: &str) -> String {
     value.replace('\'', "''")
@@ -39,6 +43,41 @@ pub async fn fetch_github_release(repo: String) -> Result<serde_json::Value, Str
         serde_json::from_str(&body).map_err(|e| format!("Failed to parse release: {}", e))?;
 
     Ok(json)
+}
+
+#[tauri::command]
+pub async fn fetch_update_manifest(url: String) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&url)
+        .header(USER_AGENT, "noder-updater")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch checksum manifest: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response.text().await.unwrap_or_default();
+        return Err(format!(
+            "Checksum manifest download failed ({}): {}",
+            status, error_text
+        ));
+    }
+
+    if response.content_length().unwrap_or(0) > MAX_UPDATE_MANIFEST_BYTES {
+        return Err("Checksum manifest is too large.".to_string());
+    }
+
+    let body = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read checksum manifest: {}", e))?;
+
+    if body.len() as u64 > MAX_UPDATE_MANIFEST_BYTES {
+        return Err("Checksum manifest is too large.".to_string());
+    }
+
+    Ok(body)
 }
 
 #[tauri::command]
@@ -93,6 +132,51 @@ pub async fn download_update(
     fs::write(&file_path, &bytes).map_err(|e| format!("Failed to write update file: {}", e))?;
 
     Ok(file_path.to_string_lossy().to_string())
+}
+
+fn normalize_sha256(value: &str) -> Option<String> {
+    let normalized = value.trim().to_ascii_lowercase();
+    if normalized.len() == 64 && normalized.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        Some(normalized)
+    } else {
+        None
+    }
+}
+
+fn calculate_sha256(file_path: &Path) -> Result<String, io::Error> {
+    let mut file = fs::File::open(file_path)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..bytes_read]);
+    }
+
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+#[tauri::command]
+pub fn verify_update_sha256(file_path: String, expected_sha256: String) -> Result<(), String> {
+    let expected = normalize_sha256(&expected_sha256).ok_or_else(|| {
+        "Expected SHA-256 checksum must be 64 hexadecimal characters.".to_string()
+    })?;
+
+    let update_file = Path::new(&file_path);
+    if !update_file.exists() {
+        return Err("Update file not found.".to_string());
+    }
+
+    let actual = calculate_sha256(update_file)
+        .map_err(|e| format!("Failed to calculate update checksum: {}", e))?;
+    if actual != expected {
+        return Err("Update checksum mismatch.".to_string());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -200,4 +284,62 @@ pub fn extract_app_zip(zip_path: String) -> Result<String, String> {
 #[tauri::command]
 pub fn extract_app_zip(_zip_path: String) -> Result<String, String> {
     Err("This command is only available on macOS".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn write_temp_update(contents: &[u8]) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time should be after epoch")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "noder-update-sha256-test-{}-{}.bin",
+            std::process::id(),
+            nonce
+        ));
+        fs::write(&path, contents).expect("temp update should be written");
+        path
+    }
+
+    #[test]
+    fn verify_update_sha256_accepts_matching_digest() {
+        let path = write_temp_update(b"hello");
+
+        let result = verify_update_sha256(
+            path.to_string_lossy().to_string(),
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824".to_string(),
+        );
+
+        fs::remove_file(path).ok();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn verify_update_sha256_rejects_mismatched_digest() {
+        let path = write_temp_update(b"hello");
+
+        let result = verify_update_sha256(path.to_string_lossy().to_string(), "0".repeat(64));
+
+        fs::remove_file(path).ok();
+        assert_eq!(result.unwrap_err(), "Update checksum mismatch.");
+    }
+
+    #[test]
+    fn verify_update_sha256_rejects_invalid_digest() {
+        let path = write_temp_update(b"hello");
+
+        let result =
+            verify_update_sha256(path.to_string_lossy().to_string(), "not-a-sha".to_string());
+
+        fs::remove_file(path).ok();
+        assert_eq!(
+            result.unwrap_err(),
+            "Expected SHA-256 checksum must be 64 hexadecimal characters."
+        );
+    }
 }

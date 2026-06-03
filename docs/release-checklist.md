@@ -50,15 +50,18 @@ Every published release should include:
 
 Verify checksum manifests against the downloaded files before announcing a release.
 
+The in-app updater requires the platform checksum manifest for available updates and verifies the downloaded update asset before it becomes installable.
+
 ## Updater Smoke Test
 
 1. Install the previous released version on Windows and macOS.
 2. Start the app outside dev mode.
 3. Open Settings > Updates and check for updates.
 4. Download the new update.
-5. Restart/apply the update from the in-app prompt.
-6. Confirm the app launches and reports the new version.
-7. Confirm existing workflows, outputs, settings, and API keys still load.
+5. Confirm missing or mismatched checksum manifests keep the update from reaching the ready-to-install state.
+6. Restart/apply the update from the in-app prompt.
+7. Confirm the app launches and reports the new version.
+8. Confirm existing workflows, outputs, settings, and API keys still load.
 
 ## Installer Smoke Test
 
