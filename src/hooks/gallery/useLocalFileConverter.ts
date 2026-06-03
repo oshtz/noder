@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Output, isLocalPath } from '../../components/gallery/types';
 
+import { logger } from '../../utils/logger';
 interface UseLocalFileConverterReturn {
   convertedSrcs: Record<string, string>;
   loadingImages: Record<string, boolean>;
@@ -41,7 +42,7 @@ export function useLocalFileConverter(): UseLocalFileConverterReturn {
         setLoadingImages((prev) => ({ ...prev, [cacheKey]: false }));
         return dataUrl;
       } catch (error) {
-        console.error(`Failed to convert local file: ${filePath}`, error);
+        logger.error(`Failed to convert local file: ${filePath}`, error);
         pendingLoadsRef.current.delete(cacheKey);
         setLoadingImages((prev) => ({ ...prev, [cacheKey]: false }));
         return null;

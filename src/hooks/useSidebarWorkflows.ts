@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { toSafeWorkflowId } from '../utils/workflowId';
 import { confirmAction, notifyError } from '../utils/appFeedback';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -78,7 +79,7 @@ export function useSidebarWorkflows({
       const workflowsList = (await invoke('list_workflows')) as Workflow[];
       setWorkflows(workflowsList);
     } catch (error) {
-      console.error('Failed to load workflows:', error);
+      logger.error('Failed to load workflows:', error);
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +132,7 @@ export function useSidebarWorkflows({
         setEditingId(null);
         await loadWorkflows();
       } catch (error) {
-        console.error('Failed to rename workflow:', error);
+        logger.error('Failed to rename workflow:', error);
       }
     },
     [workflows, loadWorkflows]
@@ -176,7 +177,7 @@ export function useSidebarWorkflows({
         }
       } catch (error) {
         // Rollback on error
-        console.error('Failed to delete workflow:', error);
+        logger.error('Failed to delete workflow:', error);
         setWorkflows(previousWorkflows);
       }
     },
@@ -196,7 +197,7 @@ export function useSidebarWorkflows({
         };
         onWorkflowLoad(loadedWorkflow);
       } catch (error) {
-        console.error('Failed to load workflow:', error);
+        logger.error('Failed to load workflow:', error);
       }
     },
     [onWorkflowLoad]
@@ -243,7 +244,7 @@ export function useSidebarWorkflows({
         });
       } catch (error) {
         // Rollback on error
-        console.error('Failed to create workflow:', error);
+        logger.error('Failed to create workflow:', error);
         setWorkflows(previousWorkflows);
       }
     },

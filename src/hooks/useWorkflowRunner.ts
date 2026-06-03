@@ -19,6 +19,7 @@ import type { FailedNode, ExecutionState } from './useWorkflowExecution';
 import type { ValidationError } from '../types/components';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
+import { logger } from '../utils/logger';
 // Local types
 interface NodeData {
   prompt?: string;
@@ -198,7 +199,7 @@ export function useWorkflowRunner({
   const runWorkflow = useCallback(
     async (options: RunWorkflowOptions = {}): Promise<void> => {
       if (isProcessing) {
-        console.log('[Workflow] Workflow is already running');
+        logger.debug('[Workflow] Workflow is already running');
         return;
       }
 
@@ -278,7 +279,7 @@ export function useWorkflowRunner({
       const allowPartial = continueOnError || skipFailed;
 
       if (scopedNodes.length === 0) {
-        console.warn('[Workflow] No nodes to execute for the requested scope');
+        logger.warn('[Workflow] No nodes to execute for the requested scope');
         return;
       }
 
@@ -295,7 +296,7 @@ export function useWorkflowRunner({
 
       try {
         setIsProcessing(true);
-        console.log('[Workflow] Starting DAG-based workflow execution');
+        logger.debug('[Workflow] Starting DAG-based workflow execution');
 
         setNodes((nds) =>
           nds.map((n) => ({
@@ -321,7 +322,7 @@ export function useWorkflowRunner({
           skipNodeIds: effectiveSkipNodeIds,
           continueOnError: allowPartial,
           onNodeStart: (node: Node): void => {
-            console.log(`[Workflow] Starting node: ${node.id} (${node.type})`);
+            logger.debug(`[Workflow] Starting node: ${node.id} (${node.type})`);
             nodeTimingsRef.current[node.id] = Date.now();
             setNodes((nds) =>
               nds.map((n) => {
@@ -346,7 +347,7 @@ export function useWorkflowRunner({
             );
           },
           onNodeComplete: (node: Node, output: unknown): void => {
-            console.log(`[Workflow] Completed node: ${node.id}`, output);
+            logger.debug(`[Workflow] Completed node: ${node.id}`, output);
             const outputPayload = getPrimaryOutput(output);
             const nodeStartedAt = nodeTimingsRef.current[node.id];
             const runDurationMs = nodeStartedAt ? Date.now() - nodeStartedAt : null;
@@ -384,7 +385,7 @@ export function useWorkflowRunner({
               const outputType = getOutputTypeFromNodeType(node.type as string);
 
               const persistAndSaveOutput = async (): Promise<void> => {
-                console.log('[Persist] Starting persist for node:', node.id, 'type:', outputType);
+                logger.debug('[Persist] Starting persist for node:', node.id, 'type:', outputType);
 
                 try {
                   const localValue = await persistOutputToLocal(
@@ -407,14 +408,14 @@ export function useWorkflowRunner({
 
                   try {
                     const savedId = await db.saveOutput(outputData);
-                    console.log('[Persist] Output saved to database. ID:', savedId);
+                    logger.debug('[Persist] Output saved to database. ID:', savedId);
                   } catch (dbErr) {
-                    console.error('[Persist] Database save failed:', dbErr);
+                    logger.error('[Persist] Database save failed:', dbErr);
                   }
 
                   setWorkflowOutputs((prev) => [...prev, outputData]);
                 } catch (err) {
-                  console.error('Failed to persist and save output:', err);
+                  logger.error('Failed to persist and save output:', err);
 
                   const fallbackData = {
                     type: outputType,
@@ -430,7 +431,7 @@ export function useWorkflowRunner({
                   try {
                     await db.saveOutput(fallbackData);
                   } catch (e) {
-                    console.error('Failed to save fallback output:', e);
+                    logger.error('Failed to save fallback output:', e);
                   }
                   setWorkflowOutputs((prev) => [...prev, fallbackData]);
                 }
@@ -453,7 +454,7 @@ export function useWorkflowRunner({
             );
           },
           onNodeError: (node: Node, error: Error): void => {
-            console.error(`[Workflow] Error in node ${node.id}:`, error);
+            logger.error(`[Workflow] Error in node ${node.id}:`, error);
             const nodeStartedAt = nodeTimingsRef.current[node.id];
             const runDurationMs = nodeStartedAt ? Date.now() - nodeStartedAt : null;
 
@@ -503,21 +504,21 @@ export function useWorkflowRunner({
             completed: number;
             total: number;
           }): void => {
-            console.log(
+            logger.debug(
               `[Workflow] Progress: ${progress.percentage}% (${progress.completed}/${progress.total})`
             );
           },
         })) as WorkflowResult;
 
         if (workflowResult.success) {
-          console.log('[Workflow] Workflow completed successfully', workflowResult);
+          logger.debug('[Workflow] Workflow completed successfully', workflowResult);
         } else if (!allowPartial) {
           throw new Error(workflowResult.error || 'Workflow execution failed');
         } else {
-          console.log('[Workflow] Workflow completed with errors', workflowResult);
+          logger.debug('[Workflow] Workflow completed with errors', workflowResult);
         }
       } catch (error) {
-        console.error('[Workflow] Error during workflow execution:', error);
+        logger.error('[Workflow] Error during workflow execution:', error);
         workflowError = error as Error;
         setValidationErrors((prev) => [
           ...prev,
@@ -576,7 +577,7 @@ export function useWorkflowRunner({
         setIsProcessing(false);
         setCurrentWorkflowId(null);
         currentWorkflowIdRef.current = null;
-        console.log('[Workflow] Execution completed');
+        logger.debug('[Workflow] Execution completed');
       }
     },
     [

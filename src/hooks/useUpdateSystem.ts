@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke, type GitHubRelease as TauriGitHubRelease } from '../types/tauri';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -168,7 +169,7 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
         setCurrentVersion(version);
       }
     } catch (error) {
-      console.error('Failed to load app version:', error);
+      logger.error('Failed to load app version:', error);
     }
   }, [updateSupported]);
 
@@ -229,7 +230,7 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
       setUpdateStatus('available');
       return info;
     } catch (error) {
-      console.error('Update check failed:', error);
+      logger.error('Update check failed:', error);
       setUpdateError((error as Error)?.message || 'Update check failed.');
       setUpdateStatus('error');
       setLastUpdateCheck(Date.now());
@@ -272,7 +273,7 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
         setUpdateStatus('ready');
         return finalPath;
       } catch (error) {
-        console.error('Update download failed:', error);
+        logger.error('Update download failed:', error);
         setUpdateError((error as Error)?.message || 'Update download failed.');
         setUpdateStatus('error');
         return null;
@@ -295,7 +296,7 @@ export function useUpdateSystem(): UseUpdateSystemReturn {
     try {
       await invoke('apply_update', { updatePath });
     } catch (error) {
-      console.error('Update install failed:', error);
+      logger.error('Update install failed:', error);
       setUpdateError((error as Error)?.message || 'Update install failed.');
       setUpdateStatus('error');
     }

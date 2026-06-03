@@ -6,6 +6,7 @@
 import { useCallback, useMemo } from 'react';
 import type { Node } from 'reactflow';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -60,7 +61,7 @@ export function useGroupOperations({
   const groupSelectedNodes = useCallback((): void => {
     const selectedNonGroupNodes = nodes.filter((n) => n.selected && n.type !== 'group');
     if (selectedNonGroupNodes.length < 2) {
-      console.log('[Group] Need at least 2 nodes to create a group');
+      logger.debug('[Group] Need at least 2 nodes to create a group');
       return;
     }
 
@@ -121,7 +122,7 @@ export function useGroupOperations({
 
     setNodes([groupNode, ...updatedNodes]);
 
-    console.log('[Group] Created group with', selectedNonGroupNodes.length, 'nodes');
+    logger.debug('[Group] Created group with', selectedNonGroupNodes.length, 'nodes');
   }, [nodes, setNodes, takeSnapshot, handleRemoveNode]);
 
   /**
@@ -155,7 +156,7 @@ export function useGroupOperations({
 
       setNodes(updatedNodes);
 
-      console.log('[Group] Ungrouped', childNodes.length, 'nodes');
+      logger.debug('[Group] Ungrouped', childNodes.length, 'nodes');
     },
     [nodes, setNodes, takeSnapshot]
   );

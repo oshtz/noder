@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -187,7 +188,7 @@ export function useReplicateNode(options: UseReplicateNodeOptions): UseReplicate
         throw new Error('Failed to create prediction - no ID returned');
       }
 
-      console.log(`Created prediction ${prediction.id} for model ${modelId}`);
+      logger.debug(`Created prediction ${prediction.id} for model ${modelId}`);
 
       // Poll for completion
       let currentPrediction = prediction;
@@ -210,7 +211,7 @@ export function useReplicateNode(options: UseReplicateNodeOptions): UseReplicate
 
         // Log progress at intervals
         if (attempts % logInterval === 0) {
-          console.log(`Polling attempt ${attempts}/${maxAttempts}: ${currentPrediction.status}`);
+          logger.debug(`Polling attempt ${attempts}/${maxAttempts}: ${currentPrediction.status}`);
         }
 
         onProgress?.(attempts, currentPrediction.status);
@@ -222,7 +223,7 @@ export function useReplicateNode(options: UseReplicateNodeOptions): UseReplicate
         setResult(output);
         setStatus('succeeded');
         onSuccess?.(output);
-        console.log(`Prediction succeeded: ${output.substring(0, 100)}...`);
+        logger.debug(`Prediction succeeded: ${output.substring(0, 100)}...`);
         return output;
       } else if (currentPrediction.status === 'failed') {
         const errorMsg = currentPrediction.error || 'Prediction failed with no error message';
@@ -234,7 +235,7 @@ export function useReplicateNode(options: UseReplicateNodeOptions): UseReplicate
       }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
-      console.error(`Replicate prediction error for ${modelId}:`, errorMessage);
+      logger.error(`Replicate prediction error for ${modelId}:`, errorMessage);
       setError(errorMessage);
       setStatus('error');
       onError?.(errorMessage);

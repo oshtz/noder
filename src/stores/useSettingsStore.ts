@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { invoke } from '../types/tauri';
 import { isTauriRuntime } from '../utils/runtime';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -444,7 +445,7 @@ export const useSettingsStore = create<SettingsStore>()(
             set({ currentTheme: savedTheme });
           }
         } catch (error) {
-          console.error('Failed to load settings from Tauri:', error);
+          logger.error('Failed to load settings from Tauri:', error);
           set({ isLoaded: true }); // Still mark as loaded so app can proceed with defaults
         }
       },
@@ -510,7 +511,7 @@ export const useSettingsStore = create<SettingsStore>()(
                 },
               });
             } catch (error) {
-              console.error('Failed to save settings to Tauri:', error);
+              logger.error('Failed to save settings to Tauri:', error);
             } finally {
               set({ isSaving: false });
             }

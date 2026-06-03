@@ -31,6 +31,7 @@ import {
 import { useLocalFileConverter } from '../hooks/gallery';
 import { confirmAction, notifyError } from '../utils/appFeedback';
 
+import { logger } from '../utils/logger';
 interface OutputGalleryProps {
   outputs?: Output[];
   onClose?: () => void;
@@ -103,7 +104,7 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
     try {
       localStorage.setItem('noder-gallery-view-mode', viewMode);
     } catch (error) {
-      console.error('Failed to save gallery view mode:', error);
+      logger.error('Failed to save gallery view mode:', error);
     }
   }, [viewMode]);
 
@@ -387,7 +388,7 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
           setHasMore(false);
         }
       } catch (error) {
-        console.error('Failed to load outputs:', error);
+        logger.error('Failed to load outputs:', error);
       } finally {
         setIsLoading(false);
       }
@@ -439,7 +440,7 @@ export const OutputGallery: React.FC<OutputGalleryProps> = ({
           setSelectedIndex(newOutputs.length - 1);
         }
       } catch (error) {
-        console.error('Failed to delete output:', error);
+        logger.error('Failed to delete output:', error);
         notifyError('Failed to delete output. Please try again.');
       }
     },

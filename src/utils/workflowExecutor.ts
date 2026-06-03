@@ -25,6 +25,7 @@ import { emit } from './eventBus';
 import { chatCompletion } from '../api/openrouter';
 import { getApiKey } from '../api/settings';
 
+import { logger } from './logger';
 // =============================================================================
 // Provider Detection
 // =============================================================================
@@ -347,7 +348,7 @@ async function runOpenRouterCompletion(
     messages.push({ role: 'user', content: prompt });
   }
 
-  console.log(`[Executor] Running OpenRouter completion`, { model, messages });
+  logger.debug(`[Executor] Running OpenRouter completion`, { model, messages });
 
   const response = await chatCompletion({
     apiKey,
@@ -447,7 +448,7 @@ async function executeTextNode(
   const model = node.data.model || 'meta/meta-llama-3-70b-instruct';
   const provider = getModelProvider(model);
 
-  console.log(`[Executor] Running Text node ${node.id} via ${provider}`, { model, prompt });
+  logger.debug(`[Executor] Running Text node ${node.id} via ${provider}`, { model, prompt });
 
   // Route to the appropriate provider
   if (provider === 'openrouter') {
@@ -471,7 +472,7 @@ async function executeTextNode(
       ) {
         throw error;
       }
-      console.warn(`[Executor] Skipping schema validation for ${model}:`, error);
+      logger.warn(`[Executor] Skipping schema validation for ${model}:`, error);
     }
   }
 
@@ -555,7 +556,7 @@ function validateConnectedInputs(
     // Check if model only has inpainting fields
     const hasPrimaryOnly = mapping.image.some((f) => f.role === 'primary');
     if (hasPrimaryOnly) {
-      console.warn(
+      logger.warn(
         `[Executor] Image connected to model "${modelId}" but model only supports inpainting (not yet implemented). Image will be ignored.`
       );
     } else {
@@ -606,13 +607,13 @@ async function executeImageNode(
   const connectedInputs = collectInputsByType(inputs);
   const chipValues = collectChipValues(inputs, node.data);
 
-  console.log(`[Executor] Running Replicate Image node ${node.id}`, { model });
+  logger.debug(`[Executor] Running Replicate Image node ${node.id}`, { model });
 
   try {
     // Fetch model schema
     const schema = await fetchModelSchema(model);
 
-    console.log(`[Executor] Connected inputs:`, connectedInputs);
+    logger.debug(`[Executor] Connected inputs:`, connectedInputs);
 
     validateConnectedInputs(schema, connectedInputs, node, model);
 
@@ -641,13 +642,13 @@ async function executeImageNode(
       unknown
     >;
 
-    console.log(`[Executor] Built input from schema:`, input);
-    console.log(`[Executor] Image input URL (if any):`, input.image || 'no image');
+    logger.debug(`[Executor] Built input from schema:`, input);
+    logger.debug(`[Executor] Image input URL (if any):`, input.image || 'no image');
 
     return await runReplicatePrediction(model, input, HANDLE_TYPES.IMAGE.type);
   } catch (schemaError) {
     // Fallback to manual input building if schema fetch fails
-    console.warn(`[Executor] Schema fetch failed, using fallback:`, schemaError);
+    logger.warn(`[Executor] Schema fetch failed, using fallback:`, schemaError);
 
     if (connectedInputs.video.length > 0 || connectedInputs.audio.length > 0) {
       throw new Error('Image Generation: video/audio inputs are not supported for this node.');
@@ -709,12 +710,12 @@ async function executeUpscalerNode(
     throw new Error('Upscaler: connect an image or provide an image URL.');
   }
 
-  console.log(`[Executor] Running Replicate Upscaler node ${node.id}`, { model });
+  logger.debug(`[Executor] Running Replicate Upscaler node ${node.id}`, { model });
 
   try {
     const schema = await fetchModelSchema(model);
 
-    console.log(`[Executor] Connected inputs:`, connectedInputs);
+    logger.debug(`[Executor] Connected inputs:`, connectedInputs);
 
     validateConnectedInputs(schema, connectedInputs, node, model);
 
@@ -724,11 +725,11 @@ async function executeUpscalerNode(
       node.data as Record<string, unknown>
     ) as Record<string, unknown>;
 
-    console.log(`[Executor] Built input from schema:`, input);
+    logger.debug(`[Executor] Built input from schema:`, input);
 
     return await runReplicatePrediction(model, input, HANDLE_TYPES.IMAGE.type);
   } catch (schemaError) {
-    console.warn(`[Executor] Upscaler schema fetch failed, using fallback:`, schemaError);
+    logger.warn(`[Executor] Upscaler schema fetch failed, using fallback:`, schemaError);
 
     if (connectedInputs.video.length > 0 || connectedInputs.audio.length > 0) {
       throw new Error('Upscaler: video/audio inputs are not supported for this node.');
@@ -760,7 +761,7 @@ async function executeVideoNode(
   const connectedInputs = collectInputsByType(inputs);
   const chipValues = collectChipValues(inputs, node.data);
 
-  console.log(`[Executor] Running Replicate Video node ${node.id}`, { model, connectedInputs });
+  logger.debug(`[Executor] Running Replicate Video node ${node.id}`, { model, connectedInputs });
 
   // Add fallback video URL from node data if available
   const fallbackVideo = node.data.videoUrl ? node.data.videoUrl.trim() : '';
@@ -794,7 +795,7 @@ async function executeVideoNode(
     // Fetch model schema for validation and input building
     const schema = await fetchModelSchema(model);
 
-    console.log(`[Executor] Connected inputs:`, connectedInputs);
+    logger.debug(`[Executor] Connected inputs:`, connectedInputs);
 
     // Validate connected inputs against schema
     validateConnectedInputs(schema, connectedInputs, node, model);
@@ -811,17 +812,17 @@ async function executeVideoNode(
       unknown
     >;
 
-    console.log(`[Executor] Built input from schema:`, input);
+    logger.debug(`[Executor] Built input from schema:`, input);
 
     return await runReplicatePrediction(model, input, HANDLE_TYPES.VIDEO.type, {
       maxAttempts: 300,
       onProgress: ({ attempts, status }) => {
-        console.log(`[Executor] Polling attempt ${attempts}:`, status);
+        logger.debug(`[Executor] Polling attempt ${attempts}:`, status);
       },
     });
   } catch (schemaError) {
     // Fallback to manual input building if schema fetch fails
-    console.warn(`[Executor] Video schema fetch failed, using fallback:`, schemaError);
+    logger.warn(`[Executor] Video schema fetch failed, using fallback:`, schemaError);
 
     if (connectedInputs.audio.length > 0) {
       throw new Error('Video: audio inputs are not supported for this node.');
@@ -858,12 +859,12 @@ async function executeVideoNode(
       throw new Error('No valid input for video generation');
     }
 
-    console.log(`[Executor] Using fallback input:`, input);
+    logger.debug(`[Executor] Using fallback input:`, input);
 
     return await runReplicatePrediction(model, input, HANDLE_TYPES.VIDEO.type, {
       maxAttempts: 300,
       onProgress: ({ attempts, status }) => {
-        console.log(`[Executor] Polling attempt ${attempts}:`, status);
+        logger.debug(`[Executor] Polling attempt ${attempts}:`, status);
       },
     });
   }
@@ -897,7 +898,7 @@ async function executeAudioNode(
 
   const model = node.data.model || 'meta/musicgen';
 
-  console.log(`[Executor] Running Replicate Audio node ${node.id}`, { model, prompt });
+  logger.debug(`[Executor] Running Replicate Audio node ${node.id}`, { model, prompt });
 
   const input: Record<string, unknown> = { prompt };
 
@@ -920,8 +921,8 @@ async function executeSaveMediaNode(
   _context: ExecutionContext
 ): Promise<NodeOutputs> {
   // Debug logging
-  console.log('[Executor] SaveMediaNode inputs:', inputs);
-  console.log('[Executor] SaveMediaNode node.data:', node.data);
+  logger.debug('[Executor] SaveMediaNode inputs:', inputs);
+  logger.debug('[Executor] SaveMediaNode node.data:', node.data);
 
   // Get URL from any connected input handle or node data
   // Check all possible input handles: file-in, image-in, video-in, text-in, etc.
@@ -932,12 +933,12 @@ async function executeSaveMediaNode(
     const inputValue = (inputData as NodeInputItem)?.value;
     if (inputValue) {
       url = toInputString(inputValue);
-      console.log(`[Executor] SaveMediaNode found input from handle: ${handleId}`);
+      logger.debug(`[Executor] SaveMediaNode found input from handle: ${handleId}`);
       break;
     }
   }
 
-  console.log('[Executor] SaveMediaNode extracted URL:', url);
+  logger.debug('[Executor] SaveMediaNode extracted URL:', url);
 
   if (!url || !url.trim()) {
     throw new Error('No file URL to save. Connect a media output or enter a URL.');
@@ -946,7 +947,7 @@ async function executeSaveMediaNode(
   const filename = node.data.filename ? node.data.filename.trim() : null;
   const destinationFolder = node.data.destinationFolder ? node.data.destinationFolder.trim() : null;
 
-  console.log(`[Executor] Saving media file from URL:`, { url, filename, destinationFolder });
+  logger.debug(`[Executor] Saving media file from URL:`, { url, filename, destinationFolder });
 
   try {
     const savedPath = await invoke<string>('download_and_save_file', {
@@ -955,7 +956,7 @@ async function executeSaveMediaNode(
       destinationFolder,
     });
 
-    console.log(`[Executor] File saved successfully:`, savedPath);
+    logger.debug(`[Executor] File saved successfully:`, savedPath);
 
     return {
       'success-out': {
@@ -966,7 +967,7 @@ async function executeSaveMediaNode(
       },
     };
   } catch (error) {
-    console.error(`[Executor] Error saving file:`, error);
+    logger.error(`[Executor] Error saving file:`, error);
     throw new Error(`Failed to save file: ${(error as Error)?.message || error}`);
   }
 }
@@ -1008,7 +1009,7 @@ async function executeNode(
       // Prefer Replicate URL for remote consumption, fallback to local path
       const outputValue = replicateUrl || mediaPath;
 
-      console.log(`[Executor] Media node ${node.id} output:`, {
+      logger.debug(`[Executor] Media node ${node.id} output:`, {
         mediaType,
         localPath: mediaPath,
         replicateUrl,
@@ -1040,7 +1041,7 @@ async function executeNode(
       const chipContent = data.content || '';
       const chipId = data.chipId || node.id;
 
-      console.log(`[Executor] Chip node ${node.id} output:`, { chipId, content: chipContent });
+      logger.debug(`[Executor] Chip node ${node.id} output:`, { chipId, content: chipContent });
 
       return {
         out: {
@@ -1053,7 +1054,7 @@ async function executeNode(
     }
 
     default:
-      console.warn(`[Executor] Unknown node type: ${type}`);
+      logger.warn(`[Executor] Unknown node type: ${type}`);
       return { passthrough: true };
   }
 }
@@ -1081,14 +1082,14 @@ function dispatchNodeOutput(nodeId: string, outputs: NodeOutputs, edges: Workflo
  * Clean up uploaded Replicate files after workflow execution
  */
 async function cleanupWorkflowFiles(nodes: WorkflowNode[]): Promise<void> {
-  console.log('[Executor] Cleaning up Replicate files...');
+  logger.debug('[Executor] Cleaning up Replicate files...');
 
   const mediaNodes = nodes.filter((node) => node.type === 'media');
   const cleanupPromises = mediaNodes
     .filter((node) => node.data.replicateFileId)
     .map(async (node) => {
       try {
-        console.log(
+        logger.debug(
           `[Executor] Cleaning up file for node ${node.id}: ${node.data.replicateFileId}`
         );
         await deleteFileFromReplicate(node.data.replicateFileId);
@@ -1096,12 +1097,12 @@ async function cleanupWorkflowFiles(nodes: WorkflowNode[]): Promise<void> {
         node.data.replicateFileId = null;
         node.data.replicateUrl = null;
       } catch (error) {
-        console.warn(`[Executor] Failed to cleanup file for node ${node.id}:`, error);
+        logger.warn(`[Executor] Failed to cleanup file for node ${node.id}:`, error);
       }
     });
 
   await Promise.allSettled(cleanupPromises);
-  console.log('[Executor] Cleanup complete');
+  logger.debug('[Executor] Cleanup complete');
 }
 /**
  * Execute workflow using DAG-based orchestration
@@ -1144,12 +1145,12 @@ export async function executeWorkflow({
     // Get execution layers
     const layers = topologicalSort(nodes, graph, inDegree) as WorkflowNode[][];
 
-    console.log(`[Executor] Executing ${nodes.length} nodes in ${layers.length} layers`);
+    logger.debug(`[Executor] Executing ${nodes.length} nodes in ${layers.length} layers`);
 
     // Execute each layer sequentially
     for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
       const layer = layers[layerIndex] as WorkflowNode[];
-      console.log(`[Executor] Layer ${layerIndex + 1}/${layers.length}: ${layer.length} nodes`);
+      logger.debug(`[Executor] Layer ${layerIndex + 1}/${layers.length}: ${layer.length} nodes`);
 
       // Execute all nodes in this layer in parallel
       const layerPromises = layer.map(async (node) => {
@@ -1169,15 +1170,15 @@ export async function executeWorkflow({
 
           // Get inputs for this node
           const inputs = getNodeInputs(node, edges, nodes, nodeOutputs) as NodeInputs;
-          console.log(`[Executor] Node ${node.id} (${node.type}) inputs:`, inputs);
+          logger.debug(`[Executor] Node ${node.id} (${node.type}) inputs:`, inputs);
 
           // Execute the node
           const output = await executeNode(node, inputs, context);
-          console.log(`[Executor] Node ${node.id} (${node.type}) output:`, output);
+          logger.debug(`[Executor] Node ${node.id} (${node.type}) output:`, output);
 
           // Store output
           nodeOutputs[node.id] = output;
-          console.log(`[Executor] Stored outputs:`, nodeOutputs);
+          logger.debug(`[Executor] Stored outputs:`, nodeOutputs);
 
           // Dispatch output to connected nodes
           dispatchNodeOutput(node.id, output, edges);
@@ -1213,7 +1214,7 @@ export async function executeWorkflow({
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[Executor] Workflow completed in ${duration}ms`);
+    logger.debug(`[Executor] Workflow completed in ${duration}ms`);
 
     // Cleanup Replicate files after successful execution
     if (autoCleanup) {
@@ -1231,14 +1232,14 @@ export async function executeWorkflow({
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Executor] Workflow failed:`, error);
+    logger.error(`[Executor] Workflow failed:`, error);
 
     // Cleanup Replicate files even on error
     if (autoCleanup) {
       try {
         await cleanupWorkflowFiles(nodes);
       } catch (cleanupError) {
-        console.warn('[Executor] Cleanup after error failed:', cleanupError);
+        logger.warn('[Executor] Cleanup after error failed:', cleanupError);
       }
     }
 

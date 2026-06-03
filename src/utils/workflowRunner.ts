@@ -7,6 +7,7 @@
 
 import type { Node, Edge } from 'reactflow';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -317,12 +318,12 @@ export async function runWorkflowDAG({
     // Get execution layers via topological sort
     const layers = topologicalSort(nodes, graph, inDegree);
 
-    console.log(`[WorkflowRunner] Executing ${nodes.length} nodes in ${layers.length} layers`);
+    logger.debug(`[WorkflowRunner] Executing ${nodes.length} nodes in ${layers.length} layers`);
 
     // Execute each layer
     for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
       const layer = layers[layerIndex] ?? [];
-      console.log(`[WorkflowRunner] Layer ${layerIndex + 1}: ${layer.length} nodes`);
+      logger.debug(`[WorkflowRunner] Layer ${layerIndex + 1}: ${layer.length} nodes`);
 
       // Execute all nodes in this layer in parallel
       const layerPromises = layer.map(async (node): Promise<NodeExecutionResult> => {
@@ -350,7 +351,7 @@ export async function runWorkflowDAG({
           return { nodeId: node.id, success: true, output };
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
-          console.error(`[WorkflowRunner] Error executing node ${node.id}:`, err);
+          logger.error(`[WorkflowRunner] Error executing node ${node.id}:`, err);
           nodeErrors[node.id] = err;
           onNodeError(node, err);
 
@@ -364,7 +365,7 @@ export async function runWorkflowDAG({
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[WorkflowRunner] Workflow completed in ${duration}ms`);
+    logger.debug(`[WorkflowRunner] Workflow completed in ${duration}ms`);
 
     return {
       success: true,
@@ -376,7 +377,7 @@ export async function runWorkflowDAG({
   } catch (error) {
     const duration = Date.now() - startTime;
     const err = error instanceof Error ? error : new Error(String(error));
-    console.error(`[WorkflowRunner] Workflow failed:`, err);
+    logger.error(`[WorkflowRunner] Workflow failed:`, err);
 
     return {
       success: false,

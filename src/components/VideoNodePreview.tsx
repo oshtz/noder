@@ -7,6 +7,7 @@ import React, { MouseEvent, SyntheticEvent } from 'react';
 import { MinimalPromptInput } from './MinimalPromptInput';
 import { ImagePreviewStrip } from './ImagePreviewStrip';
 
+import { logger } from '../utils/logger';
 interface VideoNodePreviewProps {
   nodeId: string;
   videoUrl: string | null;
@@ -101,7 +102,7 @@ export const VideoNodePreview: React.FC<VideoNodePreviewProps> = ({
           objectFit: 'contain',
         }}
         onError={(e: SyntheticEvent<HTMLVideoElement>) => {
-          console.error('Failed to load video preview:', e);
+          logger.error('Failed to load video preview:', e);
           onVideoError();
         }}
       />

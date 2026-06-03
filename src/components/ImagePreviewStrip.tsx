@@ -4,6 +4,7 @@ import { FaImage } from 'react-icons/fa';
 import { on } from '../utils/eventBus';
 import './ImagePreviewStrip.css';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -183,7 +184,7 @@ export const ImagePreviewStrip: React.FC<ImagePreviewStripProps> = ({ nodeId }) 
    * Handle image load errors with logging
    */
   const handleImageError = useCallback((url: string, index: number): void => {
-    console.error('Failed to load image preview:', {
+    logger.error('Failed to load image preview:', {
       url: url.substring(0, 100) + '...',
       index,
       isDataUrl: url.startsWith('data:'),
@@ -196,7 +197,7 @@ export const ImagePreviewStrip: React.FC<ImagePreviewStripProps> = ({ nodeId }) 
    * Handle successful image loads with logging
    */
   const handleImageLoad = useCallback((url: string, index: number): void => {
-    console.log('Successfully loaded image preview:', {
+    logger.debug('Successfully loaded image preview:', {
       url: url.substring(0, 100) + '...',
       index,
       mimeType: url.startsWith('data:') ? url.split(';')[0].split(':')[1] : 'unknown',

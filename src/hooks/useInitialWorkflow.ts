@@ -6,6 +6,7 @@ import { prepareEdges } from '../utils/workflowHelpers';
 import type { WorkflowDocument } from '../utils/workflowSchema';
 import type { ValidationError } from '../types/components';
 
+import { logger } from '../utils/logger';
 export interface InitialWorkflowResult {
   initialNodes: Node[];
   initialEdges: Edge[];
@@ -28,7 +29,7 @@ export function useInitialWorkflow(): InitialWorkflowResult {
         return migrateWorkflowDocument(JSON.parse(storedDoc));
       }
     } catch (error) {
-      console.error('Failed to parse stored workflow document:', error);
+      logger.error('Failed to parse stored workflow document:', error);
     }
 
     // Legacy fallback
@@ -54,7 +55,7 @@ export function useInitialWorkflow(): InitialWorkflowResult {
         validationErrorsRef
       );
     } catch (error) {
-      console.error('Error loading edges:', error);
+      logger.error('Error loading edges:', error);
       return [];
     }
   }, [initialWorkflow.edges, initialWorkflow.nodes]);

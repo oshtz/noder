@@ -7,6 +7,7 @@
 import type { Node, XYPosition } from 'reactflow';
 import type { NodeHandle } from '../types/components';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -107,7 +108,7 @@ export const sortNodesForReactFlow = <T extends Node>(nodes: T[]): T[] => {
 
     // If node has a parent reference but that parent doesn't exist, remove the reference
     if (parentId && !existingNodeIds.has(parentId)) {
-      console.warn(
+      logger.warn(
         `[sortNodesForReactFlow] Removing orphaned parentNode reference "${parentId}" from node "${node.id}"`
       );
       const { parentNode: _parentNode, parentId: _parentId, extent: _extent, ...cleanNode } = node;

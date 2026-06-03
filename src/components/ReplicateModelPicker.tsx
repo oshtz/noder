@@ -27,6 +27,7 @@ import type { FalModel, FalModelCategory } from '../api/fal';
 import type { ReplicateModel } from '../types/tauri';
 import './ReplicateModelPicker.css';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -136,7 +137,7 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
 
   // Handle Replicate cache updates
   const handleReplicateCacheUpdate: ReplicateOnUpdateCallback = useCallback((updatedModels) => {
-    console.log('[ModelPicker] Replicate cache updated with', updatedModels.length, 'models');
+    logger.debug('[ModelPicker] Replicate cache updated with', updatedModels.length, 'models');
     const unified = updatedModels.map((m) => toUnifiedModel(m, 'replicate'));
     setModels((prev) => {
       const otherModels = prev.filter((m) => m.source !== 'replicate');
@@ -146,7 +147,7 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
 
   // Handle OpenRouter cache updates
   const handleOpenRouterCacheUpdate = useCallback((updatedModels: OpenRouterModel[]) => {
-    console.log('[ModelPicker] OpenRouter cache updated with', updatedModels.length, 'models');
+    logger.debug('[ModelPicker] OpenRouter cache updated with', updatedModels.length, 'models');
     const unified = updatedModels.map((m) => toUnifiedModel(m, 'openrouter'));
     setModels((prev) => {
       const otherModels = prev.filter((m) => m.source !== 'openrouter');
@@ -156,7 +157,7 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
 
   // Handle Fal cache updates
   const handleFalCacheUpdate: OnFalUpdateCallback = useCallback((updatedModels) => {
-    console.log('[ModelPicker] Fal cache updated with', updatedModels.length, 'models');
+    logger.debug('[ModelPicker] Fal cache updated with', updatedModels.length, 'models');
     const unified = updatedModels.map((m) => toUnifiedModel(m, 'fal'));
     setModels((prev) => {
       const otherModels = prev.filter((m) => m.source !== 'fal');
@@ -193,9 +194,9 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
             );
             const unified = replicateModels.map((m) => toUnifiedModel(m, 'replicate'));
             allModels.push(...unified);
-            console.log('[ModelPicker] Loaded', replicateModels.length, 'Replicate models');
+            logger.debug('[ModelPicker] Loaded', replicateModels.length, 'Replicate models');
           } catch (err) {
-            console.error('[ModelPicker] Error loading Replicate models:', err);
+            logger.error('[ModelPicker] Error loading Replicate models:', err);
           }
         }
 
@@ -208,9 +209,9 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
             );
             const unified = openrouterModels.map((m) => toUnifiedModel(m, 'openrouter'));
             allModels.push(...unified);
-            console.log('[ModelPicker] Loaded', openrouterModels.length, 'OpenRouter models');
+            logger.debug('[ModelPicker] Loaded', openrouterModels.length, 'OpenRouter models');
           } catch (err) {
-            console.error('[ModelPicker] Error loading OpenRouter models:', err);
+            logger.error('[ModelPicker] Error loading OpenRouter models:', err);
           }
         }
 
@@ -231,9 +232,9 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
             }
             const unified = falModels.map((m) => toUnifiedModel(m, 'fal'));
             allModels.push(...unified);
-            console.log('[ModelPicker] Loaded', falModels.length, 'Fal models');
+            logger.debug('[ModelPicker] Loaded', falModels.length, 'Fal models');
           } catch (err) {
-            console.error('[ModelPicker] Error loading Fal models:', err);
+            logger.error('[ModelPicker] Error loading Fal models:', err);
           }
         }
 
@@ -244,7 +245,7 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
           return [...prev, ...newModels];
         });
       } catch (err) {
-        console.error('[ModelPicker] Error loading models:', err);
+        logger.error('[ModelPicker] Error loading models:', err);
         setError('Failed to load models. Using manual input.');
       } finally {
         setLoading(false);

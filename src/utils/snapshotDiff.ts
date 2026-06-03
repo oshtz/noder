@@ -6,6 +6,7 @@
 import { compare, applyPatch as jsonApplyPatch, Operation } from 'fast-json-patch';
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -201,7 +202,7 @@ export function reconstructState<T>(snapshots: Snapshot<T>[], targetIndex: numbe
   }
 
   if (baseState === null) {
-    console.error('Could not find base snapshot for reconstruction');
+    logger.error('Could not find base snapshot for reconstruction');
     return null;
   }
 

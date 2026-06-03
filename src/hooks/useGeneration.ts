@@ -13,6 +13,7 @@ import { fetchModelSchema, buildReplicateInput } from '../utils/replicateSchemaC
 import { chatCompletion } from '../api/openrouter';
 import { getApiKey } from '../api/settings';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Provider Detection
 // =============================================================================
@@ -166,7 +167,7 @@ async function urlToDataUrl(url: string): Promise<string> {
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error(`Failed to convert URL to data URL: ${url}`, error);
+    logger.error(`Failed to convert URL to data URL: ${url}`, error);
     throw error;
   }
 }
@@ -198,7 +199,7 @@ async function collectConnectedImages(
         const dataUrl = await urlToDataUrl(sourceData.output);
         collectedImages.push(dataUrl);
       } catch (error) {
-        console.warn(`Failed to convert image URL, skipping: ${sourceData.output}`, error);
+        logger.warn(`Failed to convert image URL, skipping: ${sourceData.output}`, error);
       }
     } else if (sourceData.mediaPath) {
       const mediaPath = sourceData.mediaPath as string;
@@ -339,7 +340,7 @@ export function useGeneration<
         audio: externalInputs?.audio ? [externalInputs.audio] : [],
       };
 
-      console.log(`[useGeneration] Using provider: ${provider} for model: ${formState.model}`);
+      logger.debug(`[useGeneration] Using provider: ${provider} for model: ${formState.model}`);
 
       // Route to OpenRouter for text generation with supported providers
       if (provider === 'openrouter' && config.type === 'text') {
@@ -370,7 +371,7 @@ export function useGeneration<
           messages.push({ role: 'user', content: prompt });
         }
 
-        console.log('[useGeneration] Calling OpenRouter:', { model: formState.model, messages });
+        logger.debug('[useGeneration] Calling OpenRouter:', { model: formState.model, messages });
 
         const response = await chatCompletion({
           apiKey,
@@ -399,12 +400,12 @@ export function useGeneration<
           const schema = await fetchModelSchema(formState.model);
           input = buildReplicateInput(schema, connectedInputsData, formState);
         } catch (schemaError) {
-          console.warn('Schema fetch failed, using fallback:', schemaError);
+          logger.warn('Schema fetch failed, using fallback:', schemaError);
           input = buildFallbackInput(formState, connectedInputsData, config.type);
         }
       }
 
-      console.log(`Creating Replicate ${config.type} prediction:`, {
+      logger.debug(`Creating Replicate ${config.type} prediction:`, {
         model: formState.model,
         input,
       });
@@ -415,7 +416,7 @@ export function useGeneration<
         input,
       })) as Prediction;
 
-      console.log('Prediction created:', prediction);
+      logger.debug('Prediction created:', prediction);
 
       // Poll for completion
       let currentPrediction = prediction;
@@ -437,7 +438,7 @@ export function useGeneration<
         setPollingProgress({ attempts, maxAttempts, elapsedSeconds });
 
         if (attempts % 10 === 0) {
-          console.log(`Polling attempt ${attempts}:`, currentPrediction.status);
+          logger.debug(`Polling attempt ${attempts}:`, currentPrediction.status);
         }
       }
 
@@ -459,7 +460,7 @@ export function useGeneration<
         throw new Error('Prediction timed out');
       }
     } catch (e) {
-      console.error(`Error generating ${config.type}:`, e);
+      logger.error(`Error generating ${config.type}:`, e);
       const errorMessage = e instanceof Error ? e.message : String(e);
       setError(errorMessage || 'Failed to run model');
     } finally {

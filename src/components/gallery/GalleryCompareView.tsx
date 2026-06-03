@@ -2,6 +2,7 @@ import React, { SyntheticEvent } from 'react';
 import { FaPlay, FaMusic, FaFileAlt, FaExchangeAlt, FaSpinner, FaPlus } from 'react-icons/fa';
 import { Output, CompareTarget, isLocalPath } from './types';
 
+import { logger } from '../../utils/logger';
 interface GalleryCompareViewProps {
   outputs: Output[];
   compareLeftIndex: number;
@@ -35,7 +36,7 @@ const renderCompareMedia = (
         alt={output.prompt || 'Comparison output'}
         className="compare-image"
         onError={(e: SyntheticEvent<HTMLImageElement>) => {
-          console.error('Failed to load image:', output.value);
+          logger.error('Failed to load image:', output.value);
           e.currentTarget.style.display = 'none';
         }}
       />
@@ -49,7 +50,7 @@ const renderCompareMedia = (
         controls
         className="compare-video"
         onError={() => {
-          console.error('Failed to load video:', output.value);
+          logger.error('Failed to load video:', output.value);
         }}
       />
     );
@@ -62,7 +63,7 @@ const renderCompareMedia = (
         controls
         className="compare-audio"
         onError={() => {
-          console.error('Failed to load audio:', output.value);
+          logger.error('Failed to load audio:', output.value);
         }}
       />
     );

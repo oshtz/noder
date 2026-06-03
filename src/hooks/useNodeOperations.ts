@@ -7,6 +7,7 @@ import { markEdgeGlows } from '../utils/workflowHelpers';
 import { getHelperLines } from '../components/HelperLines';
 import { nodeCreators } from '../nodes';
 
+import { logger } from '../utils/logger';
 export interface NodeOperationsConfig {
   nodes: Node[];
   edges: Edge[];
@@ -66,7 +67,7 @@ export function useNodeOperations({
         try {
           await deleteFileFromReplicate(nodeToRemove.data.replicateFileId);
         } catch (error) {
-          console.warn(`Failed to cleanup file for node ${nodeId}:`, error);
+          logger.warn(`Failed to cleanup file for node ${nodeId}:`, error);
         }
       }
 
@@ -115,7 +116,7 @@ export function useNodeOperations({
       const nodeId = `${type}-${Date.now()}`;
       const createNodeFn = nodeCreators[type];
       if (!createNodeFn) {
-        console.error(`No creator function found for node type: ${type}`);
+        logger.error(`No creator function found for node type: ${type}`);
         return null;
       }
 

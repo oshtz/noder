@@ -12,6 +12,7 @@ import {
 } from '../utils/openrouterModelCache';
 import type { OpenRouterModel } from '../api/openrouter';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -328,7 +329,7 @@ export function useAssistantModel({
         setDynamicModels(entries);
         hasLoadedDynamicModels.current = true;
       } catch (err) {
-        console.error('[useAssistantModel] Failed to load dynamic models:', err);
+        logger.error('[useAssistantModel] Failed to load dynamic models:', err);
       } finally {
         setIsLoadingModels(false);
       }

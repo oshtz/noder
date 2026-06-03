@@ -12,6 +12,7 @@ import { markEdgeGlows } from '../utils/workflowHelpers';
 import { nodeTypes as registeredNodeTypes } from '../nodes';
 import type { ValidationError } from '../types/components';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -75,12 +76,12 @@ export function useNodeConnections({
   const onConnectStart = useCallback(
     (event: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams): void => {
       const { nodeId, handleId, handleType } = params;
-      console.log('[onConnectStart] Starting connection from:', { nodeId, handleId, handleType });
+      logger.debug('[onConnectStart] Starting connection from:', { nodeId, handleId, handleType });
 
       const sourceNode = nodes.find((n) => n.id === nodeId);
       if (sourceNode) {
-        console.log('[onConnectStart] Source node:', sourceNode);
-        console.log('[onConnectStart] Source node data.handles:', sourceNode.data?.handles);
+        logger.debug('[onConnectStart] Source node:', sourceNode);
+        logger.debug('[onConnectStart] Source node data.handles:', sourceNode.data?.handles);
 
         let handles = (sourceNode.data?.handles || []) as HandleDefinition[];
         let handle = handles.find((h: HandleDefinition) => h.id === handleId);
@@ -89,14 +90,14 @@ export function useNodeConnections({
           const nodeDef = registeredNodeTypes[sourceNode.type as string] as
             | NodeTypeDefinition
             | undefined;
-          console.log('[onConnectStart] Node definition:', nodeDef);
+          logger.debug('[onConnectStart] Node definition:', nodeDef);
           handles = nodeDef?.defaultData?.handles || [];
           handle = handles.find((h: HandleDefinition) => h.id === handleId);
         }
 
         const dataType = handle?.dataType;
-        console.log('[onConnectStart] Found handle:', handle);
-        console.log('[onConnectStart] Handle data type:', dataType);
+        logger.debug('[onConnectStart] Found handle:', handle);
+        logger.debug('[onConnectStart] Handle data type:', dataType);
 
         setConnectingNodeId(nodeId || null);
         setConnectingHandleId(handleId || null);
@@ -115,15 +116,15 @@ export function useNodeConnections({
    */
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent): void => {
-      console.log('[onConnectEnd] Event:', event);
-      console.log('[onConnectEnd] Connecting from:', {
+      logger.debug('[onConnectEnd] Event:', event);
+      logger.debug('[onConnectEnd] Connecting from:', {
         connectingNodeId,
         connectingHandleId,
         connectingHandleType,
       });
 
       if (!connectingNodeId || !connectingHandleId) {
-        console.log('[onConnectEnd] No connection information available');
+        logger.debug('[onConnectEnd] No connection information available');
         setConnectingNodeId(null);
         setConnectingHandleId(null);
         setConnectingHandleType(null);
@@ -135,8 +136,8 @@ export function useNodeConnections({
       const targetIsRenderer = target.classList.contains('react-flow__renderer');
       const targetIsEdgeLayer = target.classList.contains('react-flow__edges');
 
-      console.log('[onConnectEnd] Target classes:', target.className);
-      console.log(
+      logger.debug('[onConnectEnd] Target classes:', target.className);
+      logger.debug(
         '[onConnectEnd] Is pane/renderer/edges:',
         targetIsPane,
         targetIsRenderer,
@@ -144,7 +145,7 @@ export function useNodeConnections({
       );
 
       if (!targetIsPane && !targetIsRenderer && !targetIsEdgeLayer) {
-        console.log('[onConnectEnd] Not dropped on empty space');
+        logger.debug('[onConnectEnd] Not dropped on empty space');
         setConnectingNodeId(null);
         setConnectingHandleId(null);
         setConnectingHandleType(null);
@@ -153,16 +154,16 @@ export function useNodeConnections({
 
       const sourceNode = nodes.find((n) => n.id === connectingNodeId);
       if (!sourceNode) {
-        console.log('[onConnectEnd] Source node not found');
+        logger.debug('[onConnectEnd] Source node not found');
         setConnectingNodeId(null);
         setConnectingHandleId(null);
         setConnectingHandleType(null);
         return;
       }
 
-      console.log('[onConnectEnd] Source node:', sourceNode.id);
-      console.log('[onConnectEnd] Source handle:', connectingHandleId);
-      console.log('[onConnectEnd] Handle type:', connectingHandleType);
+      logger.debug('[onConnectEnd] Source node:', sourceNode.id);
+      logger.debug('[onConnectEnd] Source handle:', connectingHandleId);
+      logger.debug('[onConnectEnd] Handle type:', connectingHandleType);
 
       const clientX =
         'clientX' in event ? event.clientX : (event as TouchEvent).touches?.[0]?.clientX || 0;
@@ -176,7 +177,7 @@ export function useNodeConnections({
         const relativeX = clientX - bounds.left;
         const relativeY = clientY - bounds.top;
 
-        console.log('[onConnectEnd] Opening NodeSelector at:', {
+        logger.debug('[onConnectEnd] Opening NodeSelector at:', {
           screenX: clientX,
           screenY: clientY,
           relativeX,
@@ -277,7 +278,7 @@ export function useNodeConnections({
       detail: { nodeId: string; updates: Record<string, unknown> };
     }): void => {
       const { nodeId, updates } = event.detail;
-      console.log('[App] Node data updated:', { nodeId, updates });
+      logger.debug('[App] Node data updated:', { nodeId, updates });
       setNodes((nds) =>
         nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...updates } } : n))
       );
@@ -293,7 +294,7 @@ export function useNodeConnections({
     }): void => {
       const { source, sourceHandle, target, handleType } = event.detail;
 
-      console.log('[handleAutoConnect] Attempting auto-connect:', {
+      logger.debug('[handleAutoConnect] Attempting auto-connect:', {
         source,
         sourceHandle,
         target,
@@ -302,27 +303,27 @@ export function useNodeConnections({
 
       const targetNode = nodes.find((n) => n.id === target);
       if (!targetNode) {
-        console.log('[handleAutoConnect] Target node not found:', target);
+        logger.debug('[handleAutoConnect] Target node not found:', target);
         return;
       }
 
-      console.log('[handleAutoConnect] Target node found:', targetNode);
+      logger.debug('[handleAutoConnect] Target node found:', targetNode);
 
       const targetNodeDef = registeredNodeTypes[targetNode.type as string] as
         | NodeTypeDefinition
         | undefined;
       if (!targetNodeDef) {
-        console.log('[handleAutoConnect] Node definition not found for type:', targetNode.type);
+        logger.debug('[handleAutoConnect] Node definition not found for type:', targetNode.type);
         return;
       }
 
       const handles = targetNode.data?.handles || targetNodeDef.handles || [];
-      console.log('[handleAutoConnect] Available handles:', handles);
+      logger.debug('[handleAutoConnect] Available handles:', handles);
 
       const compatibleHandle = handles.find((h: HandleDefinition) => {
         const isInput = h.type === 'input' || h.type === 'target';
         const isCompatible = h.dataType === handleType;
-        console.log('[handleAutoConnect] Checking handle:', h.id, {
+        logger.debug('[handleAutoConnect] Checking handle:', h.id, {
           isInput,
           isCompatible,
           handleDataType: h.dataType,
@@ -332,7 +333,7 @@ export function useNodeConnections({
       });
 
       if (compatibleHandle) {
-        console.log('[handleAutoConnect] Compatible handle found:', compatibleHandle.id);
+        logger.debug('[handleAutoConnect] Compatible handle found:', compatibleHandle.id);
         onConnect({
           source: source,
           sourceHandle: sourceHandle,
@@ -340,7 +341,7 @@ export function useNodeConnections({
           targetHandle: compatibleHandle.id,
         });
       } else {
-        console.log('[handleAutoConnect] No compatible handle found');
+        logger.debug('[handleAutoConnect] No compatible handle found');
       }
     };
 

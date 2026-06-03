@@ -4,6 +4,7 @@ import BaseNode from '../../components/BaseNode';
 import { HANDLE_TYPES, HandleDataType } from '../../constants/handleTypes';
 import { emit, on } from '../../utils/eventBus';
 
+import { logger } from '../../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -111,7 +112,7 @@ const DisplayTextNode: React.FC<DisplayTextNodeProps> = ({ id, data, selected, c
   // Listen for input from connected nodes
   useEffect(() => {
     const handleNodeContentChanged = (event: NodeContentChangedEvent): void => {
-      console.log('Display node received content event:', event.detail);
+      logger.debug('Display node received content event:', event.detail);
       const { sourceId, targetId, targetHandle, content: contentPayload } = event.detail;
 
       // Generate a unique event identifier
@@ -128,7 +129,7 @@ const DisplayTextNode: React.FC<DisplayTextNodeProps> = ({ id, data, selected, c
         targetHandle === 'text-in' &&
         contentPayload?.type === HANDLE_TYPES.TEXT.type
       ) {
-        console.log('Display node updating content:', contentPayload.value);
+        logger.debug('Display node updating content:', contentPayload.value);
         setError(null);
         setContent(contentPayload.value);
 

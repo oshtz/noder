@@ -1,6 +1,7 @@
 import Database from '@tauri-apps/plugin-sql';
 import { isTauriRuntime } from './runtime';
 
+import { logger } from './logger';
 type ExecuteResult = {
   lastInsertId?: number | null;
 };
@@ -87,12 +88,12 @@ export async function initDatabase(): Promise<SqlDatabase> {
   }
 
   if (db) {
-    console.log('[Database] Already initialized, returning existing connection');
+    logger.debug('[Database] Already initialized, returning existing connection');
     return db;
   }
 
   try {
-    console.log('[Database] Initializing database...');
+    logger.debug('[Database] Initializing database...');
     // Load or create the database
     const loaded = await Database.load('sqlite:noder.db');
     db = loaded as SqlDatabase;
@@ -100,10 +101,10 @@ export async function initDatabase(): Promise<SqlDatabase> {
     if (!database) {
       throw new Error('Database failed to load');
     }
-    console.log('[Database] Database loaded successfully');
+    logger.debug('[Database] Database loaded successfully');
 
     // Create outputs table
-    console.log('[Database] Creating outputs table...');
+    logger.debug('[Database] Creating outputs table...');
     await database.execute(`
       CREATE TABLE IF NOT EXISTS outputs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +123,7 @@ export async function initDatabase(): Promise<SqlDatabase> {
     // Add original_url column if it doesn't exist (migration for existing databases)
     try {
       await database.execute(`ALTER TABLE outputs ADD COLUMN original_url TEXT`);
-      console.log('[Database] Added original_url column');
+      logger.debug('[Database] Added original_url column');
     } catch (e) {
       // Column likely already exists, ignore
     }
@@ -155,23 +156,23 @@ export async function initDatabase(): Promise<SqlDatabase> {
       const count = await database.select<{ count: number }>(
         'SELECT COUNT(*) as count FROM outputs'
       );
-      console.log('[Database] Current outputs count:', count[0]?.count || 0);
+      logger.debug('[Database] Current outputs count:', count[0]?.count || 0);
 
       // Show latest output if any
       if (count[0]?.count > 0) {
         const latest = await database.select<
           Pick<OutputRow, 'id' | 'type' | 'value' | 'timestamp'>
         >('SELECT id, type, value, timestamp FROM outputs ORDER BY timestamp DESC LIMIT 1');
-        console.log('[Database] Latest output:', latest[0]);
+        logger.debug('[Database] Latest output:', latest[0]);
       }
     } catch (e) {
-      console.log('[Database] Could not get count:', e);
+      logger.debug('[Database] Could not get count:', e);
     }
 
-    console.log('[Database] Database initialized successfully');
+    logger.debug('[Database] Database initialized successfully');
     return database;
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    logger.error('Failed to initialize database:', error);
     throw error;
   }
 }
@@ -197,11 +198,11 @@ export async function saveOutput(output: OutputInput): Promise<number | null | u
     return id;
   }
 
-  console.log('[Database] saveOutput called with:', output);
+  logger.debug('[Database] saveOutput called with:', output);
   const database = await initDatabase();
 
   try {
-    console.log('[Database] Executing INSERT with params:', {
+    logger.debug('[Database] Executing INSERT with params:', {
       type: output.type,
       value: output.value?.substring(0, 50) + '...',
       originalUrl: output.originalUrl ? output.originalUrl.substring(0, 50) + '...' : null,
@@ -227,10 +228,10 @@ export async function saveOutput(output: OutputInput): Promise<number | null | u
       ]
     );
 
-    console.log('[Database] Output saved successfully. ID:', result.lastInsertId);
+    logger.debug('[Database] Output saved successfully. ID:', result.lastInsertId);
     return result.lastInsertId;
   } catch (error) {
-    console.error('[Database] Failed to save output:', error);
+    logger.error('[Database] Failed to save output:', error);
     throw error;
   }
 }
@@ -248,7 +249,7 @@ export async function getOutputs({
     return filtered.slice(offset, offset + limit);
   }
 
-  console.log('[Database] getOutputs called with:', { type, limit, offset });
+  logger.debug('[Database] getOutputs called with:', { type, limit, offset });
   const database = await initDatabase();
 
   try {
@@ -272,13 +273,13 @@ export async function getOutputs({
       params.push(offset);
     }
 
-    console.log('[Database] Executing query:', query, 'params:', params);
+    logger.debug('[Database] Executing query:', query, 'params:', params);
 
     const outputs = await database.select<OutputRow>(query, params);
-    console.log('[Database] Query returned', outputs?.length || 0, 'outputs');
+    logger.debug('[Database] Query returned', outputs?.length || 0, 'outputs');
     return outputs;
   } catch (error) {
-    console.error('Failed to get outputs:', error);
+    logger.error('Failed to get outputs:', error);
     throw error;
   }
 }
@@ -297,7 +298,7 @@ export async function getOutputById(id: number): Promise<OutputRow | null> {
     const outputs = await database.select<OutputRow>('SELECT * FROM outputs WHERE id = ?', [id]);
     return outputs[0] || null;
   } catch (error) {
-    console.error('Failed to get output by ID:', error);
+    logger.error('Failed to get output by ID:', error);
     throw error;
   }
 }
@@ -316,9 +317,9 @@ export async function deleteOutput(id: number): Promise<void> {
 
   try {
     await database.execute('DELETE FROM outputs WHERE id = ?', [id]);
-    console.log('Output deleted:', id);
+    logger.debug('Output deleted:', id);
   } catch (error) {
-    console.error('Failed to delete output:', error);
+    logger.error('Failed to delete output:', error);
     throw error;
   }
 }
@@ -336,9 +337,9 @@ export async function clearAllOutputs(): Promise<void> {
 
   try {
     await database.execute('DELETE FROM outputs');
-    console.log('All outputs cleared');
+    logger.debug('All outputs cleared');
   } catch (error) {
-    console.error('Failed to clear outputs:', error);
+    logger.error('Failed to clear outputs:', error);
     throw error;
   }
 }
@@ -367,7 +368,7 @@ export async function getOutputStats(): Promise<OutputStatsRow[]> {
     `);
     return stats;
   } catch (error) {
-    console.error('Failed to get output stats:', error);
+    logger.error('Failed to get output stats:', error);
     throw error;
   }
 }
@@ -397,10 +398,10 @@ export async function saveWorkflowToHistory(
       ]
     );
 
-    console.log('Workflow saved to history:', result);
+    logger.debug('Workflow saved to history:', result);
     return result.lastInsertId;
   } catch (error) {
-    console.error('Failed to save workflow to history:', error);
+    logger.error('Failed to save workflow to history:', error);
     throw error;
   }
 }
@@ -433,7 +434,7 @@ export async function getWorkflowHistory({
       edges: JSON.parse(wf.edges),
     }));
   } catch (error) {
-    console.error('Failed to get workflow history:', error);
+    logger.error('Failed to get workflow history:', error);
     throw error;
   }
 }
@@ -450,9 +451,9 @@ export async function deleteWorkflow(id: number): Promise<void> {
 
   try {
     await database.execute('DELETE FROM workflow_history WHERE id = ?', [id]);
-    console.log('Workflow deleted:', id);
+    logger.debug('Workflow deleted:', id);
   } catch (error) {
-    console.error('Failed to delete workflow:', error);
+    logger.error('Failed to delete workflow:', error);
     throw error;
   }
 }

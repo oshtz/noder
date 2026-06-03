@@ -31,6 +31,7 @@ import './WelcomeScreen.css';
 import noderLogo from '../../noderBG.png';
 import FaultyTerminal from './FaultyTerminal';
 import { useShowAssistantPanel } from '../stores/useSettingsStore';
+import { logger } from '../utils/logger';
 import type {
   WorkflowTemplate as Template,
   TemplateCategory as WorkflowTemplateCategory,
@@ -247,7 +248,7 @@ const WorkflowsList = React.memo<WorkflowsListProps>(({ onLoadWorkflow }) => {
         const workflowsList = (await invoke('list_workflows')) as Workflow[];
         setWorkflows(Array.isArray(workflowsList) ? workflowsList : []);
       } catch (error) {
-        console.error('Failed to load workflows:', error);
+        logger.error('Failed to load workflows:', error);
         setWorkflows([]);
       } finally {
         setLoading(false);
@@ -342,7 +343,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     try {
       localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
     } catch (error) {
-      console.error('Failed to save view mode:', error);
+      logger.error('Failed to save view mode:', error);
     }
   }, [viewMode]);
 

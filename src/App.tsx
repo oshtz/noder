@@ -73,6 +73,7 @@ import { useExecutionProgress } from './stores/useExecutionStore';
 import { useSidebarProps } from './hooks/useSidebarProps';
 import { setGlobalWorkflowRefs } from './context/WorkflowContext';
 
+import { logger } from './utils/logger';
 // =============================================================================
 // Node/Edge Types
 // =============================================================================
@@ -127,7 +128,7 @@ function App(): React.ReactElement {
       .getState()
       .loadFromTauri()
       .catch((err) => {
-        console.warn('Failed to load settings from Tauri:', err);
+        logger.warn('Failed to load settings from Tauri:', err);
       });
   }, []);
 
@@ -169,7 +170,7 @@ function App(): React.ReactElement {
       const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
       if (storedTemplates) return normalizeTemplates(JSON.parse(storedTemplates));
     } catch (error) {
-      console.error('Failed to parse stored workflow templates:', error);
+      logger.error('Failed to parse stored workflow templates:', error);
     }
     return normalizeTemplates(workflowTemplates);
   });
@@ -485,7 +486,7 @@ function App(): React.ReactElement {
   useEffect(() => {
     db.getOutputs({ limit: 100 })
       .then((outputs) => outputs?.length && setWorkflowOutputs(outputs))
-      .catch((err) => console.error('Failed to load outputs:', err));
+      .catch((err) => logger.error('Failed to load outputs:', err));
   }, []);
 
   // Update edge type when setting changes

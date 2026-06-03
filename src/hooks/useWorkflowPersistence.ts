@@ -15,6 +15,7 @@ import { sortNodesForReactFlow } from '../utils/createNode';
 import { isTauriRuntime } from '../utils/runtime';
 import { notifyError, notifySuccess, promptForText } from '../utils/appFeedback';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -102,7 +103,7 @@ const readWorkflowHistory = (): WorkflowHistoryEntry[] => {
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    console.warn('[History] Failed to read workflow history:', error);
+    logger.warn('[History] Failed to read workflow history:', error);
     return [];
   }
 };
@@ -114,7 +115,7 @@ const writeWorkflowHistory = (entries: WorkflowHistoryEntry[]): void => {
   try {
     localStorage.setItem(WORKFLOW_HISTORY_KEY, JSON.stringify(entries));
   } catch (error) {
-    console.warn('[History] Failed to write workflow history:', error);
+    logger.warn('[History] Failed to write workflow history:', error);
   }
 };
 
@@ -235,7 +236,7 @@ export function useWorkflowPersistence({
       setHasUnsavedChanges(false);
       notifySuccess(`Saved "${trimmedName}".`, 'Workflow Saved');
     } catch (error) {
-      console.error('Failed to save workflow:', error);
+      logger.error('Failed to save workflow:', error);
       notifyError('Failed to save workflow. Please try again.');
     }
   }, [prepareWorkflowData]);
@@ -266,10 +267,10 @@ export function useWorkflowPersistence({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      console.log('[Export] Workflow exported successfully:', workflowName);
+      logger.debug('[Export] Workflow exported successfully:', workflowName);
       notifySuccess(`Exported "${workflowName}".`, 'Workflow Exported');
     } catch (error) {
-      console.error('[Export] Failed to export workflow:', error);
+      logger.error('[Export] Failed to export workflow:', error);
       notifyError('Failed to export workflow. Please try again.');
     }
   }, [activeWorkflow, workflowMetadata, prepareWorkflowData]);
@@ -312,7 +313,7 @@ export function useWorkflowPersistence({
       setHasUnsavedChanges(false);
       return document;
     } catch (error) {
-      console.error('Failed to save workflow:', error);
+      logger.error('Failed to save workflow:', error);
       return null;
     }
   }, [activeWorkflow, prepareWorkflowData]);
@@ -508,7 +509,7 @@ export function useWorkflowPersistence({
             event.preventDefault();
             await saveCurrentWorkflowRef.current?.();
           } catch (error) {
-            console.error('Failed to save workflow before close:', error);
+            logger.error('Failed to save workflow before close:', error);
           } finally {
             if (removeCloseListener) {
               removeCloseListener();
@@ -518,7 +519,7 @@ export function useWorkflowPersistence({
           }
         });
       } catch (error) {
-        console.error('Failed to register close handler:', error);
+        logger.error('Failed to register close handler:', error);
       }
     };
 
@@ -562,7 +563,7 @@ export function useWorkflowPersistence({
       try {
         localStorage.setItem('noder-nodes', JSON.stringify(sanitizedNodes));
       } catch (error) {
-        console.error('Failed to save nodes to localStorage:', error);
+        logger.error('Failed to save nodes to localStorage:', error);
         try {
           const minimalNodes = nodes.map((node) => ({
             ...node,
@@ -574,7 +575,7 @@ export function useWorkflowPersistence({
           }));
           localStorage.setItem('noder-nodes', JSON.stringify(minimalNodes));
         } catch (e) {
-          console.error('Failed to save even minimal nodes:', e);
+          logger.error('Failed to save even minimal nodes:', e);
         }
       }
     }
@@ -647,7 +648,7 @@ export function useWorkflowPersistence({
     try {
       localStorage.setItem(LOCAL_WORKFLOW_KEY, JSON.stringify(document));
     } catch (error) {
-      console.error('Failed to persist local workflow document:', error);
+      logger.error('Failed to persist local workflow document:', error);
     }
   }, [nodes, edges, workflowMetadata, activeWorkflow]);
 

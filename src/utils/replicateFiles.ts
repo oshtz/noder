@@ -6,6 +6,7 @@
 import { invoke } from '../types/tauri';
 import type { ReplicateFileUpload } from '../types/tauri';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -78,7 +79,7 @@ export async function isReplicateUrlValid(url: string | null | undefined): Promi
     const response = await fetch(url, { method: 'HEAD' });
     return response.ok; // 200-299 status codes
   } catch (error) {
-    console.warn('[ReplicateFiles] URL validation failed:', error);
+    logger.warn('[ReplicateFiles] URL validation failed:', error);
     return false;
   }
 }
@@ -99,13 +100,13 @@ export async function isCacheValid(
 
   // No cached URL
   if (!replicateUrl) {
-    console.log('[ReplicateFiles] Cache miss: no replicateUrl');
+    logger.debug('[ReplicateFiles] Cache miss: no replicateUrl');
     return false;
   }
 
   // Media path changed - need to re-upload
   if (uploadedMediaPath && uploadedMediaPath !== currentMediaPath) {
-    console.log('[ReplicateFiles] Cache miss: mediaPath changed', {
+    logger.debug('[ReplicateFiles] Cache miss: mediaPath changed', {
       uploadedMediaPath,
       currentMediaPath,
     });
@@ -117,7 +118,7 @@ export async function isCacheValid(
     const expiresAt = new Date(replicateExpiresAt).getTime();
     const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
     if (Date.now() > expiresAt - bufferMs) {
-      console.log('[ReplicateFiles] Cache miss: URL expired or expiring soon');
+      logger.debug('[ReplicateFiles] Cache miss: URL expired or expiring soon');
       return false;
     }
   }
@@ -126,12 +127,12 @@ export async function isCacheValid(
   if (verifyUrl) {
     const isValid = await isReplicateUrlValid(replicateUrl);
     if (!isValid) {
-      console.log('[ReplicateFiles] Cache miss: URL no longer accessible');
+      logger.debug('[ReplicateFiles] Cache miss: URL no longer accessible');
       return false;
     }
   }
 
-  console.log('[ReplicateFiles] Cache hit: using existing replicateUrl');
+  logger.debug('[ReplicateFiles] Cache hit: using existing replicateUrl');
   return true;
 }
 
@@ -177,7 +178,7 @@ export async function uploadFileToReplicate(
     // Extract filename from path
     const filename = filePath.split(/[\\/]/).pop() || `upload.${extension}`;
 
-    console.log(`[ReplicateFiles] Uploading file: ${filename} (${contentType})`);
+    logger.debug(`[ReplicateFiles] Uploading file: ${filename} (${contentType})`);
 
     const response: ReplicateFileUpload = await invoke('replicate_upload_file', {
       filePath,
@@ -185,8 +186,8 @@ export async function uploadFileToReplicate(
       contentType,
     });
 
-    console.log(`[ReplicateFiles] File uploaded successfully:`, response);
-    console.log(`[ReplicateFiles] Extracted URL for use:`, response.urls.get);
+    logger.debug(`[ReplicateFiles] File uploaded successfully:`, response);
+    logger.debug(`[ReplicateFiles] Extracted URL for use:`, response.urls.get);
 
     return {
       id: response.id,
@@ -197,7 +198,7 @@ export async function uploadFileToReplicate(
     };
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    console.error('[ReplicateFiles] Upload failed:', err);
+    logger.error('[ReplicateFiles] Upload failed:', err);
     throw new Error(`Failed to upload file to Replicate: ${err.message}`);
   }
 }
@@ -208,18 +209,18 @@ export async function uploadFileToReplicate(
  */
 export async function deleteFileFromReplicate(fileId: string | null | undefined): Promise<void> {
   if (!fileId) {
-    console.warn('[ReplicateFiles] No file ID provided for deletion');
+    logger.warn('[ReplicateFiles] No file ID provided for deletion');
     return;
   }
 
   try {
-    console.log(`[ReplicateFiles] Deleting file: ${fileId}`);
+    logger.debug(`[ReplicateFiles] Deleting file: ${fileId}`);
     await invoke('replicate_delete_file', { fileId });
-    console.log(`[ReplicateFiles] File deleted successfully: ${fileId}`);
+    logger.debug(`[ReplicateFiles] File deleted successfully: ${fileId}`);
   } catch (error) {
     // Don't throw on delete errors - just log them
     // Files may already be deleted or expired
-    console.warn(`[ReplicateFiles] Failed to delete file ${fileId}:`, error);
+    logger.warn(`[ReplicateFiles] Failed to delete file ${fileId}:`, error);
   }
 }
 
@@ -270,18 +271,18 @@ export class ReplicateFileManager {
     // Check if already uploaded for this node
     const existing = this.uploadedFiles.get(nodeId);
     if (existing && existing.filePath === filePath) {
-      console.log(`[ReplicateFiles] Using cached upload for node ${nodeId}`);
+      logger.debug(`[ReplicateFiles] Using cached upload for node ${nodeId}`);
       return existing.url;
     }
 
     // Check if should upload
     if (!shouldUploadFile(filePath)) {
-      console.log(`[ReplicateFiles] File doesn't need upload: ${filePath}`);
+      logger.debug(`[ReplicateFiles] File doesn't need upload: ${filePath}`);
       return filePath;
     }
 
     // Upload new file
-    console.log(`[ReplicateFiles] Uploading file for node ${nodeId}`);
+    logger.debug(`[ReplicateFiles] Uploading file for node ${nodeId}`);
     const result = await uploadFileToReplicate(filePath, mediaType);
 
     // Clean up old file if exists

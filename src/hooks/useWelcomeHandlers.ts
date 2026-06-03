@@ -11,6 +11,7 @@ import type { WorkflowDocument } from '../utils/workflowSchema';
 import type { WorkflowTemplate } from '../utils/workflowTemplates';
 import type { Workflow } from './useWorkflowPersistence';
 
+import { logger } from '../utils/logger';
 export interface WelcomeHandlersConfig {
   setShowWelcome: React.Dispatch<React.SetStateAction<boolean>>;
   setWelcomePinned: React.Dispatch<React.SetStateAction<boolean>>;
@@ -56,7 +57,7 @@ export function useWelcomeHandlers({
         const workflowsList = (await invoke('list_workflows')) as Workflow[];
         existingIds = Array.isArray(workflowsList) ? workflowsList.map((wf) => wf.id) : [];
       } catch (error) {
-        console.error('Failed to list workflows:', error);
+        logger.error('Failed to list workflows:', error);
       }
 
       const trimmedName = typeof requestedName === 'string' ? requestedName.trim() : '';
@@ -81,7 +82,7 @@ export function useWelcomeHandlers({
       try {
         await invoke('save_workflow', { name: newWorkflow.name, data: document });
       } catch (error) {
-        console.error('Failed to create workflow:', error);
+        logger.error('Failed to create workflow:', error);
       }
 
       await loadWorkflow(newWorkflow);
@@ -123,7 +124,7 @@ export function useWelcomeHandlers({
               : (loadedData as WorkflowDocument);
           await loadWorkflow({ id: workflow.id, name: workflow.name, data: workflowData });
         } catch (error) {
-          console.error('Failed to load workflow from welcome screen:', error);
+          logger.error('Failed to load workflow from welcome screen:', error);
           setSidebarOpen(true);
         }
       } else {

@@ -45,6 +45,7 @@ import { invoke } from '../types/tauri';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import './Sidebar.css';
 
+import { logger } from '../utils/logger';
 // Lazy-loaded components for code splitting
 const SettingsModal = lazy(() => import('./SettingsModal'));
 const OutputGallery = lazy(() =>
@@ -256,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       const workflowsList = (await invoke('list_workflows')) as Workflow[];
       setWorkflows(workflowsList);
     } catch (error) {
-      console.error('Failed to load workflows:', error);
+      logger.error('Failed to load workflows:', error);
     } finally {
       setIsLoadingWorkflows(false);
     }
@@ -314,7 +315,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       setEditingId(null);
       await loadWorkflows();
     } catch (error) {
-      console.error('Failed to rename workflow:', error);
+      logger.error('Failed to rename workflow:', error);
     }
   };
 
@@ -357,7 +358,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
       } catch (error) {
         // 5. Rollback on error
-        console.error('Failed to delete workflow:', error);
+        logger.error('Failed to delete workflow:', error);
         setWorkflows(previousWorkflows);
       }
     }
@@ -381,7 +382,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       };
       onWorkflowLoad(loadedWorkflow);
     } catch (error) {
-      console.error('Failed to load workflow:', error);
+      logger.error('Failed to load workflow:', error);
     }
   };
 
@@ -433,7 +434,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       });
     } catch (error) {
       // 7. Rollback on error
-      console.error('Failed to create workflow:', error);
+      logger.error('Failed to create workflow:', error);
       setWorkflows(previousWorkflows);
     }
   };

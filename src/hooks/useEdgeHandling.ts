@@ -3,6 +3,7 @@ import { Edge, Node, Connection } from 'reactflow';
 import { getHandleColor } from '../constants/handleTypes';
 import { ThemeColors } from '../constants/themes';
 
+import { logger } from '../utils/logger';
 export interface UseEdgeHandlingParams {
   setEdges: Dispatch<SetStateAction<Edge[]>>;
   edgesRef: MutableRefObject<Edge[]>;
@@ -43,7 +44,7 @@ export const useEdgeHandling = (
       );
 
       if (connectionExists) {
-        console.warn('This exact connection already exists');
+        logger.warn('This exact connection already exists');
         return;
       }
 

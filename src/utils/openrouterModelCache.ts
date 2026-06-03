@@ -8,6 +8,7 @@
 
 import { listModels, type OpenRouterModel, type OutputModality } from '../api/openrouter';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -89,7 +90,7 @@ function loadFromStorage(cacheKey: string): StoredCache | null {
       }
     }
   } catch (err) {
-    console.warn('[OpenRouterModelCache] Failed to load from storage:', err);
+    logger.warn('[OpenRouterModelCache] Failed to load from storage:', err);
   }
   return null;
 }
@@ -101,7 +102,7 @@ function saveToStorage(cacheKey: string, data: StoredCache): void {
   try {
     localStorage.setItem(CACHE_STORAGE_PREFIX + cacheKey, JSON.stringify(data));
   } catch (err) {
-    console.warn('[OpenRouterModelCache] Failed to save to storage:', err);
+    logger.warn('[OpenRouterModelCache] Failed to save to storage:', err);
   }
 }
 
@@ -194,7 +195,7 @@ export async function getOpenRouterModels(
           }
         })
         .catch((err) => {
-          console.error('[OpenRouterModelCache] Background refresh failed:', err);
+          logger.error('[OpenRouterModelCache] Background refresh failed:', err);
           const entry = modelListCache.get(cacheKey);
           if (entry) entry.isFetching = false;
         });
@@ -246,7 +247,7 @@ export async function getOpenRouterModels(
 
     return { models, fromCache: false };
   } catch (err) {
-    console.error('[OpenRouterModelCache] Failed to fetch models:', err);
+    logger.error('[OpenRouterModelCache] Failed to fetch models:', err);
     newEntry.isFetching = false;
     throw err;
   }
@@ -291,7 +292,7 @@ export async function refreshModels(outputModality?: OutputModality): Promise<Op
 
     return models;
   } catch (err) {
-    console.error('[OpenRouterModelCache] Failed to refresh models:', err);
+    logger.error('[OpenRouterModelCache] Failed to refresh models:', err);
     throw err;
   }
 }
@@ -328,10 +329,10 @@ export function clearOpenRouterCache(): void {
       }
     });
   } catch (err) {
-    console.warn('[OpenRouterModelCache] Failed to clear storage:', err);
+    logger.warn('[OpenRouterModelCache] Failed to clear storage:', err);
   }
 
-  console.log('[OpenRouterModelCache] Cache cleared');
+  logger.debug('[OpenRouterModelCache] Cache cleared');
 }
 
 /**

@@ -1,3 +1,4 @@
+import { logger } from './logger';
 /**
  * Fal.ai Model List Cache
  *
@@ -96,7 +97,7 @@ function loadFromStorage(cacheKey: string): StoredCache | null {
       }
     }
   } catch (err) {
-    console.warn('[FalModelCache] Failed to load from storage:', err);
+    logger.warn('[FalModelCache] Failed to load from storage:', err);
   }
   return null;
 }
@@ -108,7 +109,7 @@ function saveToStorage(cacheKey: string, data: StoredCache): void {
   try {
     localStorage.setItem(CACHE_STORAGE_PREFIX + cacheKey, JSON.stringify(data));
   } catch (err) {
-    console.warn('[FalModelCache] Failed to save to storage:', err);
+    logger.warn('[FalModelCache] Failed to save to storage:', err);
   }
 }
 
@@ -185,7 +186,7 @@ export async function getFalModels(
           }
         })
         .catch((err) => {
-          console.error('[FalModelCache] Background refresh failed:', err);
+          logger.error('[FalModelCache] Background refresh failed:', err);
           const entry = modelListCache.get(cacheKey);
           if (entry) entry.isFetching = false;
         });
@@ -235,7 +236,7 @@ export async function getFalModels(
 
     return { models, fromCache: false };
   } catch (err) {
-    console.error('[FalModelCache] Failed to fetch models:', err);
+    logger.error('[FalModelCache] Failed to fetch models:', err);
     newEntry.isFetching = false;
     throw err;
   }
@@ -423,10 +424,10 @@ export function clearFalCache(): void {
       }
     });
   } catch (err) {
-    console.warn('[FalModelCache] Failed to clear storage:', err);
+    logger.warn('[FalModelCache] Failed to clear storage:', err);
   }
 
-  console.log('[FalModelCache] Cache cleared');
+  logger.debug('[FalModelCache] Cache cleared');
 }
 
 /**

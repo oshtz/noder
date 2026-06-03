@@ -7,6 +7,7 @@
 
 import { logApiError } from '../utils/errorLogger';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -321,7 +322,7 @@ export async function chatCompletion(
         break;
       }
 
-      console.warn(
+      logger.warn(
         `[OpenRouter API] Request failed (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_DELAY_MS}ms...`
       );
       await delay(RETRY_DELAY_MS * attempt);

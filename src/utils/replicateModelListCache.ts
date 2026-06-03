@@ -8,6 +8,7 @@
 import { invoke } from '../types/tauri';
 import type { ReplicateModel, ReplicateModelsResponse } from '../types/tauri';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -96,7 +97,7 @@ function loadFromStorage(cacheKey: string): StoredCache | null {
       }
     }
   } catch (err) {
-    console.warn('[ModelListCache] Failed to load from storage:', err);
+    logger.warn('[ModelListCache] Failed to load from storage:', err);
   }
   return null;
 }
@@ -108,7 +109,7 @@ function saveToStorage(cacheKey: string, data: StoredCache): void {
   try {
     localStorage.setItem(CACHE_STORAGE_PREFIX + cacheKey, JSON.stringify(data));
   } catch (err) {
-    console.warn('[ModelListCache] Failed to save to storage:', err);
+    logger.warn('[ModelListCache] Failed to save to storage:', err);
   }
 }
 
@@ -147,7 +148,7 @@ async function fetchModelsFromAPI(collectionSlug: CollectionSlug): Promise<Repli
           });
         }
       } catch (err) {
-        console.error(`[ModelListCache] Error fetching from collection ${slug}:`, err);
+        logger.error(`[ModelListCache] Error fetching from collection ${slug}:`, err);
       }
     }
 
@@ -234,7 +235,7 @@ export async function getModels(
           }
         })
         .catch((err) => {
-          console.error('[ModelListCache] Background refresh failed:', err);
+          logger.error('[ModelListCache] Background refresh failed:', err);
           const entry = modelListCache.get(cacheKey);
           if (entry) entry.isFetching = false;
         });
@@ -286,7 +287,7 @@ export async function getModels(
 
     return { models, fromCache: false };
   } catch (err) {
-    console.error('[ModelListCache] Failed to fetch models:', err);
+    logger.error('[ModelListCache] Failed to fetch models:', err);
     newEntry.isFetching = false;
     throw err;
   }
@@ -313,7 +314,7 @@ export async function refreshModels(collectionSlug: CollectionSlug): Promise<Rep
 
     return models;
   } catch (err) {
-    console.error('[ModelListCache] Failed to refresh models:', err);
+    logger.error('[ModelListCache] Failed to refresh models:', err);
     throw err;
   }
 }
@@ -347,10 +348,10 @@ export function clearModelListCache(): void {
       }
     });
   } catch (err) {
-    console.warn('[ModelListCache] Failed to clear storage:', err);
+    logger.warn('[ModelListCache] Failed to clear storage:', err);
   }
 
-  console.log('[ModelListCache] Cache cleared');
+  logger.debug('[ModelListCache] Cache cleared');
 }
 
 /**

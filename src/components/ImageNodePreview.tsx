@@ -7,6 +7,7 @@ import React, { MouseEvent, SyntheticEvent } from 'react';
 import { MinimalPromptInput } from './MinimalPromptInput';
 import { ImagePreviewStrip } from './ImagePreviewStrip';
 
+import { logger } from '../utils/logger';
 interface ImageNodePreviewProps {
   nodeId: string;
   imageUrl: string | null;
@@ -101,7 +102,7 @@ export const ImageNodePreview: React.FC<ImageNodePreviewProps> = ({
           objectFit: 'contain',
         }}
         onError={(_e: SyntheticEvent<HTMLImageElement>) => {
-          console.error('Failed to load image preview:', {
+          logger.error('Failed to load image preview:', {
             url: imageUrl?.substring(0, 100) + (imageUrl?.length > 100 ? '...' : ''),
             isDataUrl: imageUrl?.startsWith('data:'),
             isHttpUrl: imageUrl?.startsWith('http'),

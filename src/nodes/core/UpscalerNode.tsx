@@ -12,6 +12,7 @@ import { emit, on } from '../../utils/eventBus';
 import { fetchModelSchema, buildReplicateInput } from '../../utils/replicateSchemaCache';
 import { Position } from 'reactflow';
 
+import { logger } from '../../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -263,7 +264,7 @@ const UpscalerNode: React.FC<UpscalerNodeProps> = ({ id, data, selected = false 
         };
         input = buildReplicateInput(schema, connectedInputs, formState);
       } catch (schemaError) {
-        console.warn(`[Upscaler] Schema fetch failed, using fallback:`, schemaError);
+        logger.warn(`[Upscaler] Schema fetch failed, using fallback:`, schemaError);
         input = { image: collectedImages[0] };
         if (formState.prompt?.trim()) {
           input.prompt = formState.prompt.trim();
@@ -273,7 +274,7 @@ const UpscalerNode: React.FC<UpscalerNodeProps> = ({ id, data, selected = false 
         }
       }
 
-      console.log('Creating Replicate upscaler prediction:', {
+      logger.debug('Creating Replicate upscaler prediction:', {
         model: formState.model,
         input,
       });
@@ -324,7 +325,7 @@ const UpscalerNode: React.FC<UpscalerNodeProps> = ({ id, data, selected = false 
         throw new Error('Prediction timed out');
       }
     } catch (e) {
-      console.error('Error upscaling image:', e);
+      logger.error('Error upscaling image:', e);
       const errorMessage = e instanceof Error ? e.message : String(e);
       setError(errorMessage || 'Failed to run model');
     } finally {

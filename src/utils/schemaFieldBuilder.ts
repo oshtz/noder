@@ -1,3 +1,4 @@
+import { logger } from './logger';
 /**
  * Utility functions for building dynamic form fields from Replicate model schemas.
  * Used by ImageNode, VideoNode, AudioNode, etc. to create forms based on model capabilities.
@@ -147,9 +148,9 @@ const detectMediaInputType = (
 export const buildDynamicFieldsFromSchema = (schema: ModelSchema): DynamicField[] => {
   const inputs = schema?.inputs || {};
 
-  console.log('[buildDynamicFieldsFromSchema] All schema input keys:', Object.keys(inputs));
+  logger.debug('[buildDynamicFieldsFromSchema] All schema input keys:', Object.keys(inputs));
   Object.entries(inputs).forEach(([key, def]) => {
-    console.log(`[buildDynamicFieldsFromSchema] ${key}:`, {
+    logger.debug(`[buildDynamicFieldsFromSchema] ${key}:`, {
       type: def?.type,
       enum: def?.enum,
       anyOf: def?.anyOf,
@@ -286,9 +287,9 @@ export const mergeDefinitionFields = (
   const hasAspectRatio = dynamicKeys.has('aspect_ratio') || dynamicCamelKeys.has('aspectRatio');
   const dimensionFieldsToHide = hasAspectRatio ? new Set(['width', 'height']) : new Set<string>();
 
-  console.log('[mergeDefinitionFields] Dynamic field keys:', Array.from(dynamicKeys));
-  console.log('[mergeDefinitionFields] hasAspectRatio:', hasAspectRatio);
-  console.log('[mergeDefinitionFields] Will hide:', Array.from(dimensionFieldsToHide));
+  logger.debug('[mergeDefinitionFields] Dynamic field keys:', Array.from(dynamicKeys));
+  logger.debug('[mergeDefinitionFields] hasAspectRatio:', hasAspectRatio);
+  logger.debug('[mergeDefinitionFields] Will hide:', Array.from(dimensionFieldsToHide));
 
   const pushField = (field: DynamicField | undefined): void => {
     if (!field || !field.key || seen.has(field.key)) return;

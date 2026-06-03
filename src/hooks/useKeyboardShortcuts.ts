@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Node, Edge, ReactFlowInstance } from 'reactflow';
 import { sortNodesForReactFlow } from '../utils/createNode';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -152,7 +153,7 @@ export const useKeyboardShortcuts = ({
       edges: edgesToCopy,
     };
 
-    console.log(
+    logger.debug(
       '[Shortcuts] Copied',
       selectedNodes.length,
       'nodes and',
@@ -211,7 +212,13 @@ export const useKeyboardShortcuts = ({
       setEdges((eds) => [...eds, ...pastedEdges]);
     }
 
-    console.log('[Shortcuts] Pasted', pastedNodes.length, 'nodes and', pastedEdges.length, 'edges');
+    logger.debug(
+      '[Shortcuts] Pasted',
+      pastedNodes.length,
+      'nodes and',
+      pastedEdges.length,
+      'edges'
+    );
   }, [nodes, setNodes, setEdges]);
 
   // Handle keyboard events

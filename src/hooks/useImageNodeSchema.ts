@@ -14,6 +14,7 @@ import {
 import type { SchemaStatus, ImageFormState } from '../types/imageNode';
 import type { NodeSchemaDefinition } from '../nodes/nodeSchemas';
 
+import { logger } from '../utils/logger';
 interface UseImageNodeSchemaOptions {
   modelId: string;
   definition: NodeSchemaDefinition;
@@ -124,21 +125,21 @@ export function useImageNodeSchema({
     const trimmedModelId = modelId?.trim();
     if (!trimmedModelId) return;
 
-    console.log('[useImageNodeSchema] Clearing schema cache and refetching for:', trimmedModelId);
+    logger.debug('[useImageNodeSchema] Clearing schema cache and refetching for:', trimmedModelId);
     clearSchemaCache();
     setSchemaStatus('loading');
     setDynamicFields([]);
 
     fetchModelSchema(trimmedModelId)
       .then((schema) => {
-        console.log('[useImageNodeSchema] Refetched schema:', schema);
+        logger.debug('[useImageNodeSchema] Refetched schema:', schema);
         const nextFields = buildDynamicFieldsFromSchema(schema as unknown as ModelSchema);
-        console.log('[useImageNodeSchema] Built dynamic fields:', nextFields);
+        logger.debug('[useImageNodeSchema] Built dynamic fields:', nextFields);
         setDynamicFields(nextFields);
         setSchemaStatus('loaded');
       })
       .catch((err: Error) => {
-        console.error('[useImageNodeSchema] Schema refetch failed:', err);
+        logger.error('[useImageNodeSchema] Schema refetch failed:', err);
         setSchemaStatus('error');
         setSchemaError(err?.message || 'Failed to load model schema.');
       });

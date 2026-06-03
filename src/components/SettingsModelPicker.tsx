@@ -9,6 +9,7 @@ import {
 import type { TextProvider, MediaProvider } from '../stores/useSettingsStore';
 import './SettingsModelPicker.css';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -324,7 +325,7 @@ export const SettingsModelPicker: React.FC<SettingsModelPickerProps> = ({
 
       setModels(loadedModels);
     } catch (err) {
-      console.error('[SettingsModelPicker] Failed to load models:', err);
+      logger.error('[SettingsModelPicker] Failed to load models:', err);
       setError('Failed to load models');
     } finally {
       setLoading(false);

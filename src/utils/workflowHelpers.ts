@@ -9,6 +9,7 @@ import { LEGACY_HANDLE_ALIASES } from '../constants/app';
 import type { WorkflowTemplate } from './workflowTemplates';
 import type { ValidationError } from '../types/components';
 
+import { logger } from './logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -184,7 +185,9 @@ export async function persistOutputToLocal(
             : 'bin';
     const filename = `noder-${outputType}-${Date.now()}.${ext}`;
 
-    console.log(`[Persist] Downloading ${outputType} to local storage: ${url.substring(0, 50)}...`);
+    logger.debug(
+      `[Persist] Downloading ${outputType} to local storage: ${url.substring(0, 50)}...`
+    );
 
     const localPath = (await invoke('download_and_save_file', {
       url: url,
@@ -192,10 +195,10 @@ export async function persistOutputToLocal(
       destinationFolder: null,
     })) as string;
 
-    console.log(`[Persist] Saved to: ${localPath}`);
+    logger.debug(`[Persist] Saved to: ${localPath}`);
     return localPath;
   } catch (error) {
-    console.error(`[Persist] Failed to download output for node ${nodeId}:`, error);
+    logger.error(`[Persist] Failed to download output for node ${nodeId}:`, error);
     return url;
   }
 }

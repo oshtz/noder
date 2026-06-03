@@ -5,6 +5,7 @@ import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 import { compare, applyPatch, Operation } from 'fast-json-patch';
 import { sortNodesForReactFlow } from '../utils/createNode';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Performance Constants
 // =============================================================================
@@ -286,7 +287,7 @@ export const useUndoRedo = ({
       }
 
       if (baseIndex < 0) {
-        console.error('Could not find base snapshot for reconstruction');
+        logger.error('Could not find base snapshot for reconstruction');
         profiler.end('reconstruct');
         return null;
       }

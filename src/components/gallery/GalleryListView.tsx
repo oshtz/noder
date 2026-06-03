@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fa';
 import { Output, PanPosition, getFileExtension } from './types';
 
+import { logger } from '../../utils/logger';
 interface GalleryListViewProps {
   outputs: Output[];
   selectedIndex: number;
@@ -101,7 +102,7 @@ export const GalleryListView: React.FC<GalleryListViewProps> = ({
                 className="gallery-image"
                 draggable={false}
                 onError={(e: SyntheticEvent<HTMLImageElement>) => {
-                  console.error('Failed to load image:', currentOutput.value);
+                  logger.error('Failed to load image:', currentOutput.value);
                   e.currentTarget.style.display = 'none';
                 }}
               />
@@ -121,7 +122,7 @@ export const GalleryListView: React.FC<GalleryListViewProps> = ({
               autoPlay
               loop
               onError={() => {
-                console.error('Failed to load video:', currentOutput.value);
+                logger.error('Failed to load video:', currentOutput.value);
               }}
             />
           )
@@ -141,7 +142,7 @@ export const GalleryListView: React.FC<GalleryListViewProps> = ({
                 className="gallery-audio"
                 autoPlay
                 onError={() => {
-                  console.error('Failed to load audio:', currentOutput.value);
+                  logger.error('Failed to load audio:', currentOutput.value);
                 }}
               />
             </div>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { logger } from '../utils/logger';
 import {
   useSettingsStore,
   type EdgeType,
@@ -83,7 +84,7 @@ export function useSettings(): UseSettingsReturn {
       .getState()
       .loadFromTauri()
       .catch((error) => {
-        console.error('Failed to load settings:', error);
+        logger.error('Failed to load settings:', error);
       });
   }, []);
 

@@ -17,6 +17,7 @@ import { FaStar, FaRegStar } from 'react-icons/fa';
 import { emit, on } from '../utils/eventBus';
 import { notifyError } from '../utils/appFeedback';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -73,7 +74,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Error in NodeSelector:', error, errorInfo);
+    logger.error('Error in NodeSelector:', error, errorInfo);
   }
 
   render(): ReactNode {
@@ -194,7 +195,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
     try {
       localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteTypes));
     } catch (error) {
-      console.warn('Failed to persist favorite nodes:', error);
+      logger.warn('Failed to persist favorite nodes:', error);
     }
   }, [favoriteTypes]);
 
@@ -213,7 +214,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
       for (const file of files) {
         const mediaType = detectMediaType(file.name);
         if (!mediaType) {
-          console.warn(`Unsupported file type: ${file.name}`);
+          logger.warn(`Unsupported file type: ${file.name}`);
           continue;
         }
 
@@ -273,7 +274,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
 
             setTimeout(() => applyUploadToNode(), 50);
           } catch (error) {
-            console.error('Error saving uploaded file:', error);
+            logger.error('Error saving uploaded file:', error);
             notifyError(`Failed to upload ${file.name}: ${(error as Error).message}`);
           }
         };
@@ -282,7 +283,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
 
       setIsOpen(false);
     } catch (error) {
-      console.error('Error handling file upload:', error);
+      logger.error('Error handling file upload:', error);
     }
 
     // Reset file input

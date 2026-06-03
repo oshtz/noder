@@ -9,6 +9,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 
+import { logger } from './logger';
 // OpenAPI Schema Types
 interface OpenAPIProperty {
   type?: string;
@@ -139,7 +140,7 @@ const schemaCache = new Map<string, NormalizedSchema>();
 export async function fetchModelSchema(modelId: string): Promise<NormalizedSchema> {
   // Check cache first
   if (schemaCache.has(modelId)) {
-    console.log(`[SchemaCache] Using cached schema for ${modelId}`);
+    logger.debug(`[SchemaCache] Using cached schema for ${modelId}`);
     return schemaCache.get(modelId) as NormalizedSchema;
   }
 
@@ -152,7 +153,7 @@ export async function fetchModelSchema(modelId: string): Promise<NormalizedSchem
       throw new Error(`Invalid model ID format: ${modelId}`);
     }
 
-    console.log(`[SchemaCache] Fetching schema for ${owner}/${modelName}`);
+    logger.debug(`[SchemaCache] Fetching schema for ${owner}/${modelName}`);
 
     // Fetch from Replicate API via Tauri command
     const modelData = await invoke<ReplicateModelData>('replicate_get_model', {
@@ -173,11 +174,11 @@ export async function fetchModelSchema(modelId: string): Promise<NormalizedSchem
     // Cache it
     schemaCache.set(modelId, normalizedSchema);
 
-    console.log(`[SchemaCache] Cached schema for ${modelId}:`, normalizedSchema);
+    logger.debug(`[SchemaCache] Cached schema for ${modelId}:`, normalizedSchema);
 
     return normalizedSchema;
   } catch (error) {
-    console.error(`[SchemaCache] Failed to fetch schema for ${modelId}:`, error);
+    logger.error(`[SchemaCache] Failed to fetch schema for ${modelId}:`, error);
     throw error;
   }
 }
@@ -191,7 +192,7 @@ function normalizeSchema(openapiSchema: OpenAPISpec, modelId: string): Normalize
   const allSchemas = openapiSchema?.components?.schemas || {};
 
   if (!inputSchema) {
-    console.warn(`[SchemaCache] No input schema found for ${modelId}`);
+    logger.warn(`[SchemaCache] No input schema found for ${modelId}`);
   }
 
   // Helper to resolve $ref references
@@ -243,7 +244,7 @@ function normalizeSchema(openapiSchema: OpenAPISpec, modelId: string): Normalize
 
       // Debug: log resolved property for fields that had allOf
       if (rawProp.allOf) {
-        console.log(`[normalizeSchema] ${key} resolved from allOf:`, {
+        logger.debug(`[normalizeSchema] ${key} resolved from allOf:`, {
           type: prop.type,
           enum: prop.enum,
         });
@@ -554,7 +555,7 @@ export function buildReplicateInput(
  */
 export function clearSchemaCache(): void {
   schemaCache.clear();
-  console.log('[SchemaCache] Cache cleared');
+  logger.debug('[SchemaCache] Cache cleared');
 }
 
 /**

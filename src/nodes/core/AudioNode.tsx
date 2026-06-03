@@ -18,6 +18,7 @@ import { getNodeSchema, parseNodeData, NodeSchemaDefinition } from '../nodeSchem
 import NodeSettingsClipboard from '../../components/NodeSettingsClipboard';
 import { emit, on } from '../../utils/eventBus';
 
+import { logger } from '../../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -275,7 +276,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
         input.temperature = formState.temperature;
       }
 
-      console.log('Creating Replicate audio prediction:', {
+      logger.debug('Creating Replicate audio prediction:', {
         model: formState.model,
         input,
       });
@@ -285,7 +286,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
         input,
       })) as Prediction;
 
-      console.log('Prediction created:', prediction);
+      logger.debug('Prediction created:', prediction);
 
       // Poll for completion - audio can take a while
       let currentPrediction = prediction;
@@ -306,7 +307,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
 
         // Log progress every 10 seconds
         if (attempts % 10 === 0) {
-          console.log(`Polling attempt ${attempts}:`, currentPrediction.status);
+          logger.debug(`Polling attempt ${attempts}:`, currentPrediction.status);
         }
       }
 
@@ -335,7 +336,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
         throw new Error('Prediction timed out');
       }
     } catch (e) {
-      console.error('Error generating audio:', e);
+      logger.error('Error generating audio:', e);
       const errorMessage = e instanceof Error ? e.message : String(e);
       setError(errorMessage || 'Failed to run model');
     } finally {
@@ -407,7 +408,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
                   maxWidth: '100%',
                 }}
                 onError={(e: SyntheticEvent<HTMLAudioElement>) => {
-                  console.error('Failed to load audio preview:', e);
+                  logger.error('Failed to load audio preview:', e);
                   setAudioUrl(null);
                 }}
               />

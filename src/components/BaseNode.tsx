@@ -18,6 +18,7 @@ import { NodeSettingsPopover } from './NodeSettingsPopover';
 import { emit } from '../utils/eventBus';
 import '@reactflow/node-resizer/dist/style.css';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -137,10 +138,10 @@ const BaseNode: React.FC<BaseNodeProps> = ({
 
   const handleRemove = (): void => {
     if (data.onRemove) {
-      console.log('Removing node:', id);
+      logger.debug('Removing node:', id);
       data.onRemove(id);
     } else {
-      console.warn('No onRemove handler provided for node:', id);
+      logger.warn('No onRemove handler provided for node:', id);
     }
   };
 

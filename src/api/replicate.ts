@@ -9,6 +9,7 @@ import { invoke } from '../types/tauri';
 import { logApiError } from '../utils/errorLogger';
 import type { ReplicatePrediction, ReplicateModel, ReplicateModelsResponse } from '../types/tauri';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -91,7 +92,7 @@ async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): P
       }
 
       if (attempt < maxRetries) {
-        console.warn(
+        logger.warn(
           `[Replicate API] ${operation} failed (attempt ${attempt}/${maxRetries}), retrying in ${retryDelay}ms...`
         );
         await delay(retryDelay * attempt); // Exponential backoff

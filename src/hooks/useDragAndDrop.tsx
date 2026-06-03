@@ -8,6 +8,7 @@ import { nodeCreators } from '../nodes';
 import { isTauriRuntime } from '../utils/runtime';
 import { notifyError } from '../utils/appFeedback';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -80,7 +81,7 @@ export const useDragAndDrop = (
     // Drag enter event
     promises.push(
       event.listen('tauri://drag-enter', (evt: DragEvent) => {
-        console.log('Drag enter event:', evt);
+        logger.debug('Drag enter event:', evt);
         setIsDragging(true);
         setDragCounter((prev) => prev + 1);
       })
@@ -89,7 +90,7 @@ export const useDragAndDrop = (
     // Drag leave event
     promises.push(
       event.listen('tauri://drag-leave', (evt: DragEvent) => {
-        console.log('Drag leave event:', evt);
+        logger.debug('Drag leave event:', evt);
         setDragCounter((prev) => {
           const newCount = Math.max(0, prev - 1);
           if (newCount === 0) {
@@ -103,14 +104,14 @@ export const useDragAndDrop = (
     // Drag over event
     promises.push(
       event.listen('tauri://drag-over', (evt: DragEvent) => {
-        console.log('Drag over event:', evt);
+        logger.debug('Drag over event:', evt);
       })
     );
 
     // Drop event
     promises.push(
       event.listen('tauri://drag-drop', async (evt: DragEvent) => {
-        console.log('Drop event:', evt);
+        logger.debug('Drop event:', evt);
         setIsDragging(false);
         setDragCounter(0);
 
@@ -176,7 +177,7 @@ export const useDragAndDrop = (
                 setNodes((nds) => [...nds, newNode]);
               }
             } catch (error) {
-              console.error('Error handling dropped image:', error);
+              logger.error('Error handling dropped image:', error);
             }
             return;
           }
@@ -236,7 +237,7 @@ export const useDragAndDrop = (
             }));
             setEdges(processedEdges);
           } catch (error) {
-            console.error('Error loading workflow:', error);
+            logger.error('Error loading workflow:', error);
             notifyError('Error loading workflow file');
           }
         }
@@ -253,7 +254,7 @@ export const useDragAndDrop = (
 
   // Debug isDragging state
   useEffect(() => {
-    console.log('isDragging state changed:', isDragging);
+    logger.debug('isDragging state changed:', isDragging);
   }, [isDragging]);
 
   return {

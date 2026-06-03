@@ -16,6 +16,7 @@ import {
 } from '../../utils/replicateFiles';
 import { on, emit } from '../../utils/eventBus';
 
+import { logger } from '../../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -140,11 +141,11 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
   // Sync local state with data prop when it changes (e.g., from gallery drag-drop)
   useEffect(() => {
     if (data.mediaPath && data.mediaPath !== mediaPath) {
-      console.log('[MediaNode] Syncing mediaPath from data prop:', data.mediaPath);
+      logger.debug('[MediaNode] Syncing mediaPath from data prop:', data.mediaPath);
       setMediaPath(data.mediaPath);
     }
     if (data.mediaType && data.mediaType !== mediaType) {
-      console.log('[MediaNode] Syncing mediaType from data prop:', data.mediaType);
+      logger.debug('[MediaNode] Syncing mediaType from data prop:', data.mediaType);
       setMediaType(data.mediaType);
     }
   }, [data.mediaPath, data.mediaType, mediaPath, mediaType]);
@@ -164,7 +165,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
 
       // If it's a URL, use it directly
       if (isUrl(mediaPath)) {
-        console.log('[MediaNode] Using URL directly:', mediaPath);
+        logger.debug('[MediaNode] Using URL directly:', mediaPath);
         setConvertedSrc(mediaPath);
         nodeData.convertedSrc = mediaPath;
         setLoading(false);
@@ -182,7 +183,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
           setLoading(false);
         })
         .catch((err) => {
-          console.error('Error loading media file:', err);
+          logger.error('Error loading media file:', err);
           setError('Failed to load media file');
           setLoading(false);
         });
@@ -210,7 +211,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         const cacheValid = await isCacheValid(cacheInfo, mediaPath);
 
         if (cacheValid) {
-          console.log(`[MediaNode] Using cached Replicate URL for node ${id}`);
+          logger.debug(`[MediaNode] Using cached Replicate URL for node ${id}`);
           // Ensure local state matches cached data
           if (nodeData.replicateUrl && nodeData.replicateUrl !== uploadState.replicateUrl) {
             setReplicateUrl(nodeData.replicateUrl);
@@ -226,7 +227,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
         }
 
         setUploadStatus('uploading');
-        console.log(`[MediaNode] Auto-uploading file for node ${id}`);
+        logger.debug(`[MediaNode] Auto-uploading file for node ${id}`);
 
         // Delete old file if exists
         if (uploadState.replicateFileId) {
@@ -259,9 +260,9 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
           },
         });
 
-        console.log(`[MediaNode] File uploaded successfully for node ${id}:`, result.url);
+        logger.debug(`[MediaNode] File uploaded successfully for node ${id}:`, result.url);
       } catch (err) {
-        console.error(`[MediaNode] Failed to upload file for node ${id}:`, err);
+        logger.error(`[MediaNode] Failed to upload file for node ${id}:`, err);
         setUploadStatus('error');
         setError('Failed to upload to Replicate');
       }
@@ -274,9 +275,9 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
   useEffect(() => {
     return () => {
       if (replicateFileId) {
-        console.log(`[MediaNode] Cleaning up file for node ${id}`);
+        logger.debug(`[MediaNode] Cleaning up file for node ${id}`);
         deleteFileFromReplicate(replicateFileId).catch((err) => {
-          console.warn(`[MediaNode] Cleanup failed for node ${id}:`, err);
+          logger.warn(`[MediaNode] Cleanup failed for node ${id}:`, err);
         });
       }
     };

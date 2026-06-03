@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as db from '../utils/database';
 import { isTauriRuntime } from '../utils/runtime';
 
+import { logger } from '../utils/logger';
 // Re-export types from database module for convenience
 export type {
   OutputInput,
@@ -39,17 +40,17 @@ export const useDatabase = (): UseDatabaseReturn => {
   // Initialize database on mount
   useEffect(() => {
     const init = async () => {
-      console.log('[useDatabase] Starting database initialization...');
+      logger.debug('[useDatabase] Starting database initialization...');
       if (!isTauriRuntime()) {
         setIsInitialized(true);
         return;
       }
       try {
         await db.initDatabase();
-        console.log('[useDatabase] Database initialized successfully');
+        logger.debug('[useDatabase] Database initialized successfully');
         setIsInitialized(true);
       } catch (err) {
-        console.error('[useDatabase] Database initialization error:', err);
+        logger.error('[useDatabase] Database initialization error:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
       }
     };
@@ -63,7 +64,7 @@ export const useDatabase = (): UseDatabaseReturn => {
         const id = await db.saveOutput(output);
         return id;
       } catch (err) {
-        console.error('Error saving output:', err);
+        logger.error('Error saving output:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
@@ -78,7 +79,7 @@ export const useDatabase = (): UseDatabaseReturn => {
         const outputs = await db.getOutputs(options);
         return outputs;
       } catch (err) {
-        console.error('Error getting outputs:', err);
+        logger.error('Error getting outputs:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
@@ -92,7 +93,7 @@ export const useDatabase = (): UseDatabaseReturn => {
       const output = await db.getOutputById(id);
       return output;
     } catch (err) {
-      console.error('Error getting output by ID:', err);
+      logger.error('Error getting output by ID:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;
     }
@@ -103,7 +104,7 @@ export const useDatabase = (): UseDatabaseReturn => {
     try {
       await db.deleteOutput(id);
     } catch (err) {
-      console.error('Error deleting output:', err);
+      logger.error('Error deleting output:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;
     }
@@ -114,7 +115,7 @@ export const useDatabase = (): UseDatabaseReturn => {
     try {
       await db.clearAllOutputs();
     } catch (err) {
-      console.error('Error clearing outputs:', err);
+      logger.error('Error clearing outputs:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;
     }
@@ -126,7 +127,7 @@ export const useDatabase = (): UseDatabaseReturn => {
       const stats = await db.getOutputStats();
       return stats;
     } catch (err) {
-      console.error('Error getting output stats:', err);
+      logger.error('Error getting output stats:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;
     }
@@ -139,7 +140,7 @@ export const useDatabase = (): UseDatabaseReturn => {
         const id = await db.saveWorkflowToHistory(workflow);
         return id;
       } catch (err) {
-        console.error('Error saving workflow to history:', err);
+        logger.error('Error saving workflow to history:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
@@ -154,7 +155,7 @@ export const useDatabase = (): UseDatabaseReturn => {
         const workflows = await db.getWorkflowHistory(options);
         return workflows;
       } catch (err) {
-        console.error('Error getting workflow history:', err);
+        logger.error('Error getting workflow history:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
@@ -167,7 +168,7 @@ export const useDatabase = (): UseDatabaseReturn => {
     try {
       await db.deleteWorkflow(id);
     } catch (err) {
-      console.error('Error deleting workflow:', err);
+      logger.error('Error deleting workflow:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
       throw err;
     }

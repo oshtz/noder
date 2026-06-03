@@ -9,6 +9,7 @@ import { invoke } from '../types/tauri';
 import { logApiError } from '../utils/errorLogger';
 import type { AppSettings, FloatingButtonPosition } from '../types/tauri';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -137,7 +138,7 @@ export async function loadSettings(): Promise<Settings> {
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     logApiError(err, 'load_settings');
-    console.error('Failed to load settings:', error);
+    logger.error('Failed to load settings:', error);
     // Return defaults on error so app can continue
     return { ...DEFAULT_SETTINGS };
   }
@@ -154,7 +155,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     logApiError(err, 'save_settings');
-    console.error('Failed to save settings:', error);
+    logger.error('Failed to save settings:', error);
     throw err;
   }
 }

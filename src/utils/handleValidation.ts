@@ -11,6 +11,7 @@ import { getHandleColor, areTypesCompatible } from '../constants/handleTypes';
 import { getGlobalNodesRef } from '../context/WorkflowContext';
 import type { HandleDataType, NodeHandle } from '../types/components';
 
+import { logger } from './logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -184,7 +185,7 @@ export const isValidConnection2 = (connection: TypedConnection): boolean => {
 
     return true;
   } catch (error) {
-    console.error('Error validating connection:', error);
+    logger.error('Error validating connection:', error);
     return false;
   }
 };
@@ -303,14 +304,14 @@ export const registerValidation = (name: string, validator: Validator): void => 
 export const getValidator = (name: string): Validator => {
   const validator = validationRegistry.get(name);
   if (!validator) {
-    console.warn(`Validation rule '${name}' not found, defaulting to true`);
+    logger.warn(`Validation rule '${name}' not found, defaulting to true`);
     return () => true;
   }
   return (connection: TypedConnection): boolean => {
     try {
       return validator(connection);
     } catch (error) {
-      console.error(`Error in validation rule '${name}':`, error);
+      logger.error(`Error in validation rule '${name}':`, error);
       return false;
     }
   };

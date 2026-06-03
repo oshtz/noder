@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Edge } from 'reactflow';
 import { emit } from '../utils/eventBus';
 
+import { logger } from '../utils/logger';
 // =============================================================================
 // Types
 // =============================================================================
@@ -68,7 +69,7 @@ export interface UseNodeOutputReturn {
  *   sourceHandle: 'out',
  *   model: formState.model,
  *   onOutputChange: (value) => {
- *     console.log('Output changed:', value);
+ *     logger.debug('Output changed:', value);
  *   },
  * });
  *
@@ -152,7 +153,7 @@ export function useNodeOutput(options: UseNodeOutputOptions): UseNodeOutputRetur
         });
       });
 
-      console.log(
+      logger.debug(
         `Dispatched ${handleType} output from ${nodeId} to ${outgoingEdges.length} connected node(s)`
       );
     },

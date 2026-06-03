@@ -1,6 +1,7 @@
 import { useCallback, Dispatch, SetStateAction } from 'react';
 import { Node, XYPosition } from 'reactflow';
 
+import { logger } from '../utils/logger';
 export interface SelectorPosition {
   x: number;
   y: number;
@@ -53,9 +54,9 @@ export const useNodeSelector = (
       const target = event.target as HTMLElement;
       const { top, left } = target.getBoundingClientRect();
 
-      console.log('Double click at:', { clientX, clientY });
-      console.log('Flow container offset:', { left, top });
-      console.log('Setting position:', { x: clientX, y: clientY });
+      logger.debug('Double click at:', { clientX, clientY });
+      logger.debug('Flow container offset:', { left, top });
+      logger.debug('Setting position:', { x: clientX, y: clientY });
 
       setSelectorPosition({ x: clientX, y: clientY });
       setSelectorOpen(true);

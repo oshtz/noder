@@ -9,6 +9,7 @@ import type { ReactFlowInstance, Node } from 'reactflow';
 import { invoke } from '@tauri-apps/api/core';
 import { isImageFile } from '../utils/workflowHelpers';
 
+import { logger } from '../utils/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -66,7 +67,7 @@ export function useMediaHandling({
     (dragData: GalleryDragData, dropX: number, dropY: number): void => {
       const flowWrapper = document.querySelector('.react-flow');
       if (!flowWrapper) {
-        console.error('[Gallery Drag] ReactFlow wrapper not found');
+        logger.error('[Gallery Drag] ReactFlow wrapper not found');
         return;
       }
 
@@ -77,12 +78,12 @@ export function useMediaHandling({
         dropY < bounds.top ||
         dropY > bounds.bottom
       ) {
-        console.log('[Gallery Drag] Drop outside canvas bounds');
+        logger.debug('[Gallery Drag] Drop outside canvas bounds');
         return;
       }
 
       if (!reactFlowInstance) {
-        console.error('[Gallery Drag] ReactFlow instance not available');
+        logger.error('[Gallery Drag] ReactFlow instance not available');
         return;
       }
 
@@ -90,10 +91,10 @@ export function useMediaHandling({
       const x = (dropX - bounds.left - viewport.x) / viewport.zoom;
       const y = (dropY - bounds.top - viewport.y) / viewport.zoom;
 
-      console.log('[Gallery Drag] Creating node at:', { x, y });
+      logger.debug('[Gallery Drag] Creating node at:', { x, y });
 
       const nodeId = handleAddNode('media', { x, y });
-      console.log('[Gallery Drag] Created node:', nodeId);
+      logger.debug('[Gallery Drag] Created node:', nodeId);
 
       setTimeout(() => {
         setNodes((nds) =>
@@ -112,7 +113,7 @@ export function useMediaHandling({
               : n
           )
         );
-        console.log('[Gallery Drag] Node data updated');
+        logger.debug('[Gallery Drag] Node data updated');
       }, 50);
     },
     [reactFlowInstance, handleAddNode, setNodes]
@@ -123,7 +124,7 @@ export function useMediaHandling({
    */
   const handleGalleryDragStart = useCallback(
     (dragData: GalleryDragData, startX: number, startY: number): void => {
-      console.log('[Gallery Drag] Start - storing data:', dragData, 'at:', startX, startY);
+      logger.debug('[Gallery Drag] Start - storing data:', dragData, 'at:', startX, startY);
       galleryDragDataRef.current = {
         data: dragData,
         startX,
@@ -141,10 +142,10 @@ export function useMediaHandling({
           Math.pow(e.clientX - stored.startX, 2) + Math.pow(e.clientY - stored.startY, 2)
         );
 
-        console.log('[Gallery Drag] MouseUp at:', e.clientX, e.clientY, 'distance:', distance);
+        logger.debug('[Gallery Drag] MouseUp at:', e.clientX, e.clientY, 'distance:', distance);
 
         if (distance < 30) {
-          console.log('[Gallery Drag] Not enough movement, ignoring');
+          logger.debug('[Gallery Drag] Not enough movement, ignoring');
           return;
         }
 
@@ -162,7 +163,7 @@ export function useMediaHandling({
    * Handles gallery drag end
    */
   const handleGalleryDragEnd = useCallback((clientX: number, clientY: number): void => {
-    console.log('[Gallery Drag] DragEnd event at:', clientX, clientY);
+    logger.debug('[Gallery Drag] DragEnd event at:', clientX, clientY);
   }, []);
 
   /**
@@ -194,17 +195,17 @@ export function useMediaHandling({
         e.preventDefault();
         e.stopPropagation();
 
-        console.log('[Global Drop] Gallery output detected:', dragData.output);
+        logger.debug('[Global Drop] Gallery output detected:', dragData.output);
         const { output } = dragData;
 
         if (!reactFlowInstance) {
-          console.error('[Global Drop] ReactFlow instance not available');
+          logger.error('[Global Drop] ReactFlow instance not available');
           return;
         }
 
         const flowWrapper = document.querySelector('.react-flow');
         if (!flowWrapper) {
-          console.error('[Global Drop] ReactFlow wrapper not found');
+          logger.error('[Global Drop] ReactFlow wrapper not found');
           return;
         }
 
@@ -213,10 +214,10 @@ export function useMediaHandling({
         const x = (e.clientX - bounds.left - viewport.x) / viewport.zoom;
         const y = (e.clientY - bounds.top - viewport.y) / viewport.zoom;
 
-        console.log('[Global Drop] Drop position:', { x, y });
+        logger.debug('[Global Drop] Drop position:', { x, y });
 
         const nodeId = handleAddNode('media', { x, y });
-        console.log('[Global Drop] Created node:', nodeId);
+        logger.debug('[Global Drop] Created node:', nodeId);
 
         setTimeout(() => {
           setNodes((nds) =>
@@ -235,7 +236,7 @@ export function useMediaHandling({
                 : n
             )
           );
-          console.log('[Global Drop] Node data updated');
+          logger.debug('[Global Drop] Node data updated');
         }, 50);
       } catch (err) {
         // Not gallery JSON data, ignore
@@ -316,7 +317,7 @@ export function useMediaHandling({
                 );
               }, 50);
             } catch (error) {
-              console.error('Error saving pasted image:', error);
+              logger.error('Error saving pasted image:', error);
             }
           };
 
@@ -337,32 +338,32 @@ export function useMediaHandling({
     async (e: DragEvent<HTMLDivElement>): Promise<void> => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('[Drop] Drop event triggered on canvas');
-      console.log('[Drop] dataTransfer types:', e.dataTransfer.types);
+      logger.debug('[Drop] Drop event triggered on canvas');
+      logger.debug('[Drop] dataTransfer types:', e.dataTransfer.types);
 
       try {
         let jsonData = e.dataTransfer.getData('application/json');
         if (!jsonData) {
           jsonData = e.dataTransfer.getData('text/plain');
         }
-        console.log('[Drop] JSON data:', jsonData?.substring(0, 200));
+        logger.debug('[Drop] JSON data:', jsonData?.substring(0, 200));
 
         if (jsonData) {
           const dragData = JSON.parse(jsonData);
-          console.log('[Drop] Parsed drag data:', dragData);
+          logger.debug('[Drop] Parsed drag data:', dragData);
 
           if (dragData.type === 'gallery-output' && dragData.output) {
-            console.log('[Drop] Gallery output detected:', dragData.output);
+            logger.debug('[Drop] Gallery output detected:', dragData.output);
             const { output } = dragData;
 
             if (!reactFlowInstance) {
-              console.error('[Drop] ReactFlow instance not available');
+              logger.error('[Drop] ReactFlow instance not available');
               return;
             }
 
             const flowWrapper = document.querySelector('.react-flow__renderer');
             if (!flowWrapper) {
-              console.error('[Drop] ReactFlow wrapper not found');
+              logger.error('[Drop] ReactFlow wrapper not found');
               return;
             }
 
@@ -371,10 +372,10 @@ export function useMediaHandling({
             const x = (e.clientX - bounds.left - viewport.x) / viewport.zoom;
             const y = (e.clientY - bounds.top - viewport.y) / viewport.zoom;
 
-            console.log('[Drop] Drop position:', { x, y });
+            logger.debug('[Drop] Drop position:', { x, y });
 
             const nodeId = handleAddNode('media', { x, y });
-            console.log('[Drop] Created node:', nodeId);
+            logger.debug('[Drop] Created node:', nodeId);
 
             setTimeout(() => {
               setNodes((nds) =>
@@ -393,22 +394,22 @@ export function useMediaHandling({
                     : n
                 )
               );
-              console.log('[Drop] Node data updated');
+              logger.debug('[Drop] Node data updated');
             }, 50);
 
-            console.log('[Gallery Drop] Successfully created media node from gallery output:', {
+            logger.debug('[Gallery Drop] Successfully created media node from gallery output:', {
               nodeId,
               output,
             });
             return;
           } else {
-            console.log('[Drop] Not a gallery output type');
+            logger.debug('[Drop] Not a gallery output type');
           }
         } else {
-          console.log('[Drop] No JSON data in dataTransfer');
+          logger.debug('[Drop] No JSON data in dataTransfer');
         }
       } catch (err) {
-        console.log('[Gallery Drop] Error parsing JSON or not a gallery item:', err);
+        logger.debug('[Gallery Drop] Error parsing JSON or not a gallery item:', err);
       }
 
       const files = Array.from(e.dataTransfer?.files || []);
@@ -458,7 +459,7 @@ export function useMediaHandling({
               );
             }, 50);
           } catch (error) {
-            console.error('Error saving dropped image:', error);
+            logger.error('Error saving dropped image:', error);
           }
         };
 
