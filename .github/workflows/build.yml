@@ -137,15 +137,26 @@ jobs:
 
       - name: Install Enigma Virtual Box
         shell: pwsh
+        env:
+          ENIGMA_VIRTUAL_BOX_INSTALLER_URL: ${{ vars.ENIGMA_VIRTUAL_BOX_INSTALLER_URL }}
+          ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256: ${{ vars.ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256 }}
         run: |
-          # Download EVB installer with multiple fallback sources
-          $evbUrls = @(
+          # Prefer an operator-controlled mirror/cache, then fall back to public vendor URLs.
+          $evbUrls = @()
+          if (-not [string]::IsNullOrWhiteSpace($env:ENIGMA_VIRTUAL_BOX_INSTALLER_URL)) {
+            $evbUrls += $env:ENIGMA_VIRTUAL_BOX_INSTALLER_URL
+          }
+          $evbUrls += @(
             "https://www.enigmaprotector.com/assets/files/enigmavb.exe",
             "https://enigmaprotector.com/assets/files/enigmavb.exe",
             "https://web.archive.org/web/2024/https://enigmaprotector.com/assets/files/enigmavb.exe"
           )
           $evbInstaller = Join-Path $env:RUNNER_TEMP "enigmavb_setup.exe"
           Remove-Item -Path $evbInstaller -Force -ErrorAction SilentlyContinue
+          $expectedHash = $env:ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256
+          if (-not [string]::IsNullOrWhiteSpace($expectedHash)) {
+            $expectedHash = $expectedHash.Trim().ToLowerInvariant()
+          }
 
           $downloaded = $false
           foreach ($evbUrl in $evbUrls) {
@@ -160,6 +171,14 @@ jobs:
                 Invoke-WebRequest -Uri $evbUrl -OutFile $evbInstaller -UseBasicParsing -Headers $headers -MaximumRedirection 5
 
                 if ((Test-Path $evbInstaller) -and (Get-Item $evbInstaller).Length -gt 1MB) {
+                  if (-not [string]::IsNullOrWhiteSpace($expectedHash)) {
+                    $actualHash = (Get-FileHash -Algorithm SHA256 -Path $evbInstaller).Hash.ToLowerInvariant()
+                    if ($actualHash -ne $expectedHash) {
+                      Write-Host "SHA256 mismatch for $evbUrl. Expected $expectedHash, got $actualHash"
+                      Remove-Item -Path $evbInstaller -Force -ErrorAction SilentlyContinue
+                      continue
+                    }
+                  }
                   $downloaded = $true
                   Write-Host "Downloaded successfully from $evbUrl"
                   break
@@ -173,7 +192,7 @@ jobs:
           }
 
           if (-not $downloaded) {
-            throw "Failed to download EVB installer. The enigmaprotector.com site may be blocking CI downloads. Consider caching the installer in a GitHub release."
+            throw "Failed to download EVB installer. Set ENIGMA_VIRTUAL_BOX_INSTALLER_URL and ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256 repository variables to use a controlled cached installer."
           }
 
           # Install silently

@@ -32,6 +32,11 @@ Windows Authenticode signing is optional but recommended:
 
 If the Windows secrets are missing, the workflow still publishes unsigned Windows artifacts and prints a warning in the build log.
 
+Windows portable builds use Enigma Virtual Box. To avoid depending only on the vendor download URL during release builds, configure these repository variables when a controlled installer mirror is available:
+
+- `ENIGMA_VIRTUAL_BOX_INSTALLER_URL`
+- `ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256`
+
 ## Release Assets
 
 Every published release should include:

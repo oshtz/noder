@@ -115,19 +115,28 @@ fn load_api_key(name: &str) -> Result<Option<String>, String> {
     match keyring_entry(name)?.get_password() {
         Ok(value) => Ok(Some(value)),
         Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(format!("Failed to read '{}' from secure storage: {}", name, e)),
+        Err(e) => Err(format!(
+            "Failed to read '{}' from secure storage: {}",
+            name, e
+        )),
     }
 }
 
 fn save_api_key(name: &str, value: Option<&String>) -> Result<(), String> {
     let entry = keyring_entry(name)?;
-    match value.map(|entry| entry.trim()).filter(|entry| !entry.is_empty()) {
+    match value
+        .map(|entry| entry.trim())
+        .filter(|entry| !entry.is_empty())
+    {
         Some(secret) => entry
             .set_password(secret)
             .map_err(|e| format!("Failed to save '{}' to secure storage: {}", name, e)),
         None => match entry.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(e) => Err(format!("Failed to remove '{}' from secure storage: {}", name, e)),
+            Err(e) => Err(format!(
+                "Failed to remove '{}' from secure storage: {}",
+                name, e
+            )),
         },
     }
 }

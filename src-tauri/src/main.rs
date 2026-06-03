@@ -1,19 +1,21 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use chrono::Utc;
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use tauri::{Manager, generate_handler, generate_context, Builder, State, Emitter};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
+use tauri::{generate_context, generate_handler, Builder, Emitter, Manager, State};
 
+mod file_commands;
+mod path_utils;
 mod settings;
+mod updates;
 
+use path_utils::sanitize_workflow_id;
 use settings::load_settings;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -22,13 +24,13 @@ struct AnthropicRequest {
     messages: Vec<Message>,
     max_tokens: Option<i32>,
     temperature: Option<f32>,
-    system: Option<String>
+    system: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Message {
     role: String,
-    content: String
+    content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -39,61 +41,61 @@ struct AnthropicResponse {
     role: String,
     stop_reason: Option<String>,
     stop_sequence: Option<String>,
-    usage: Usage
+    usage: Usage,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Content {
     text: String,
     #[serde(rename = "type")]
-    content_type: String
+    content_type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Usage {
     input_tokens: i32,
-    output_tokens: i32
+    output_tokens: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIChatMessage {
     role: String,
-    content: String
+    content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIChatRequest {
     model: String,
     messages: Vec<OpenAIChatMessage>,
-    temperature: f32
+    temperature: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIChatChoice {
-    message: OpenAIChatMessage
+    message: OpenAIChatMessage,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIChatResponse {
-    choices: Vec<OpenAIChatChoice>
+    choices: Vec<OpenAIChatChoice>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIModel {
     id: String,
-    owned_by: Option<String>
+    owned_by: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct OpenAIModelsResponse {
-    data: Vec<OpenAIModel>
+    data: Vec<OpenAIModel>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Workflow {
     name: String,
     id: String,
-    data: serde_json::Value
+    data: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,7 +107,7 @@ struct WhatsAppStatus {
     #[serde(rename = "isClientReady")]
     is_client_ready: bool,
     #[serde(rename = "isInitializing")]
-    is_initializing: bool
+    is_initializing: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -115,7 +117,7 @@ struct WhatsAppReceivedMessage {
     #[serde(rename = "fromMe")]
     from_me: bool,
     content: String,
-    timestamp: String
+    timestamp: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -126,7 +128,7 @@ struct ReplicatePrediction {
     error: Option<String>,
     logs: Option<String>,
     #[serde(default)]
-    metrics: Option<serde_json::Value>
+    metrics: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -141,14 +143,14 @@ struct ReplicateModel {
     run_count: i64,
     cover_image_url: Option<String>,
     default_example: Option<serde_json::Value>,
-    latest_version: Option<serde_json::Value>
+    latest_version: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct ReplicateModelsResponse {
     next: Option<String>,
     previous: Option<String>,
-    results: Vec<ReplicateModel>
+    results: Vec<ReplicateModel>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -159,75 +161,16 @@ struct ReplicateFileUpload {
     size: i64,
     urls: ReplicateFileUrls,
     created_at: String,
-    expires_at: Option<String>
+    expires_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct ReplicateFileUrls {
-    get: String
+    get: String,
 }
 
 #[derive(Debug, Clone)]
 struct WhatsAppState(Arc<Mutex<WhatsAppStatus>>);
-
-fn sanitize_segment(input: &str, allow_spaces: bool) -> String {
-    let mut cleaned = String::with_capacity(input.len());
-    for ch in input.chars() {
-        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || (allow_spaces && ch == ' ') {
-            cleaned.push(ch);
-        } else {
-            cleaned.push('_');
-        }
-    }
-    cleaned.trim().to_string()
-}
-
-fn sanitize_component(input: &str, allow_spaces: bool, fallback: &str) -> String {
-    let cleaned = sanitize_segment(input, allow_spaces);
-    if cleaned.is_empty() {
-        fallback.to_string()
-    } else {
-        cleaned
-    }
-}
-
-fn sanitize_workflow_id(input: &str) -> String {
-    sanitize_component(input, true, "workflow")
-}
-
-fn sanitize_extension(input: &str) -> String {
-    input.chars().filter(|c| c.is_ascii_alphanumeric()).collect()
-}
-
-fn sanitize_filename(input: &str) -> String {
-    let path = Path::new(input);
-    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-    let safe_stem = sanitize_component(stem, true, "file");
-    let safe_ext = sanitize_extension(ext);
-
-    if safe_ext.is_empty() {
-        safe_stem
-    } else {
-        format!("{}.{}", safe_stem, safe_ext)
-    }
-}
-
-fn sanitize_relative_path(input: &str) -> PathBuf {
-    let mut clean = PathBuf::new();
-    for segment in input.split(|c| c == '/' || c == '\\') {
-        let trimmed = segment.trim();
-        if trimmed.is_empty() || trimmed == "." || trimmed == ".." {
-            continue;
-        }
-        let sanitized = sanitize_segment(trimmed, true);
-        if sanitized.is_empty() {
-            continue;
-        }
-        clean.push(sanitized);
-    }
-    clean
-}
 
 fn mask_phone_number(input: &str) -> String {
     let digits: String = input.chars().filter(|c| c.is_ascii_digit()).collect();
@@ -239,263 +182,35 @@ fn mask_phone_number(input: &str) -> String {
     }
 }
 
-fn escape_powershell_literal(value: &str) -> String {
-    value.replace('\'', "''")
-}
-
-#[cfg(target_os = "macos")]
-fn escape_bash_literal(value: &str) -> String {
-    value.replace('\'', "'\\''")
-}
-
-fn resolve_destination_folder(
-    app_handle: &tauri::AppHandle,
-    destination_folder: Option<String>
-) -> Result<PathBuf, String> {
-    let download_dir = app_handle.path().download_dir()
-        .map_err(|e| format!("Failed to get downloads directory: {}", e))?;
-    let app_data_dir = app_handle.path().app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    let base_dir = download_dir.join("noder");
-
-    if let Some(folder) = destination_folder {
-        let trimmed = folder.trim();
-        if trimmed.is_empty() {
-            return Ok(base_dir);
-        }
-
-        let candidate = PathBuf::from(trimmed);
-        if candidate.is_absolute() {
-            if candidate.starts_with(&download_dir) || candidate.starts_with(&app_data_dir) {
-                return Ok(candidate);
-            }
-            return Err("Destination folder must be within Downloads or app data directory.".to_string());
-        }
-
-        let relative = sanitize_relative_path(trimmed);
-        if relative.as_os_str().is_empty() {
-            return Ok(base_dir);
-        }
-
-        let first_segment = relative.components()
-            .next()
-            .and_then(|c| c.as_os_str().to_str())
-            .unwrap_or("");
-        let root = if first_segment.eq_ignore_ascii_case("downloads") {
-            download_dir.parent().unwrap_or(&download_dir).to_path_buf()
-        } else {
-            download_dir.clone()
-        };
-
-        return Ok(root.join(relative));
-    }
-
-    Ok(base_dir)
-}
-
 #[tauri::command]
-async fn fetch_github_release(repo: String) -> Result<serde_json::Value, String> {
-    let url = format!("https://api.github.com/repos/{}/releases/latest", repo);
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&url)
-        .header(USER_AGENT, "noder-updater")
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch release: {}", e))?;
-
-    let status = response.status();
-    let body = response.text().await.map_err(|e| e.to_string())?;
-
-    if !status.is_success() {
-        return Err(format!("GitHub API error ({}): {}", status, body));
-    }
-
-    let json: serde_json::Value =
-        serde_json::from_str(&body).map_err(|e| format!("Failed to parse release: {}", e))?;
-
-    Ok(json)
-}
-
-#[tauri::command]
-async fn download_update(
-    app_handle: tauri::AppHandle,
-    url: String,
-    file_name: Option<String>,
-    dir_name: Option<String>
+async fn anthropic_request(
+    api_key: String,
+    model: String,
+    system_prompt: String,
+    user_content: String,
+    temperature: f32,
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
-    let response = client
-        .get(&url)
-        .header(USER_AGENT, "noder-updater")
-        .send()
-        .await
-        .map_err(|e| format!("Failed to download update: {}", e))?;
 
-    let status = response.status();
-    if !status.is_success() {
-        let error_text = response.text().await.unwrap_or_default();
-        return Err(format!("Download failed ({}): {}", status, error_text));
-    }
-
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|e| format!("Failed to read update bytes: {}", e))?;
-
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
-    let update_dir = dir_name.unwrap_or_else(|| "noder-updates".to_string());
-    let safe_dir = sanitize_component(&update_dir, false, "noder-updates");
-    let updates_dir = app_data_dir.join(safe_dir);
-
-    if !updates_dir.exists() {
-        fs::create_dir_all(&updates_dir)
-            .map_err(|e| format!("Failed to create update folder: {}", e))?;
-    }
-
-    let raw_name = file_name.unwrap_or_else(|| {
-        url.split('/')
-            .last()
-            .filter(|name| !name.is_empty())
-            .unwrap_or("update.bin")
-            .to_string()
-    });
-    let safe_name = sanitize_filename(&raw_name);
-    let file_path = updates_dir.join(safe_name);
-
-    fs::write(&file_path, &bytes)
-        .map_err(|e| format!("Failed to write update file: {}", e))?;
-
-    Ok(file_path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-fn apply_update(app: tauri::AppHandle, update_path: String) -> Result<(), String> {
-    if cfg!(debug_assertions) {
-        return Err("Auto-update is disabled in dev builds.".to_string());
-    }
-
-    let update_file = Path::new(&update_path);
-    if !update_file.exists() {
-        return Err("Update file not found.".to_string());
-    }
-
-    let current_exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let pid = std::process::id();
-
-    #[cfg(target_os = "windows")]
-    {
-        let script = format!(
-            "$procId = {pid}; $source = '{source}'; $target = '{target}'; \
-             while (Get-Process -Id $procId -ErrorAction SilentlyContinue) {{ Start-Sleep -Milliseconds 200 }}; \
-             Move-Item -Force $source $target; Start-Process -FilePath $target",
-            pid = pid,
-            source = escape_powershell_literal(&update_file.to_string_lossy()),
-            target = escape_powershell_literal(&current_exe.to_string_lossy())
-        );
-
-        Command::new("powershell")
-            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        let app_bundle = current_exe
-            .parent()
-            .and_then(|p| p.parent())
-            .and_then(|p| p.parent())
-            .ok_or("Could not determine app bundle path")?;
-
-        let script = format!(
-            r#"
-pid={}
-source='{}'
-target='{}'
-
-while kill -0 $pid 2>/dev/null; do sleep 0.2; done
-rm -rf "$target"
-mv -f "$source" "$target"
-open "$target"
-"#,
-            pid,
-            escape_bash_literal(&update_file.to_string_lossy()),
-            escape_bash_literal(&app_bundle.to_string_lossy())
-        );
-
-        Command::new("bash")
-            .args(["-c", &script])
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    {
-        return Err("Auto-update is not supported on this platform.".to_string());
-    }
-
-    app.exit(0);
-    Ok(())
-}
-
-#[cfg(target_os = "macos")]
-#[tauri::command]
-fn extract_app_zip(zip_path: String) -> Result<String, String> {
-    let zip_file = Path::new(&zip_path);
-    let parent = zip_file.parent().ok_or("Invalid zip path")?;
-
-    let status = Command::new("ditto")
-        .args(["-xk", &zip_path, &parent.to_string_lossy()])
-        .status()
-        .map_err(|e| e.to_string())?;
-
-    if !status.success() {
-        return Err("Failed to extract update".to_string());
-    }
-
-    let app_path = parent.join("noder.app");
-    if !app_path.exists() {
-        return Err("Extracted app not found.".to_string());
-    }
-
-    fs::remove_file(zip_file).ok();
-
-    Ok(app_path.to_string_lossy().to_string())
-}
-
-#[cfg(not(target_os = "macos"))]
-#[tauri::command]
-fn extract_app_zip(_zip_path: String) -> Result<String, String> {
-    Err("This command is only available on macOS".to_string())
-}
-
-#[tauri::command]
-async fn anthropic_request(api_key: String, model: String, system_prompt: String, user_content: String, temperature: f32) -> Result<String, String> {
-    let client = reqwest::Client::new();
-    
     let mut headers = HeaderMap::new();
-    headers.insert("x-api-key", HeaderValue::from_str(&api_key).map_err(|e| e.to_string())?);
+    headers.insert(
+        "x-api-key",
+        HeaderValue::from_str(&api_key).map_err(|e| e.to_string())?,
+    );
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-    let messages = vec![
-        Message {
-            role: "user".to_string(),
-            content: user_content
-        }
-    ];
+    let messages = vec![Message {
+        role: "user".to_string(),
+        content: user_content,
+    }];
 
     let request_body = AnthropicRequest {
         model,
         messages,
         max_tokens: Some(1024),
         temperature: Some(temperature),
-        system: Some(system_prompt)
+        system: Some(system_prompt),
     };
 
     let response = client
@@ -512,7 +227,7 @@ async fn anthropic_request(api_key: String, model: String, system_prompt: String
     }
 
     let response_data: AnthropicResponse = response.json().await.map_err(|e| e.to_string())?;
-    
+
     // Return the first text content
     if let Some(content) = response_data.content.first() {
         Ok(content.text.clone())
@@ -524,15 +239,15 @@ async fn anthropic_request(api_key: String, model: String, system_prompt: String
 #[tauri::command]
 async fn openai_list_models(app_handle: tauri::AppHandle) -> Result<Vec<OpenAIModel>, String> {
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.openai_api_key
+    let api_key = settings
+        .openai_api_key
         .ok_or("OpenAI API key not configured. Please add it in Settings.")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
     let response = client
@@ -543,12 +258,13 @@ async fn openai_list_models(app_handle: tauri::AppHandle) -> Result<Vec<OpenAIMo
         .map_err(|e| format!("Failed to fetch models: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("OpenAI API error: {}", error_text));
     }
 
-    let models: OpenAIModelsResponse = response.json().await
+    let models: OpenAIModelsResponse = response
+        .json()
+        .await
         .map_err(|e| format!("Failed to parse models response: {}", e))?;
 
     Ok(models.data)
@@ -560,18 +276,18 @@ async fn openai_chat_completion(
     model: String,
     system_prompt: String,
     user_content: String,
-    temperature: Option<f32>
+    temperature: Option<f32>,
 ) -> Result<String, String> {
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.openai_api_key
+    let api_key = settings
+        .openai_api_key
         .ok_or("OpenAI API key not configured. Please add it in Settings.")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
@@ -586,14 +302,14 @@ async fn openai_chat_completion(
         messages: vec![
             OpenAIChatMessage {
                 role: "system".to_string(),
-                content: prompt
+                content: prompt,
             },
             OpenAIChatMessage {
                 role: "user".to_string(),
-                content: user_content
-            }
+                content: user_content,
+            },
         ],
-        temperature: temperature.unwrap_or(0.7)
+        temperature: temperature.unwrap_or(0.7),
     };
 
     let response = client
@@ -605,24 +321,34 @@ async fn openai_chat_completion(
         .map_err(|e| format!("Failed to create completion: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("OpenAI API error: {}", error_text));
     }
 
-    let response_data: OpenAIChatResponse = response.json().await
+    let response_data: OpenAIChatResponse = response
+        .json()
+        .await
         .map_err(|e| format!("Failed to parse OpenAI response: {}", e))?;
 
-    response_data.choices.first()
+    response_data
+        .choices
+        .first()
         .map(|choice| choice.message.content.clone())
         .ok_or("No content in OpenAI response".to_string())
 }
 
 #[tauri::command]
-fn save_workflow(app_handle: tauri::AppHandle, name: String, data: serde_json::Value) -> Result<(), String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+fn save_workflow(
+    app_handle: tauri::AppHandle,
+    name: String,
+    data: serde_json::Value,
+) -> Result<(), String> {
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let workflows_dir = app_data.join("workflows");
-    
+
     if !workflows_dir.exists() {
         fs::create_dir_all(&workflows_dir).map_err(|e| e.to_string())?;
     }
@@ -634,7 +360,11 @@ fn save_workflow(app_handle: tauri::AppHandle, name: String, data: serde_json::V
 
     let safe_id = sanitize_workflow_id(trimmed_name);
     let file_path = workflows_dir.join(format!("{}.json", safe_id));
-    let workflow = Workflow { name: trimmed_name.to_string(), id: safe_id, data };
+    let workflow = Workflow {
+        name: trimmed_name.to_string(),
+        id: safe_id,
+        data,
+    };
     let json = serde_json::to_string_pretty(&workflow).map_err(|e| e.to_string())?;
     fs::write(file_path, json).map_err(|e| e.to_string())?;
     Ok(())
@@ -642,9 +372,12 @@ fn save_workflow(app_handle: tauri::AppHandle, name: String, data: serde_json::V
 
 #[tauri::command]
 fn list_workflows(app_handle: tauri::AppHandle) -> Result<Vec<Workflow>, String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let workflows_dir = app_data.join("workflows");
-    
+
     if !workflows_dir.exists() {
         return Ok(vec![]);
     }
@@ -663,7 +396,10 @@ fn list_workflows(app_handle: tauri::AppHandle) -> Result<Vec<Workflow>, String>
 
 #[tauri::command]
 fn load_workflow(app_handle: tauri::AppHandle, id: String) -> Result<Workflow, String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let safe_id = sanitize_workflow_id(id.trim());
     let file_path = app_data.join("workflows").join(format!("{}.json", safe_id));
     let content = fs::read_to_string(file_path).map_err(|e| e.to_string())?;
@@ -672,8 +408,15 @@ fn load_workflow(app_handle: tauri::AppHandle, id: String) -> Result<Workflow, S
 }
 
 #[tauri::command]
-fn rename_workflow(app_handle: tauri::AppHandle, id: String, new_name: String) -> Result<(), String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+fn rename_workflow(
+    app_handle: tauri::AppHandle,
+    id: String,
+    new_name: String,
+) -> Result<(), String> {
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let workflows_dir = app_data.join("workflows");
     let safe_old_id = sanitize_workflow_id(id.trim());
     let trimmed_name = new_name.trim();
@@ -683,12 +426,12 @@ fn rename_workflow(app_handle: tauri::AppHandle, id: String, new_name: String) -
     let safe_new_id = sanitize_workflow_id(trimmed_name);
     let old_path = workflows_dir.join(format!("{}.json", safe_old_id));
     let new_path = workflows_dir.join(format!("{}.json", safe_new_id));
-    
+
     let content = fs::read_to_string(&old_path).map_err(|e| e.to_string())?;
     let mut workflow: Workflow = serde_json::from_str(&content).map_err(|e| e.to_string())?;
     workflow.name = trimmed_name.to_string();
     workflow.id = safe_new_id;
-    
+
     let json = serde_json::to_string_pretty(&workflow).map_err(|e| e.to_string())?;
     fs::write(&new_path, json).map_err(|e| e.to_string())?;
     fs::remove_file(old_path).map_err(|e| e.to_string())?;
@@ -697,7 +440,10 @@ fn rename_workflow(app_handle: tauri::AppHandle, id: String, new_name: String) -
 
 #[tauri::command]
 fn delete_workflow(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let safe_id = sanitize_workflow_id(id.trim());
     let file_path = app_data.join("workflows").join(format!("{}.json", safe_id));
     fs::remove_file(file_path).map_err(|e| e.to_string())?;
@@ -706,9 +452,12 @@ fn delete_workflow(app_handle: tauri::AppHandle, id: String) -> Result<(), Strin
 
 #[tauri::command]
 fn create_workflow(app_handle: tauri::AppHandle) -> Result<Workflow, String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let workflows_dir = app_data.join("workflows");
-    
+
     if !workflows_dir.exists() {
         fs::create_dir_all(&workflows_dir).map_err(|e| e.to_string())?;
     }
@@ -717,20 +466,24 @@ fn create_workflow(app_handle: tauri::AppHandle) -> Result<Workflow, String> {
     let timestamp = Utc::now().timestamp();
     let name = format!("New Workflow {}", timestamp);
     let id = sanitize_workflow_id(&name);
-    
+
     // Create an empty workflow with default data
     let data = serde_json::json!({
         "nodes": [],
         "edges": []
     });
-    
-    let workflow = Workflow { name, id: id.clone(), data };
-    
+
+    let workflow = Workflow {
+        name,
+        id: id.clone(),
+        data,
+    };
+
     // Save the workflow to disk
     let file_path = workflows_dir.join(format!("{}.json", id));
     let json = serde_json::to_string_pretty(&workflow).map_err(|e| e.to_string())?;
     fs::write(file_path, json).map_err(|e| e.to_string())?;
-    
+
     Ok(workflow)
 }
 
@@ -739,21 +492,27 @@ async fn send_whatsapp_message(
     phone_number: String,
     message: String,
     app_handle: tauri::AppHandle,
-    state: State<'_, WhatsAppState>
+    state: State<'_, WhatsAppState>,
 ) -> Result<(), String> {
     // Check if WhatsApp is connected
-    let whatsapp_status = state.0.lock()
+    let whatsapp_status = state
+        .0
+        .lock()
         .map_err(|_| "Failed to lock WhatsApp state".to_string())?
         .clone();
     println!("Current WhatsApp status: {:?}", whatsapp_status);
     if !whatsapp_status.is_authenticated || !whatsapp_status.is_client_ready {
-        let err = format!("WhatsApp is not connected (status: {}). Please scan the QR code first.", whatsapp_status.status);
+        let err = format!(
+            "WhatsApp is not connected (status: {}). Please scan the QR code first.",
+            whatsapp_status.status
+        );
         println!("{}", err);
         return Err(err);
     }
 
     // Format phone number (remove any non-numeric characters)
-    let phone_number = phone_number.chars()
+    let phone_number = phone_number
+        .chars()
         .filter(|c| c.is_ascii_digit())
         .collect::<String>();
     println!(
@@ -761,14 +520,13 @@ async fn send_whatsapp_message(
         mask_phone_number(&phone_number),
         message.len()
     );
-    
+
     // Get app data directory
-    let app_data = app_handle.path().app_data_dir()
-        .map_err(|e| {
-            let err = format!("Failed to get app data directory: {}", e);
-            println!("{}", err);
-            err
-        })?;
+    let app_data = app_handle.path().app_data_dir().map_err(|e| {
+        let err = format!("Failed to get app data directory: {}", e);
+        println!("{}", err);
+        err
+    })?;
     let data_dir = app_data.join("whatsapp");
     if cfg!(debug_assertions) {
         println!("Using data directory: {}", data_dir.display());
@@ -776,9 +534,9 @@ async fn send_whatsapp_message(
 
     // Create data directory if it doesn't exist
     if !data_dir.exists() {
-    if cfg!(debug_assertions) {
-        println!("Creating data directory");
-    }
+        if cfg!(debug_assertions) {
+            println!("Creating data directory");
+        }
         fs::create_dir_all(&data_dir).map_err(|e| {
             let err = format!("Failed to create data directory: {}", e);
             println!("{}", err);
@@ -797,7 +555,7 @@ async fn send_whatsapp_message(
             }
         }
     }
-    
+
     // Create the message file
     let message_data = serde_json::json!({
         "phoneNumber": phone_number,
@@ -813,9 +571,9 @@ async fn send_whatsapp_message(
 
     // Remove any existing error file
     if error_path.exists() {
-    if cfg!(debug_assertions) {
-        println!("Removing existing error file");
-    }
+        if cfg!(debug_assertions) {
+            println!("Removing existing error file");
+        }
         fs::remove_file(&error_path).map_err(|e| {
             let err = format!("Failed to remove error file: {}", e);
             println!("{}", err);
@@ -833,8 +591,9 @@ async fn send_whatsapp_message(
             let err = format!("Failed to serialize message data: {}", e);
             println!("{}", err);
             err
-        })?
-    ).map_err(|e| {
+        })?,
+    )
+    .map_err(|e| {
         let err = format!("Failed to write message file: {}", e);
         println!("{}", err);
         err
@@ -859,15 +618,14 @@ async fn send_whatsapp_message(
     let start = std::time::Instant::now();
     while message_path.exists() && start.elapsed() < std::time::Duration::from_secs(5) {
         std::thread::sleep(std::time::Duration::from_millis(100));
-        
+
         // Check for error
         if error_path.exists() {
-            let error = fs::read_to_string(&error_path)
-                .map_err(|e| {
-                    let err = format!("Failed to read error file: {}", e);
-                    println!("{}", err);
-                    err
-                })?;
+            let error = fs::read_to_string(&error_path).map_err(|e| {
+                let err = format!("Failed to read error file: {}", e);
+                println!("{}", err);
+                err
+            })?;
             println!("Error from WhatsApp service: {}", error);
             fs::remove_file(&error_path).ok();
             return Err(error);
@@ -897,8 +655,13 @@ async fn send_whatsapp_message(
 }
 
 #[tauri::command]
-async fn get_whatsapp_status(app: tauri::AppHandle, state: State<'_, WhatsAppState>) -> Result<WhatsAppStatus, String> {
-    let app_data = app.path().app_data_dir()
+async fn get_whatsapp_status(
+    app: tauri::AppHandle,
+    state: State<'_, WhatsAppState>,
+) -> Result<WhatsAppStatus, String> {
+    let app_data = app
+        .path()
+        .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let status_file = app_data.join("whatsapp").join("status.txt");
 
@@ -908,7 +671,7 @@ async fn get_whatsapp_status(app: tauri::AppHandle, state: State<'_, WhatsAppSta
             timestamp: "0".to_string(),
             is_authenticated: false,
             is_client_ready: false,
-            is_initializing: false
+            is_initializing: false,
         });
     }
 
@@ -918,30 +681,42 @@ async fn get_whatsapp_status(app: tauri::AppHandle, state: State<'_, WhatsAppSta
     let status: serde_json::Value = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse status JSON: {}", e))?;
 
-    let mut whatsapp_status = state.0.lock()
+    let mut whatsapp_status = state
+        .0
+        .lock()
         .map_err(|_| "Failed to lock WhatsApp state".to_string())?;
     *whatsapp_status = WhatsAppStatus {
-        status: status["status"].as_str().unwrap_or("disconnected").to_string(),
+        status: status["status"]
+            .as_str()
+            .unwrap_or("disconnected")
+            .to_string(),
         timestamp: status["timestamp"].as_str().unwrap_or("0").to_string(),
         is_authenticated: status["isAuthenticated"].as_bool().unwrap_or(false),
         is_client_ready: status["isClientReady"].as_bool().unwrap_or(false),
-        is_initializing: status["isInitializing"].as_bool().unwrap_or(false)
+        is_initializing: status["isInitializing"].as_bool().unwrap_or(false),
     };
 
     Ok(whatsapp_status.clone())
 }
 
 #[tauri::command]
-async fn init_whatsapp(app_handle: tauri::AppHandle, state: State<'_, WhatsAppState>) -> Result<(), String> {
-    let app_data = app_handle.path().app_data_dir().map_err(|e| format!("Failed to get app data directory: {}", e))?;
+async fn init_whatsapp(
+    app_handle: tauri::AppHandle,
+    state: State<'_, WhatsAppState>,
+) -> Result<(), String> {
+    let app_data = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let whatsapp_dir = app_data.join("whatsapp");
-    
+
     if !whatsapp_dir.exists() {
         fs::create_dir_all(&whatsapp_dir).map_err(|e| e.to_string())?;
     }
 
     // Set environment variable for WhatsApp service
-    let whatsapp_dir_str = whatsapp_dir.to_str()
+    let whatsapp_dir_str = whatsapp_dir
+        .to_str()
         .ok_or("Invalid WhatsApp data directory path")?;
     std::env::set_var("WHATSAPP_DATA_DIR", whatsapp_dir_str);
 
@@ -952,9 +727,9 @@ async fn init_whatsapp(app_handle: tauri::AppHandle, state: State<'_, WhatsAppSt
         timestamp: Utc::now().to_rfc3339(),
         is_authenticated: false,
         is_client_ready: false,
-        is_initializing: true
+        is_initializing: true,
     };
-    
+
     // Write initial status to file
     if let Ok(status_json) = serde_json::to_string_pretty(&init_status) {
         let _ = fs::write(&status_file, status_json);
@@ -1009,9 +784,11 @@ async fn listen_whatsapp_messages(
     phone_numbers: Vec<String>,
     command: String,
     app_handle: tauri::AppHandle,
-    _state: State<'_, WhatsAppState>
+    _state: State<'_, WhatsAppState>,
 ) -> Result<(), String> {
-    let data_dir = app_handle.path().app_data_dir()
+    let data_dir = app_handle
+        .path()
+        .app_data_dir()
         .map_err(|e| e.to_string())?
         .join("whatsapp");
 
@@ -1023,28 +800,34 @@ async fn listen_whatsapp_messages(
         "command": command
     });
 
-    fs::write(&listeners_file, serde_json::to_string_pretty(&listeners_data).unwrap())
-        .map_err(|e| format!("Failed to write listeners file: {}", e))?;
+    fs::write(
+        &listeners_file,
+        serde_json::to_string_pretty(&listeners_data).unwrap(),
+    )
+    .map_err(|e| format!("Failed to write listeners file: {}", e))?;
 
     // Start a thread to check for received messages
     let app_handle_clone = app_handle.clone();
     thread::spawn(move || {
         let mut last_check = std::time::SystemTime::now();
-        
+
         loop {
             thread::sleep(Duration::from_millis(500));
 
             let received_file = data_dir.join(format!("received_{}.json", id));
-            
+
             match fs::metadata(&received_file) {
                 Ok(metadata) => {
                     if let Ok(modified) = metadata.modified() {
                         if modified > last_check {
                             if let Ok(content) = fs::read_to_string(&received_file) {
-                                if let Ok(message) = serde_json::from_str::<WhatsAppReceivedMessage>(&content) {
+                                if let Ok(message) =
+                                    serde_json::from_str::<WhatsAppReceivedMessage>(&content)
+                                {
                                     // Emit the received message event
-                                    let _ = app_handle_clone.emit("whatsapp-message-received", message.clone());
-                                    
+                                    let _ = app_handle_clone
+                                        .emit("whatsapp-message-received", message.clone());
+
                                     // Remove the file after processing
                                     let _ = fs::remove_file(&received_file);
                                 }
@@ -1062,11 +845,10 @@ async fn listen_whatsapp_messages(
 }
 
 #[tauri::command]
-async fn stop_whatsapp_listener(
-    id: String,
-    app_handle: tauri::AppHandle
-) -> Result<(), String> {
-    let data_dir = app_handle.path().app_data_dir()
+async fn stop_whatsapp_listener(id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let data_dir = app_handle
+        .path()
+        .app_data_dir()
         .map_err(|e| e.to_string())?
         .join("whatsapp");
 
@@ -1082,19 +864,19 @@ async fn stop_whatsapp_listener(
 async fn replicate_create_prediction(
     app_handle: tauri::AppHandle,
     model: String,
-    input: serde_json::Value
+    input: serde_json::Value,
 ) -> Result<ReplicatePrediction, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured. Please add it in Settings.")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
@@ -1110,7 +892,10 @@ async fn replicate_create_prediction(
             format!("https://api.replicate.com/v1/predictions")
         } else {
             // No version, use model-specific endpoint (official models only)
-            format!("https://api.replicate.com/v1/models/{}/predictions", model_path)
+            format!(
+                "https://api.replicate.com/v1/models/{}/predictions",
+                model_path
+            )
         }
     } else {
         // Just a version ID, use general endpoint
@@ -1145,15 +930,24 @@ async fn replicate_create_prediction(
         .map_err(|e| format!("Failed to create prediction: {}", e))?;
 
     let status = response.status();
-    let response_text = response.text().await
+    let response_text = response
+        .text()
+        .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
     if !status.is_success() {
-        return Err(format!("Replicate API error ({}): {}", status, response_text));
+        return Err(format!(
+            "Replicate API error ({}): {}",
+            status, response_text
+        ));
     }
 
-    let prediction: ReplicatePrediction = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse prediction response: {} - Response: {}", e, response_text))?;
+    let prediction: ReplicatePrediction = serde_json::from_str(&response_text).map_err(|e| {
+        format!(
+            "Failed to parse prediction response: {} - Response: {}",
+            e, response_text
+        )
+    })?;
 
     Ok(prediction)
 }
@@ -1161,19 +955,19 @@ async fn replicate_create_prediction(
 #[tauri::command]
 async fn replicate_get_prediction(
     app_handle: tauri::AppHandle,
-    prediction_id: String
+    prediction_id: String,
 ) -> Result<ReplicatePrediction, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
     let url = format!("https://api.replicate.com/v1/predictions/{}", prediction_id);
@@ -1186,12 +980,13 @@ async fn replicate_get_prediction(
         .map_err(|e| format!("Failed to get prediction: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("Replicate API error: {}", error_text));
     }
 
-    let prediction: ReplicatePrediction = response.json().await
+    let prediction: ReplicatePrediction = response
+        .json()
+        .await
         .map_err(|e| format!("Failed to parse prediction: {}", e))?;
 
     Ok(prediction)
@@ -1200,22 +995,25 @@ async fn replicate_get_prediction(
 #[tauri::command]
 async fn replicate_cancel_prediction(
     app_handle: tauri::AppHandle,
-    prediction_id: String
+    prediction_id: String,
 ) -> Result<ReplicatePrediction, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
-    let url = format!("https://api.replicate.com/v1/predictions/{}/cancel", prediction_id);
+    let url = format!(
+        "https://api.replicate.com/v1/predictions/{}/cancel",
+        prediction_id
+    );
 
     let response = client
         .post(&url)
@@ -1225,12 +1023,13 @@ async fn replicate_cancel_prediction(
         .map_err(|e| format!("Failed to cancel prediction: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("Replicate API error: {}", error_text));
     }
 
-    let prediction: ReplicatePrediction = response.json().await
+    let prediction: ReplicatePrediction = response
+        .json()
+        .await
         .map_err(|e| format!("Failed to parse prediction: {}", e))?;
 
     Ok(prediction)
@@ -1240,22 +1039,25 @@ async fn replicate_cancel_prediction(
 async fn replicate_get_model(
     app_handle: tauri::AppHandle,
     owner: String,
-    model_name: String
+    model_name: String,
 ) -> Result<ReplicateModel, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured. Please add it in Settings.")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
-    let url = format!("https://api.replicate.com/v1/models/{}/{}", owner, model_name);
+    let url = format!(
+        "https://api.replicate.com/v1/models/{}/{}",
+        owner, model_name
+    );
 
     let response = client
         .get(&url)
@@ -1265,12 +1067,13 @@ async fn replicate_get_model(
         .map_err(|e| format!("Failed to get model: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("Replicate API error: {}", error_text));
     }
 
-    let model: ReplicateModel = response.json().await
+    let model: ReplicateModel = response
+        .json()
+        .await
         .map_err(|e| format!("Failed to parse model: {}", e))?;
 
     Ok(model)
@@ -1279,19 +1082,19 @@ async fn replicate_get_model(
 #[tauri::command]
 async fn replicate_list_models(
     app_handle: tauri::AppHandle,
-    collection_slug: Option<String>
+    collection_slug: Option<String>,
 ) -> Result<ReplicateModelsResponse, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured. Please add it in Settings.")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
     // Use collection endpoint if collection_slug is provided, otherwise use general models endpoint
@@ -1307,29 +1110,29 @@ async fn replicate_list_models(
             .map_err(|e| format!("Failed to list models: {}", e))?;
 
         if !response.status().is_success() {
-            let error_text = response.text().await
-                .map_err(|e| e.to_string())?;
+            let error_text = response.text().await.map_err(|e| e.to_string())?;
             return Err(format!("Replicate API error: {}", error_text));
         }
 
-        let response_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let response_text = response.text().await.map_err(|e| e.to_string())?;
 
         // Collection endpoint returns { models: [...] }
         let collection_data: serde_json::Value = serde_json::from_str(&response_text)
             .map_err(|e| format!("Failed to parse collection response: {}", e))?;
 
-        let models = collection_data["models"].as_array()
+        let models = collection_data["models"]
+            .as_array()
             .ok_or("Collection response missing models array")?;
 
-        let parsed_models: Vec<ReplicateModel> = models.iter()
+        let parsed_models: Vec<ReplicateModel> = models
+            .iter()
             .filter_map(|m| serde_json::from_value(m.clone()).ok())
             .collect();
 
         Ok(ReplicateModelsResponse {
             next: None,
             previous: None,
-            results: parsed_models
+            results: parsed_models,
         })
     } else {
         // General models endpoint - paginated, fetch multiple pages
@@ -1351,13 +1154,11 @@ async fn replicate_list_models(
                 .map_err(|e| format!("Failed to list models: {}", e))?;
 
             if !response.status().is_success() {
-                let error_text = response.text().await
-                    .map_err(|e| e.to_string())?;
+                let error_text = response.text().await.map_err(|e| e.to_string())?;
                 return Err(format!("Replicate API error: {}", error_text));
             }
 
-            let response_text = response.text().await
-                .map_err(|e| e.to_string())?;
+            let response_text = response.text().await.map_err(|e| e.to_string())?;
 
             let page_response: ReplicateModelsResponse = serde_json::from_str(&response_text)
                 .map_err(|e| format!("Failed to parse models response: {}", e))?;
@@ -1370,7 +1171,7 @@ async fn replicate_list_models(
         Ok(ReplicateModelsResponse {
             next: None,
             previous: None,
-            results: all_models
+            results: all_models,
         })
     }
 }
@@ -1380,51 +1181,56 @@ async fn replicate_upload_file(
     app_handle: tauri::AppHandle,
     file_path: String,
     filename: String,
-    content_type: String
+    content_type: String,
 ) -> Result<ReplicateFileUpload, String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured")?;
 
     // Read the file
-    let file_bytes = fs::read(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
-    
+    let file_bytes = fs::read(&file_path).map_err(|e| format!("Failed to read file: {}", e))?;
+
     // Create multipart form
     let client = reqwest::Client::new();
-    
+
     // Build the multipart form manually with proper boundaries
     let boundary = format!("----WebKitFormBoundary{}", chrono::Utc::now().timestamp());
-    
+
     let mut body = Vec::new();
-    
+
     // Add content field
     body.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
-    body.extend_from_slice(format!("Content-Disposition: form-data; name=\"content\"; filename=\"{}\"\r\n", filename).as_bytes());
+    body.extend_from_slice(
+        format!(
+            "Content-Disposition: form-data; name=\"content\"; filename=\"{}\"\r\n",
+            filename
+        )
+        .as_bytes(),
+    );
     body.extend_from_slice(format!("Content-Type: {}\r\n\r\n", content_type).as_bytes());
     body.extend_from_slice(&file_bytes);
     body.extend_from_slice(b"\r\n");
-    
+
     // Add metadata field (empty object)
     body.extend_from_slice(format!("--{}\r\n", boundary).as_bytes());
     body.extend_from_slice(b"Content-Disposition: form-data; name=\"metadata\"\r\n");
     body.extend_from_slice(b"Content-Type: application/json\r\n\r\n");
     body.extend_from_slice(b"{}\r\n");
-    
+
     // Add final boundary
     body.extend_from_slice(format!("--{}--\r\n", boundary).as_bytes());
-    
+
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
     headers.insert(
         CONTENT_TYPE,
         HeaderValue::from_str(&format!("multipart/form-data; boundary={}", boundary))
-            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?,
     );
 
     let response = client
@@ -1436,15 +1242,24 @@ async fn replicate_upload_file(
         .map_err(|e| format!("Failed to upload file: {}", e))?;
 
     let status = response.status();
-    let response_text = response.text().await
+    let response_text = response
+        .text()
+        .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
     if !status.is_success() {
-        return Err(format!("Replicate API error ({}): {}", status, response_text));
+        return Err(format!(
+            "Replicate API error ({}): {}",
+            status, response_text
+        ));
     }
 
-    let file_upload: ReplicateFileUpload = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse file upload response: {} - Response: {}", e, response_text))?;
+    let file_upload: ReplicateFileUpload = serde_json::from_str(&response_text).map_err(|e| {
+        format!(
+            "Failed to parse file upload response: {} - Response: {}",
+            e, response_text
+        )
+    })?;
 
     if cfg!(debug_assertions) {
         println!("File uploaded successfully:");
@@ -1459,19 +1274,19 @@ async fn replicate_upload_file(
 #[tauri::command]
 async fn replicate_delete_file(
     app_handle: tauri::AppHandle,
-    file_id: String
+    file_id: String,
 ) -> Result<(), String> {
     // Load settings to get API key
     let settings = load_settings(app_handle).await?;
-    let api_key = settings.replicate_api_key
+    let api_key = settings
+        .replicate_api_key
         .ok_or("Replicate API key not configured")?;
 
     let client = reqwest::Client::new();
     let mut headers = HeaderMap::new();
     headers.insert(
         "Authorization",
-        HeaderValue::from_str(&format!("Bearer {}", api_key))
-            .map_err(|e| e.to_string())?
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).map_err(|e| e.to_string())?,
     );
 
     let url = format!("https://api.replicate.com/v1/files/{}", file_id);
@@ -1484,196 +1299,11 @@ async fn replicate_delete_file(
         .map_err(|e| format!("Failed to delete file: {}", e))?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await
-            .map_err(|e| e.to_string())?;
+        let error_text = response.text().await.map_err(|e| e.to_string())?;
         return Err(format!("Replicate API error: {}", error_text));
     }
 
     Ok(())
-}
-
-#[tauri::command]
-async fn download_and_save_file(
-    app_handle: tauri::AppHandle,
-    url: String,
-    filename: Option<String>,
-    destination_folder: Option<String>
-) -> Result<String, String> {
-    // Download the file
-    let client = reqwest::Client::new();
-    
-    // Check if this is a Replicate API URL and add auth header if needed
-    let mut request = client.get(&url);
-    
-    if url.starts_with("https://api.replicate.com/") {
-        // Load settings to get API key for Replicate file URLs
-        let settings = load_settings(app_handle.clone()).await?;
-        if let Some(api_key) = settings.replicate_api_key {
-            let mut headers = HeaderMap::new();
-            headers.insert(
-                "Authorization",
-                HeaderValue::from_str(&format!("Bearer {}", api_key))
-                    .map_err(|e| format!("Failed to create auth header: {}", e))?
-            );
-            request = request.headers(headers);
-            
-            if cfg!(debug_assertions) {
-                println!("Added Authorization header for Replicate file download");
-            }
-        } else {
-            return Err("Replicate API key not configured but required for file download".to_string());
-        }
-    }
-    
-    let response = request
-        .send()
-        .await
-        .map_err(|e| format!("Failed to download file: {}", e))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        let error_body = response.text().await.unwrap_or_default();
-        return Err(format!("Download failed with status: {} - {}", status, error_body));
-    }
-
-    let bytes = response.bytes().await
-        .map_err(|e| format!("Failed to read file bytes: {}", e))?;
-
-    // Determine destination folder
-    let dest_folder = resolve_destination_folder(&app_handle, destination_folder)?;
-
-    // Create destination folder if it doesn't exist
-    if !dest_folder.exists() {
-        fs::create_dir_all(&dest_folder)
-            .map_err(|e| format!("Failed to create destination folder: {}", e))?;
-    }
-
-    // Determine filename
-    let file_name = if let Some(name) = filename {
-        sanitize_filename(&name)
-    } else {
-        // Extract filename from URL or generate one
-        let timestamp = Utc::now().timestamp();
-
-        // Try to get file extension from URL
-        let raw_extension = url
-            .split('?')
-            .next()
-            .and_then(|s| s.split('.').last())
-            .unwrap_or("png");
-        let extension = sanitize_extension(raw_extension);
-        let extension = if extension.is_empty() { "png".to_string() } else { extension };
-
-        sanitize_filename(&format!("noder-output-{}.{}", timestamp, extension))
-    };
-
-    let file_path = dest_folder.join(&file_name);
-
-    // Save the file
-    fs::write(&file_path, &bytes)
-        .map_err(|e| format!("Failed to write file: {}", e))?;
-
-    // Return the absolute path as a string
-    Ok(file_path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-async fn read_file_as_base64(file_path: String) -> Result<String, String> {
-    use std::fs;
-    use base64::{Engine as _, engine::general_purpose};
-
-    // Read the file bytes
-    let bytes = fs::read(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
-
-    // Detect MIME type from file extension
-    let mime_type = if file_path.to_lowercase().ends_with(".png") {
-        "image/png"
-    } else if file_path.to_lowercase().ends_with(".jpg") || file_path.to_lowercase().ends_with(".jpeg") {
-        "image/jpeg"
-    } else if file_path.to_lowercase().ends_with(".gif") {
-        "image/gif"
-    } else if file_path.to_lowercase().ends_with(".webp") {
-        "image/webp"
-    } else if file_path.to_lowercase().ends_with(".mp4") {
-        "video/mp4"
-    } else if file_path.to_lowercase().ends_with(".webm") {
-        "video/webm"
-    } else {
-        "application/octet-stream"
-    };
-
-    // Encode to base64
-    let base64_data = general_purpose::STANDARD.encode(&bytes);
-
-    // Return as data URL
-    Ok(format!("data:{};base64,{}", mime_type, base64_data))
-}
-
-#[tauri::command]
-async fn save_uploaded_file(
-    app_handle: tauri::AppHandle,
-    filename: String,
-    data: String
-) -> Result<String, String> {
-    use base64::{Engine as _, engine::general_purpose};
-
-    // Parse the data URL to extract the base64 data
-    let base64_data = if data.starts_with("data:") {
-        // Extract base64 part from data URL (format: data:mime/type;base64,...)
-        data.split(',')
-            .nth(1)
-            .ok_or("Invalid data URL format")?
-    } else {
-        &data
-    };
-
-    // Decode base64 data
-    let bytes = general_purpose::STANDARD
-        .decode(base64_data)
-        .map_err(|e| format!("Failed to decode base64 data: {}", e))?;
-
-    // Determine destination folder (use Downloads/noder/uploads)
-    let download_dir = app_handle.path().download_dir()
-        .map_err(|e| format!("Failed to get downloads directory: {}", e))?;
-    let dest_folder = download_dir.join("noder").join("uploads");
-
-    // Create destination folder if it doesn't exist
-    if !dest_folder.exists() {
-        fs::create_dir_all(&dest_folder)
-            .map_err(|e| format!("Failed to create destination folder: {}", e))?;
-    }
-
-    let safe_filename = sanitize_filename(&filename);
-
-    // Generate unique filename if file already exists
-    let mut file_path = dest_folder.join(&safe_filename);
-    let mut counter = 1;
-    let file_stem = std::path::Path::new(&safe_filename)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("file");
-    let file_ext = std::path::Path::new(&safe_filename)
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
-
-    while file_path.exists() {
-        let new_filename = if file_ext.is_empty() {
-            format!("{}_{}", file_stem, counter)
-        } else {
-            format!("{}_{}.{}", file_stem, counter, file_ext)
-        };
-        file_path = dest_folder.join(new_filename);
-        counter += 1;
-    }
-
-    // Save the file
-    fs::write(&file_path, &bytes)
-        .map_err(|e| format!("Failed to write file: {}", e))?;
-
-    // Return the absolute path as a string
-    Ok(file_path.to_string_lossy().to_string())
 }
 
 fn main() {
@@ -1682,7 +1312,7 @@ fn main() {
         timestamp: Utc::now().to_rfc3339(),
         is_authenticated: false,
         is_client_ready: false,
-        is_initializing: true
+        is_initializing: true,
     };
 
     let whatsapp_state = WhatsAppState(Arc::new(Mutex::new(whatsapp_status)));
@@ -1696,7 +1326,7 @@ fn main() {
         .manage(whatsapp_state_clone)
         .setup(|app| {
             let handle = app.handle().clone();
-            
+
             // Run init_whatsapp asynchronously
             tauri::async_runtime::spawn(async move {
                 let state = handle.state::<WhatsAppState>();
@@ -1704,7 +1334,7 @@ fn main() {
                     eprintln!("Failed to initialize WhatsApp: {}", e);
                 }
             });
-            
+
             Ok(())
         })
         .invoke_handler(generate_handler![
@@ -1731,13 +1361,13 @@ fn main() {
             replicate_list_models,
             replicate_upload_file,
             replicate_delete_file,
-            fetch_github_release,
-            download_update,
-            apply_update,
-            extract_app_zip,
-            download_and_save_file,
-            read_file_as_base64,
-            save_uploaded_file
+            updates::fetch_github_release,
+            updates::download_update,
+            updates::apply_update,
+            updates::extract_app_zip,
+            file_commands::download_and_save_file,
+            file_commands::read_file_as_base64,
+            file_commands::save_uploaded_file
         ])
         .run(generate_context!())
         .expect("error while running tauri application");
