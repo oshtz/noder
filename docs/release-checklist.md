@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist before tagging or dispatching a release build.
+Use this checklist before pushing a `v*` tag or dispatching a release build.
 
 ## Local Gates
 
@@ -11,6 +11,7 @@ npm run format:check
 npm run typecheck
 npm run test:run
 npm run test:smoke
+npm run test:release-artifacts
 cd src-tauri && cargo check && cargo test
 ```
 
@@ -39,6 +40,8 @@ Windows portable builds use Enigma Virtual Box. To avoid depending only on the v
 
 ## Release Assets
 
+Release packaging runs for `v*` tags and manual workflow dispatches. Ordinary `main` pushes run validation only so they cannot republish an existing version by accident.
+
 Every published release should include:
 
 - `noder-win.zip`
@@ -51,6 +54,12 @@ Every published release should include:
 Verify checksum manifests against the downloaded files before announcing a release.
 
 The in-app updater requires the platform checksum manifest for available updates and verifies the downloaded update asset before it becomes installable.
+
+After the release workflow publishes assets, verify the published files and checksum manifests:
+
+```bash
+npm run verify:release-artifacts -- v0.1.4
+```
 
 ## Updater Smoke Test
 

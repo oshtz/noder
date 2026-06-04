@@ -36,6 +36,8 @@
     "test:run": "vitest run",
     "test:smoke": "vitest run src/stores/__tests__/useSettingsStore.test.ts src/hooks/useUndoRedo.test.ts src/utils/workflowSchema.test.js src/utils/createNode.test.ts src/context/WorkflowContext.test.tsx",
     "test:release-smoke": "node scripts/check-release-workflow.mjs",
+    "test:release-artifacts": "node --test scripts/verify-release-artifacts.node-test.mjs",
+    "verify:release-artifacts": "node scripts/verify-release-artifacts.mjs",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --no-config --ignore-path .prettierignore --single-quote --tab-width 2 --trailing-comma es5 --bracket-spacing --arrow-parens always --print-width 100 --end-of-line lf --write \"src/**/*.{js,jsx,ts,tsx,css}\" \"scripts/**/*.{js,mjs,cjs}\" \"*.{js,json,md}\" \".github/**/*.{yml,yaml}\" \"src-tauri/tauri.conf.json\" \"src-tauri/capabilities/**/*.json\"",
