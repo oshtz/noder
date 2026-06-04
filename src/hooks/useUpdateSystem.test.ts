@@ -68,13 +68,13 @@ describe('useUpdateSystem', () => {
   });
 
   // Helper to simulate Tauri environment
-  const _setupTauriEnvironment = () => {
+  const setupTauriEnvironment = () => {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
       value: { invoke: vi.fn() },
       writable: true,
       configurable: true,
     });
-    // Mock import.meta.env.DEV as false
+    vi.stubEnv('MODE', 'test');
     vi.stubEnv('DEV', false);
   };
 
@@ -225,12 +225,7 @@ describe('useUpdateSystem', () => {
     });
 
     it('should attach the platform checksum from the release manifest', async () => {
-      vi.stubEnv('DEV', false);
-      Object.defineProperty(window, '__TAURI_INTERNALS__', {
-        value: { invoke: vi.fn() },
-        writable: true,
-        configurable: true,
-      });
+      setupTauriEnvironment();
       setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
       mockGetVersion.mockResolvedValue('1.0.0');
 
@@ -326,12 +321,7 @@ describe('useUpdateSystem', () => {
     });
 
     it('should verify the downloaded update before marking it ready', async () => {
-      vi.stubEnv('DEV', false);
-      Object.defineProperty(window, '__TAURI_INTERNALS__', {
-        value: { invoke: vi.fn() },
-        writable: true,
-        configurable: true,
-      });
+      setupTauriEnvironment();
       setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
       mockGetVersion.mockResolvedValue('1.0.0');
 
@@ -367,12 +357,7 @@ describe('useUpdateSystem', () => {
     });
 
     it('should not download updates without an expected checksum', async () => {
-      vi.stubEnv('DEV', false);
-      Object.defineProperty(window, '__TAURI_INTERNALS__', {
-        value: { invoke: vi.fn() },
-        writable: true,
-        configurable: true,
-      });
+      setupTauriEnvironment();
       setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
       mockGetVersion.mockResolvedValue('1.0.0');
 
