@@ -12,6 +12,7 @@ npm run typecheck
 npm run test:run
 npm run test:smoke
 npm run test:release-artifacts
+npm run test:release-prereqs
 cd src-tauri && cargo check && cargo test
 ```
 
@@ -26,17 +27,25 @@ macOS releases require:
 - `APPLE_PASSWORD`
 - `APPLE_TEAM_ID`
 
-Windows Authenticode signing is optional but recommended:
+Windows Authenticode signing is required by default for release packaging:
 
 - `WINDOWS_CODESIGN_CERTIFICATE` as a base64-encoded `.pfx`
 - `WINDOWS_CODESIGN_PASSWORD`
 
-If the Windows secrets are missing, the workflow still publishes unsigned Windows artifacts and prints a warning in the build log.
+If the Windows secrets are missing, tagged release packaging fails before building Windows artifacts.
+For a manual non-production packaging test, dispatch the workflow with
+`allow_unsigned_windows=true`; the signing step will publish unsigned Windows artifacts and print a
+warning in the build log.
 
-Windows portable builds use Enigma Virtual Box. To avoid depending only on the vendor download URL during release builds, configure these repository variables when a controlled installer mirror is available:
+Windows portable builds use Enigma Virtual Box. Configure these repository variables before release
+packaging so the build uses an operator-controlled installer mirror and verifies it before install:
 
 - `ENIGMA_VIRTUAL_BOX_INSTALLER_URL`
 - `ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256`
+
+If those variables are missing, tagged release packaging fails before building Windows artifacts. For
+a manual non-production packaging test, dispatch the workflow with
+`allow_vendor_enigma_download=true` to permit the vendor fallback URLs.
 
 ## Release Assets
 

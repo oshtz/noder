@@ -7,6 +7,17 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      allow_unsigned_windows:
+        description: 'Allow publishing unsigned Windows artifacts for this manual build'
+        required: false
+        type: boolean
+        default: false
+      allow_vendor_enigma_download:
+        description: 'Allow Enigma Virtual Box vendor fallback download for this manual build'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -57,6 +68,9 @@ jobs:
       - name: Run release artifact verifier tests
         run: npm run test:release-artifacts
 
+      - name: Run release prerequisite tests
+        run: npm run test:release-prereqs
+
       - name: Build frontend
         run: npm run build
 
@@ -94,6 +108,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check Windows release prerequisites
+        shell: pwsh
+        env:
+          ALLOW_UNSIGNED_WINDOWS: ${{ inputs.allow_unsigned_windows || 'false' }}
+          ALLOW_VENDOR_ENIGMA_DOWNLOAD: ${{ inputs.allow_vendor_enigma_download || 'false' }}
+          WINDOWS_CODESIGN_CERTIFICATE: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE }}
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+          ENIGMA_VIRTUAL_BOX_INSTALLER_URL: ${{ vars.ENIGMA_VIRTUAL_BOX_INSTALLER_URL }}
+          ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256: ${{ vars.ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256 }}
+        run: npm run check:release-prereqs
 
       - name: Build Tauri app
         run: npm run tauri:build -- --no-bundle
