@@ -2,27 +2,18 @@ import { describe, expect, it, vi, beforeEach, afterEach, type MockInstance } fr
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { parseSha256Manifest, useUpdateSystem, type UpdateInfo } from './useUpdateSystem';
 
-// Mock dependencies
-vi.mock('../types/tauri', () => ({
-  invoke: vi.fn(),
+const { mockInvoke, mockGetVersion } = vi.hoisted(() => ({
+  mockInvoke: vi.fn(),
+  mockGetVersion: vi.fn(),
 }));
 
-vi.mock('@tauri-apps/api/app', () => ({
-  getVersion: vi.fn(),
-}));
-
-// Get mocked modules
-const mockInvoke = vi.fn();
-const mockGetVersion = vi.fn();
-
-// Re-mock with actual implementations for better control
-vi.mock('../types/tauri', async () => {
+vi.mock('../types/tauri', () => {
   return {
     invoke: (...args: unknown[]) => mockInvoke(...args),
   };
 });
 
-vi.mock('@tauri-apps/api/app', async () => {
+vi.mock('@tauri-apps/api/app', () => {
   return {
     getVersion: () => mockGetVersion(),
   };
@@ -36,7 +27,8 @@ describe('useUpdateSystem', () => {
   const _originalWindow = { ...window };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockInvoke.mockReset();
+    mockGetVersion.mockReset();
     vi.useFakeTimers({ shouldAdvanceTime: true });
 
     // Store original userAgent
