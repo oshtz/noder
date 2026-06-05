@@ -22,7 +22,13 @@ export function EmptyWorkflowOverlay({
       <div className="empty-workflow-card" role="status" aria-live="polite">
         <div className="empty-workflow-eyebrow">Empty workflow</div>
         <h2 className="empty-workflow-title">How do you want to start?</h2>
-        <p className="empty-workflow-subtitle">Pick a path to begin, then add your first node.</p>
+        <p className="empty-workflow-subtitle">
+          Double-click the canvas to open the node menu, or pick a path below.
+        </p>
+        <div className="empty-workflow-instructions" aria-label="Canvas shortcuts">
+          <span className="empty-workflow-kbd">Double-click</span>
+          <span>Open node menu anywhere on the canvas</span>
+        </div>
         <div className="empty-workflow-actions">
           {showAssistantPanel && (
             <button
@@ -46,9 +52,9 @@ export function EmptyWorkflowOverlay({
               <FaMagic />
             </span>
             <span className="empty-workflow-button-copy">
-              <span className="empty-workflow-button-title">Start from scratch</span>
+              <span className="empty-workflow-button-title">Open node menu</span>
               <span className="empty-workflow-button-description">
-                Open the node menu and choose your first block.
+                Choose the first block and place it exactly where you want it.
               </span>
             </span>
           </button>

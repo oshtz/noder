@@ -2,8 +2,9 @@
  * Tests for useExecutionStore Zustand store
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useExecutionStore } from './useExecutionStore';
+import { renderHook } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { useExecutionProgress, useExecutionStore } from './useExecutionStore';
 import type { Node, Edge } from 'reactflow';
 
 describe('useExecutionStore', () => {
@@ -363,6 +364,25 @@ describe('useExecutionStore', () => {
       useExecutionStore.getState().incrementProgress();
 
       expect(useExecutionStore.getState().processedNodeCount).toBe(3);
+    });
+
+    it('should expose progress without unstable external-store snapshots', () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      useExecutionStore.getState().setProgress(2, 4, 'node-2');
+
+      const { result, rerender } = renderHook(() => useExecutionProgress());
+
+      expect(result.current).toEqual({
+        processed: 2,
+        total: 4,
+        current: 'node-2',
+        percent: 50,
+      });
+      rerender();
+      expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('The result of getSnapshot should be cached'),
+        expect.anything()
+      );
     });
   });
 

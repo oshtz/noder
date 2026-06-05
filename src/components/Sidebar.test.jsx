@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Sidebar from './Sidebar';
 import { invoke } from '@tauri-apps/api/core';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 vi.mock('./Popover', () => ({
   default: ({ children }) => <div data-testid="popover">{children}</div>,
@@ -81,6 +82,11 @@ const buildProps = (overrides = {}) => ({
 
 describe('Sidebar', () => {
   beforeEach(() => {
+    useSettingsStore.setState({
+      showTemplates: true,
+      showEditorToolbar: false,
+    });
+
     invoke.mockImplementation(async (command) => {
       if (command === 'list_workflows') {
         return [{ id: 'wf-1', name: 'First Workflow' }];
@@ -124,5 +130,17 @@ describe('Sidebar', () => {
 
     await user.click(screen.getByTitle('Add Workflow'));
     expect(screen.getByPlaceholderText('Workflow Name')).toBeInTheDocument();
+  });
+
+  it('adds discoverable labels to the icon rail', () => {
+    render(<Sidebar {...buildProps()} />);
+
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Create')).toBeInTheDocument();
+    expect(screen.getByText('Workflows')).toBeInTheDocument();
+    expect(screen.getByText('Templates')).toBeInTheDocument();
+    expect(screen.getByText('Gallery')).toBeInTheDocument();
+    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 });

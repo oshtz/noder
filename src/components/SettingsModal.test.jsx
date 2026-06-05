@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsModal } from './SettingsModal';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 const buildProps = (overrides = {}) => ({
   isOpen: true,
@@ -54,6 +55,30 @@ const buildProps = (overrides = {}) => ({
 });
 
 describe('SettingsModal', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({
+      openaiApiKey: '',
+      openRouterApiKey: '',
+      anthropicApiKey: '',
+      replicateApiKey: '',
+      falApiKey: '',
+      geminiApiKey: '',
+      ollamaBaseUrl: '',
+      lmStudioBaseUrl: '',
+      defaultSaveLocation: '',
+      defaultTextModel: 'openai/gpt-4o-mini',
+      defaultImageModel: 'black-forest-labs/flux-2-klein-4b',
+      defaultVideoModel: 'lightricks/ltx-2-fast',
+      defaultAudioModel: 'google/lyria-2',
+      defaultUpscalerModel: 'recraft-ai/recraft-crisp-upscale',
+      defaultTextProvider: 'openrouter',
+      defaultImageProvider: 'replicate',
+      defaultVideoProvider: 'replicate',
+      defaultAudioProvider: 'replicate',
+      defaultUpscalerProvider: 'replicate',
+    });
+  });
+
   it('renders when open', () => {
     render(<SettingsModal {...buildProps()} />);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -83,5 +108,25 @@ describe('SettingsModal', () => {
     expect(overlay).toBeTruthy();
     fireEvent.click(overlay);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows setup readiness on the general tab', () => {
+    render(<SettingsModal {...buildProps()} />);
+
+    expect(screen.getByText('Setup readiness')).toBeInTheDocument();
+    expect(screen.getByText('Providers configured')).toBeInTheDocument();
+    expect(screen.getByText('Default save location')).toBeInTheDocument();
+    expect(screen.getByText('Default models')).toBeInTheDocument();
+  });
+
+  it('guides users to configure providers before choosing default models', async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal {...buildProps()} />);
+    const dialog = screen.getByRole('dialog');
+
+    await user.click(within(dialog).getByRole('tab', { name: /models/i }));
+
+    expect(screen.getAllByText('No providers configured')[0]).toBeInTheDocument();
+    expect(screen.getByText(/Add an API key or local provider/i)).toBeInTheDocument();
   });
 });

@@ -1,4 +1,3 @@
-import Database from '@tauri-apps/plugin-sql';
 import { isTauriRuntime } from './runtime';
 
 import { logger } from './logger';
@@ -95,6 +94,7 @@ export async function initDatabase(): Promise<SqlDatabase> {
   try {
     logger.debug('[Database] Initializing database...');
     // Load or create the database
+    const { default: Database } = await import('@tauri-apps/plugin-sql');
     const loaded = await Database.load('sqlite:noder.db');
     db = loaded as SqlDatabase;
     const database = db;

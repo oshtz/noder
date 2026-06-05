@@ -182,6 +182,26 @@ textarea::placeholder {
   font-size: 0.95rem;
 }
 
+.empty-workflow-instructions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -0.6rem 0 1.35rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.empty-workflow-kbd {
+  flex-shrink: 0;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .empty-workflow-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1175,8 +1195,11 @@ h6,
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   z-index: 10000;
   overflow: hidden;
+  max-height: min(720px, calc(100vh - 16px));
   color: #e0e0e0;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .node-selector-section {
@@ -1224,10 +1247,23 @@ h6,
 }
 
 .node-selector-item-label {
-  flex: 1;
   font-size: 14px;
   font-weight: 500;
   color: #e0e0e0;
+}
+
+.node-selector-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.node-selector-item-description {
+  color: #9a9a9a;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .node-selector-favorite {
@@ -1289,10 +1325,14 @@ h6,
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
   cursor: pointer;
   transition: background-color 0.15s ease;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
 }
 
 .node-selector-learn:hover {
@@ -1307,6 +1347,45 @@ h6,
 .node-selector-learn-text {
   font-size: 13px;
   color: #888;
+}
+
+.node-selector-guide {
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.16);
+  overflow-y: auto;
+}
+
+.node-selector-guide-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.node-selector-guide-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.node-selector-guide-title {
+  color: #e0e0e0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.node-selector-guide-description {
+  color: #a5a5a5;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.node-selector-guide-tip {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c0c0c0;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 /* Markdown Node Styles */

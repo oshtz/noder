@@ -235,6 +235,55 @@ export function SettingsModal({
 
   const { onSaveWorkflow, onLoadWorkflow, onClearWorkflow, onExportWorkflow } = workflowActions;
 
+  const configuredProviderCount = [
+    openaiApiKey,
+    openRouterApiKey,
+    anthropicApiKey,
+    replicateApiKey,
+    falApiKey,
+    geminiApiKey,
+    ollamaBaseUrl,
+    lmStudioBaseUrl,
+  ].filter((value) => Boolean(value?.trim())).length;
+  const hasConfiguredProvider = configuredProviderCount > 0;
+  const hasDefaultSaveLocation = Boolean(defaultSaveLocation?.trim());
+  const hasDefaultModels = [
+    defaultTextModel,
+    defaultImageModel,
+    defaultVideoModel,
+    defaultAudioModel,
+    defaultUpscalerModel,
+  ].every((value) => Boolean(value?.trim()));
+
+  const readinessItems = [
+    {
+      label: 'Providers configured',
+      ready: hasConfiguredProvider,
+      detail: hasConfiguredProvider
+        ? `${configuredProviderCount} provider${configuredProviderCount === 1 ? '' : 's'} ready`
+        : 'Add at least one API key or local provider URL',
+    },
+    {
+      label: 'Default save location',
+      ready: hasDefaultSaveLocation,
+      detail: hasDefaultSaveLocation
+        ? defaultSaveLocation
+        : 'Choose where generated media is saved',
+    },
+    {
+      label: 'Default models',
+      ready: hasDefaultModels,
+      detail: hasDefaultModels
+        ? 'Text, image, video, audio, and upscale defaults are set'
+        : 'Pick defaults for new nodes',
+    },
+    {
+      label: 'Updates',
+      ready: updateSupported,
+      detail: updateSupported ? 'Desktop update checks enabled' : 'Available in the desktop build',
+    },
+  ];
+
   // Close on escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -345,8 +394,55 @@ export function SettingsModal({
     </div>
   );
 
+  const renderSetupReadiness = () => (
+    <div className="setup-readiness" aria-label="Setup readiness">
+      <div className="setup-readiness-header">
+        <div>
+          <h3 className="settings-group-title">Setup readiness</h3>
+          <p className="settings-group-description">Confirm the basics before running workflows.</p>
+        </div>
+        <div className="setup-readiness-count">
+          {readinessItems.filter((item) => item.ready).length}/{readinessItems.length}
+        </div>
+      </div>
+
+      <div className="readiness-list">
+        {readinessItems.map((item) => (
+          <div className="readiness-item" key={item.label}>
+            <span className={`readiness-state ${item.ready ? 'is-ready' : 'needs-attention'}`}>
+              {item.ready ? 'Ready' : 'Needs setup'}
+            </span>
+            <span className="readiness-copy">
+              <span className="readiness-label">{item.label}</span>
+              <span className="readiness-detail">{item.detail}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="readiness-actions">
+        <button
+          type="button"
+          className="settings-action-button compact"
+          onClick={() => setActiveTab('apiKeys')}
+        >
+          API keys
+        </button>
+        <button
+          type="button"
+          className="settings-action-button compact"
+          onClick={() => setActiveTab('models')}
+        >
+          Models
+        </button>
+      </div>
+    </div>
+  );
+
   const renderGeneralTab = () => (
     <div className="settings-tab-content">
+      {renderSetupReadiness()}
+
       <div className="settings-group">
         <h3 className="settings-group-title">File Storage</h3>
         <div className="settings-field">
@@ -920,6 +1016,13 @@ export function SettingsModal({
             Set default models for new nodes. These will be used when you create new nodes of each
             type.
           </p>
+
+          {!hasConfiguredProvider && (
+            <div className="settings-inline-banner">
+              <strong>No providers configured</strong>
+              <span>Add an API key or local provider before choosing default models.</span>
+            </div>
+          )}
 
           {renderModelWithProvider(
             'Text Generation',

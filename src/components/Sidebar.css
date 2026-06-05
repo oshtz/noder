@@ -80,6 +80,35 @@
   transform: scale(1.05);
 }
 
+.sidebar-icon-label {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translate(-6px, -50%);
+  padding: 6px 9px;
+  border: 1px solid var(--node-border, #3d3d3d);
+  border-radius: 7px;
+  background: var(--settings-bg, #2a2a2a);
+  color: var(--text-color, #e0e0e0);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.sidebar-icon-button:hover .sidebar-icon-label,
+.sidebar-icon-button:focus-visible .sidebar-icon-label,
+.sidebar-icon-button.active .sidebar-icon-label {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
 /* Badge styles for sidebar icons */
 .sidebar-icon-button .badge {
   position: absolute;

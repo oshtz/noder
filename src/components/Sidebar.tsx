@@ -451,6 +451,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-label="Go to home screen"
           >
             <FaHome aria-hidden="true" />
+            <span className="sidebar-icon-label">Home</span>
           </button>
 
           {/* Add Workflow Button */}
@@ -465,6 +466,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-label="Create new workflow"
           >
             <FaPlus aria-hidden="true" />
+            <span className="sidebar-icon-label">Create</span>
           </button>
 
           {/* Workflows Button */}
@@ -477,6 +479,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-expanded={activePopover === 'workflows'}
           >
             <FaProjectDiagram aria-hidden="true" />
+            <span className="sidebar-icon-label">Workflows</span>
           </button>
 
           {/* Templates Button */}
@@ -490,6 +493,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               aria-expanded={activePopover === 'templates'}
             >
               <FaRocket aria-hidden="true" />
+              <span className="sidebar-icon-label">Templates</span>
             </button>
           )}
 
@@ -503,6 +507,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-expanded={activePopover === 'gallery'}
           >
             <FaImage aria-hidden="true" />
+            <span className="sidebar-icon-label">Gallery</span>
             {workflowOutputs.length > 0 && (
               <span className="badge" aria-hidden="true">
                 {workflowOutputs.length}
@@ -519,6 +524,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-pressed={showEditorToolbar}
           >
             <FaSlidersH aria-hidden="true" />
+            <span className="sidebar-icon-label">Controls</span>
           </button>
 
           {/* Spacer to push settings to bottom */}
@@ -533,6 +539,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             aria-label="Open settings"
           >
             <FaCog aria-hidden="true" />
+            <span className="sidebar-icon-label">Settings</span>
           </button>
         </div>
 

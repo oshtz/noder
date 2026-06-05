@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useWindowControls } from './useWindowControls';
 
 // Mock Tauri window API
@@ -49,60 +49,84 @@ describe('useWindowControls', () => {
   });
 
   describe('event listener setup', () => {
-    it('should attach click handlers to titlebar buttons', () => {
+    it('should attach click handlers to titlebar buttons', async () => {
       const addEventListenerSpy = vi.spyOn(minimizeBtn, 'addEventListener');
 
       renderHook(() => useWindowControls());
 
-      expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
     });
 
-    it('should call minimize when minimize button is clicked', () => {
+    it('should call minimize when minimize button is clicked', async () => {
+      const addEventListenerSpy = vi.spyOn(minimizeBtn, 'addEventListener');
       renderHook(() => useWindowControls());
 
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
       minimizeBtn.click();
 
       expect(mockMinimize).toHaveBeenCalled();
     });
 
-    it('should call toggleMaximize when maximize button is clicked', () => {
+    it('should call toggleMaximize when maximize button is clicked', async () => {
+      const addEventListenerSpy = vi.spyOn(maximizeBtn, 'addEventListener');
       renderHook(() => useWindowControls());
 
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
       maximizeBtn.click();
 
-      expect(mockToggleMaximize).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockToggleMaximize).toHaveBeenCalled();
+      });
     });
 
-    it('should call close when close button is clicked', () => {
+    it('should call close when close button is clicked', async () => {
+      const addEventListenerSpy = vi.spyOn(closeBtn, 'addEventListener');
       renderHook(() => useWindowControls());
 
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
       closeBtn.click();
 
-      expect(mockClose).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockClose).toHaveBeenCalled();
+      });
     });
   });
 
   describe('cleanup', () => {
-    it('should remove event listeners on unmount', () => {
+    it('should remove event listeners on unmount', async () => {
+      const addEventListenerSpy = vi.spyOn(minimizeBtn, 'addEventListener');
       const removeEventListenerSpy = vi.spyOn(minimizeBtn, 'removeEventListener');
 
       const { unmount } = renderHook(() => useWindowControls());
 
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
       unmount();
 
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      await waitFor(() => {
+        expect(removeEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
     });
 
-    it('should not respond to clicks after unmount', () => {
+    it('should not respond to clicks after unmount', async () => {
+      const addEventListenerSpy = vi.spyOn(minimizeBtn, 'addEventListener');
       const { unmount } = renderHook(() => useWindowControls());
 
-      unmount();
-      minimizeBtn.click();
-
-      // Since listeners were removed, these should not have been called after unmount
-      // But the initial click during render might have added handlers
-      // Let's verify by clearing and clicking again
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
       mockMinimize.mockClear();
+      unmount();
+
       minimizeBtn.click();
 
       expect(mockMinimize).not.toHaveBeenCalled();
@@ -150,12 +174,17 @@ describe('useWindowControls', () => {
   });
 
   describe('multiple renders', () => {
-    it('should not add duplicate listeners on rerender', () => {
+    it('should not add duplicate listeners on rerender', async () => {
+      const addEventListenerSpy = vi.spyOn(minimizeBtn, 'addEventListener');
       const { rerender } = renderHook(() => useWindowControls());
 
       rerender();
       rerender();
 
+      await waitFor(() => {
+        expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+      });
+      mockMinimize.mockClear();
       minimizeBtn.click();
 
       // Should only be called once per click

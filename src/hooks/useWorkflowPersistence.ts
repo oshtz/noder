@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Node, Edge, ReactFlowInstance, useUpdateNodeInternals } from 'reactflow';
 import { invoke, type WorkflowData } from '../types/tauri';
 import {
@@ -497,11 +496,16 @@ export function useWorkflowPersistence({
   useEffect(() => {
     if (!isTauriRuntime()) return undefined;
 
-    const appWindow = getCurrentWindow();
     let removeCloseListener: (() => void) | undefined;
+    let closeWindow: (() => Promise<void>) | undefined;
+    let disposed = false;
 
     const registerCloseHandler = async (): Promise<void> => {
       try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        if (disposed) return;
+        const appWindow = getCurrentWindow();
+        closeWindow = () => appWindow.close();
         removeCloseListener = await appWindow.onCloseRequested(async (event) => {
           if (isClosingRef.current) return;
           isClosingRef.current = true;
@@ -515,7 +519,7 @@ export function useWorkflowPersistence({
               removeCloseListener();
               removeCloseListener = undefined;
             }
-            appWindow.close();
+            await closeWindow?.();
           }
         });
       } catch (error) {
@@ -542,6 +546,7 @@ export function useWorkflowPersistence({
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
+      disposed = true;
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (removeCloseListener) {
         removeCloseListener();

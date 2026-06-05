@@ -26,12 +26,12 @@ import {
   FaClock,
 } from 'react-icons/fa';
 import { IconType } from 'react-icons';
-import { invoke } from '@tauri-apps/api/core';
 import './WelcomeScreen.css';
 import noderLogo from '../../noderBG.png';
 import FaultyTerminal from './FaultyTerminal';
 import { useShowAssistantPanel } from '../stores/useSettingsStore';
 import { logger } from '../utils/logger';
+import { invoke } from '../types/tauri';
 import type {
   WorkflowTemplate as Template,
   TemplateCategory as WorkflowTemplateCategory,
@@ -110,6 +110,24 @@ const templateCategories: TemplateCategory[] = [
   { id: 'beginner', label: 'Beginner', icon: 'seedling' },
   { id: 'intermediate', label: 'Intermediate', icon: 'bolt' },
   { id: 'advanced', label: 'Advanced', icon: 'rocket' },
+];
+
+const onboardingSteps = [
+  {
+    step: '01',
+    title: 'Choose a starting point',
+    description: 'Open a template, load a saved workflow, or begin with a clean canvas.',
+  },
+  {
+    step: '02',
+    title: 'Connect providers',
+    description: 'Add API keys or local provider URLs so new nodes are ready to run.',
+  },
+  {
+    step: '03',
+    title: 'Run and compare outputs',
+    description: 'Execute the flow, inspect results, and keep the strongest output paths.',
+  },
 ];
 
 // =============================================================================
@@ -379,6 +397,26 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <div className="welcome-logo">
           <img src={noderLogo} alt="Noder" className="welcome-logo-image" />
         </div>
+
+        <section className="welcome-onboarding" aria-labelledby="welcome-onboarding-title">
+          <h1 id="welcome-onboarding-title" className="welcome-title">
+            Build creative AI workflows visually
+          </h1>
+          <p className="welcome-subtitle">
+            Chain text, image, video, audio, and utility nodes into repeatable media workflows.
+          </p>
+          <div className="welcome-quick-start" aria-label="Quick start steps">
+            {onboardingSteps.map((item) => (
+              <div className="welcome-step" key={item.step}>
+                <span className="welcome-step-number">{item.step}</span>
+                <span className="welcome-step-copy">
+                  <span className="welcome-step-title">{item.title}</span>
+                  <span className="welcome-step-description">{item.description}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="welcome-actions">
           {showAssistantPanel && (

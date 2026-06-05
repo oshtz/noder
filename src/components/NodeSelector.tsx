@@ -12,10 +12,10 @@ import React, {
   MouseEvent,
 } from 'react';
 import { useNodes, Node } from 'reactflow';
-import { invoke } from '@tauri-apps/api/core';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { emit, on } from '../utils/eventBus';
 import { notifyError } from '../utils/appFeedback';
+import { invoke } from '../types/tauri';
 
 import { logger } from '../utils/logger';
 // =============================================================================
@@ -95,6 +95,44 @@ const MENU_PADDING = 8;
 // Allowed node types
 const allowedNodeTypes = ['text', 'image', 'upscaler', 'video', 'audio', 'chip'];
 
+const nodeGuideItems = [
+  {
+    type: 'text',
+    title: 'Text',
+    description: 'Draft prompts, transform text, or call text models.',
+  },
+  {
+    type: 'image',
+    title: 'Image',
+    description: 'Generate or edit still images from prompts and connected inputs.',
+  },
+  {
+    type: 'video',
+    title: 'Video',
+    description: 'Create motion outputs from prompts, images, or previous node results.',
+  },
+  {
+    type: 'audio',
+    title: 'Audio',
+    description: 'Generate music, narration, or sound from text instructions.',
+  },
+  {
+    type: 'upscaler',
+    title: 'Upscaler',
+    description: 'Improve resolution and detail on image outputs.',
+  },
+  {
+    type: 'chip',
+    title: 'Chip',
+    description: 'Keep reusable notes, parameters, and routing context on the canvas.',
+  },
+  {
+    type: 'upload',
+    title: 'Upload',
+    description: 'Bring local image, video, or audio files into the workflow.',
+  },
+];
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -127,6 +165,10 @@ const getNodeLabel = (node: NodeDefinition): string => {
   return node.label || node.type;
 };
 
+const getNodeDescription = (type: string): string =>
+  nodeGuideItems.find((item) => item.type === type)?.description ||
+  'Add a workflow building block.';
+
 // =============================================================================
 // NodeSelector Component
 // =============================================================================
@@ -142,6 +184,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [clickPosition, setClickPosition] = useState<Position>({ x: 0, y: 0 });
   const [pendingConnection, setPendingConnection] = useState<ConnectionContext | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
   const [favoriteTypes, setFavoriteTypes] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
@@ -296,6 +339,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
     if (isOpen) {
       setSelectedIndex(0);
       setSearchTerm('');
+      setShowGuide(false);
       // Focus search input when menu opens
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -514,16 +558,7 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
               </div>
               <div className="node-selector-item-content">
                 <div className="node-selector-item-label">Upload</div>
-                <div
-                  className="node-selector-item-description"
-                  style={{
-                    fontSize: '11px',
-                    opacity: 0.7,
-                    marginTop: '2px',
-                  }}
-                >
-                  Add media from your computer
-                </div>
+                <div className="node-selector-item-description">Add media from your computer</div>
               </div>
             </div>
             <input
@@ -564,7 +599,12 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
                     <div className="node-selector-item-icon" aria-hidden="true">
                       {getNodeIcon(node.type)}
                     </div>
-                    <div className="node-selector-item-label">{label}</div>
+                    <div className="node-selector-item-content">
+                      <div className="node-selector-item-label">{label}</div>
+                      <div className="node-selector-item-description">
+                        {getNodeDescription(node.type)}
+                      </div>
+                    </div>
                     <button
                       type="button"
                       className={`node-selector-favorite${favoriteSet.has(node.type) ? ' active' : ''}`}
@@ -616,7 +656,12 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
                   <div className="node-selector-item-icon" aria-hidden="true">
                     {getNodeIcon(node.type)}
                   </div>
-                  <div className="node-selector-item-label">{label}</div>
+                  <div className="node-selector-item-content">
+                    <div className="node-selector-item-label">{label}</div>
+                    <div className="node-selector-item-description">
+                      {getNodeDescription(node.type)}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className={`node-selector-favorite${isFavorite ? ' active' : ''}`}
@@ -646,11 +691,33 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({
             <span className="node-selector-footer-hint">{'\u21B5'} Select</span>
           </div>
 
-          {/* Learn about Nodes link */}
-          <div className="node-selector-learn">
+          {/* Learn about Nodes */}
+          <button
+            type="button"
+            className="node-selector-learn"
+            onClick={() => setShowGuide((prev) => !prev)}
+            aria-expanded={showGuide}
+            aria-controls="node-selector-guide"
+          >
             <span className="node-selector-learn-icon">{'\u24D8'}</span>
             <span className="node-selector-learn-text">Learn about Nodes</span>
-          </div>
+          </button>
+
+          {showGuide && (
+            <div className="node-selector-guide" id="node-selector-guide">
+              <div className="node-selector-guide-grid">
+                {nodeGuideItems.map((item) => (
+                  <div className="node-selector-guide-item" key={item.type}>
+                    <span className="node-selector-guide-title">{item.title}</span>
+                    <span className="node-selector-guide-description">{item.description}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="node-selector-guide-tip">
+                Tip: Drag from a node handle to create a connected next step.
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </ErrorBoundary>

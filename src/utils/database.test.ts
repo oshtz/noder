@@ -8,13 +8,17 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 const mockExecute = vi.fn();
 const mockSelect = vi.fn();
 const mockLoad = vi.fn();
+const mockSqlModuleLoaded = vi.fn();
 
 // Mock the Tauri SQL plugin before any imports
-vi.mock('@tauri-apps/plugin-sql', () => ({
-  default: {
-    load: () => mockLoad(),
-  },
-}));
+vi.mock('@tauri-apps/plugin-sql', () => {
+  mockSqlModuleLoaded();
+  return {
+    default: {
+      load: () => mockLoad(),
+    },
+  };
+});
 
 describe('database', () => {
   beforeEach(async () => {
@@ -36,6 +40,7 @@ describe('database', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
+    vi.doUnmock('./runtime');
   });
 
   describe('initDatabase', () => {
@@ -94,6 +99,24 @@ describe('database', () => {
   });
 
   describe('saveOutput', () => {
+    it('uses the in-memory output store without loading SQLite outside Tauri', async () => {
+      vi.resetModules();
+      vi.doMock('./runtime', () => ({ isTauriRuntime: () => false }));
+      mockSqlModuleLoaded.mockClear();
+
+      const { getOutputs, saveOutput } = await import('./database');
+
+      const id = await saveOutput({
+        type: 'text',
+        value: 'Preview output',
+      });
+
+      expect(id).toBe(1);
+      expect(await getOutputs()).toMatchObject([{ id: 1, type: 'text', value: 'Preview output' }]);
+      expect(mockSqlModuleLoaded).not.toHaveBeenCalled();
+      expect(mockLoad).not.toHaveBeenCalled();
+    });
+
     it('saves an output to the database', async () => {
       mockExecute.mockResolvedValue({ lastInsertId: 42 });
       const { saveOutput } = await import('./database');

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Node, Edge } from 'reactflow';
@@ -344,12 +345,20 @@ export const useIsProcessing = () => useExecutionStore((s) => s.isProcessing);
 export const useCurrentWorkflowId = () => useExecutionStore((s) => s.currentWorkflowId);
 export const useFailedNodes = () => useExecutionStore((s) => s.failedNodes);
 export const useShowErrorRecovery = () => useExecutionStore((s) => s.showErrorRecovery);
-export const useExecutionProgress = () =>
-  useExecutionStore((s) => ({
-    processed: s.processedNodeCount,
-    total: s.totalNodeCount,
-    current: s.currentNodeId,
-    percent: s.totalNodeCount > 0 ? Math.round((s.processedNodeCount / s.totalNodeCount) * 100) : 0,
-  }));
+export const useExecutionProgress = () => {
+  const processed = useExecutionStore((s) => s.processedNodeCount);
+  const total = useExecutionStore((s) => s.totalNodeCount);
+  const current = useExecutionStore((s) => s.currentNodeId);
+
+  return useMemo(
+    () => ({
+      processed,
+      total,
+      current,
+      percent: total > 0 ? Math.round((processed / total) * 100) : 0,
+    }),
+    [current, processed, total]
+  );
+};
 
 export default useExecutionStore;
