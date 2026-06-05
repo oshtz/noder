@@ -13,7 +13,15 @@ npm run test:run
 npm run test:smoke
 npm run test:release-artifacts
 npm run test:release-prereqs
+npm run test:release-version
+npm run check:release-version
 cd src-tauri && cargo check && cargo test
+```
+
+Before pushing a release tag, verify it matches every app version source:
+
+```bash
+npm run check:release-version -- v0.1.4
 ```
 
 ## Signing Secrets

@@ -71,6 +71,12 @@ jobs:
       - name: Run release prerequisite tests
         run: npm run test:release-prereqs
 
+      - name: Run release version tests
+        run: npm run test:release-version
+
+      - name: Check release version consistency
+        run: npm run check:release-version
+
       - name: Build frontend
         run: npm run build
 

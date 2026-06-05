@@ -20,6 +20,8 @@ const requiredSnippets = [
   'SHA256SUMS-macos.txt',
   'npm run test:release-artifacts',
   'npm run test:release-prereqs',
+  'npm run test:release-version',
+  'npm run check:release-version',
   'npm run check:release-prereqs',
   'allow_unsigned_windows',
   'allow_vendor_enigma_download',
