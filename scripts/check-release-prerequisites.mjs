@@ -28,8 +28,8 @@ export function validateWindowsReleasePrerequisites(options) {
     return { errors, warnings };
   }
 
-  const allowUnsignedWindows = parseBooleanFlag(options.allowUnsignedWindows);
-  const allowVendorEnigmaDownload = parseBooleanFlag(options.allowVendorEnigmaDownload);
+  const requireWindowsSigning = parseBooleanFlag(options.requireWindowsSigning);
+  const requireControlledEnigmaDownload = parseBooleanFlag(options.requireControlledEnigmaDownload);
   const hasWindowsCertificate = isPresent(options.windowsCertificate);
   const hasWindowsCertificatePassword = isPresent(options.windowsCertificatePassword);
   const enigmaInstallerUrl = String(options.enigmaInstallerUrl ?? '').trim();
@@ -40,13 +40,13 @@ export function validateWindowsReleasePrerequisites(options) {
   const hasEnigmaInstallerSha256 = enigmaInstallerSha256.length > 0;
 
   if (!hasWindowsCertificate || !hasWindowsCertificatePassword) {
-    if (allowUnsignedWindows) {
-      warnings.push(
-        'Publishing unsigned Windows artifacts because allow_unsigned_windows was explicitly enabled.'
+    if (requireWindowsSigning) {
+      errors.push(
+        'Missing Windows signing secrets. Configure WINDOWS_CODESIGN_CERTIFICATE and WINDOWS_CODESIGN_PASSWORD, or dispatch with require_windows_signing=false for unsigned Windows artifacts.'
       );
     } else {
-      errors.push(
-        'Missing Windows signing secrets. Configure WINDOWS_CODESIGN_CERTIFICATE and WINDOWS_CODESIGN_PASSWORD, or manually dispatch with allow_unsigned_windows=true for an unsigned test build.'
+      warnings.push(
+        'Publishing unsigned Windows artifacts because Windows signing secrets are not configured.'
       );
     }
   }
@@ -68,13 +68,13 @@ export function validateWindowsReleasePrerequisites(options) {
   }
 
   if (!hasEnigmaInstallerUrl && !hasEnigmaInstallerSha256) {
-    if (allowVendorEnigmaDownload) {
-      warnings.push(
-        'Using vendor Enigma Virtual Box download fallback because allow_vendor_enigma_download was explicitly enabled.'
+    if (requireControlledEnigmaDownload) {
+      errors.push(
+        'Missing controlled Enigma Virtual Box installer variables. Configure ENIGMA_VIRTUAL_BOX_INSTALLER_URL and ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256, or dispatch with require_controlled_enigma_download=false for vendor fallback URLs.'
       );
     } else {
-      errors.push(
-        'Missing controlled Enigma Virtual Box installer variables. Configure ENIGMA_VIRTUAL_BOX_INSTALLER_URL and ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256, or manually dispatch with allow_vendor_enigma_download=true for a fallback test build.'
+      warnings.push(
+        'Using vendor Enigma Virtual Box download fallback because controlled installer variables are not configured.'
       );
     }
   }
@@ -86,8 +86,8 @@ function optionsFromEnv(env) {
   return {
     eventName: env.GITHUB_EVENT_NAME,
     ref: env.GITHUB_REF,
-    allowUnsignedWindows: env.ALLOW_UNSIGNED_WINDOWS,
-    allowVendorEnigmaDownload: env.ALLOW_VENDOR_ENIGMA_DOWNLOAD,
+    requireWindowsSigning: env.REQUIRE_WINDOWS_SIGNING,
+    requireControlledEnigmaDownload: env.REQUIRE_CONTROLLED_ENIGMA_DOWNLOAD,
     windowsCertificate: env.WINDOWS_CODESIGN_CERTIFICATE,
     windowsCertificatePassword: env.WINDOWS_CODESIGN_PASSWORD,
     enigmaInstallerUrl: env.ENIGMA_VIRTUAL_BOX_INSTALLER_URL,

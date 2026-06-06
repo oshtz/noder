@@ -35,25 +35,24 @@ macOS releases require:
 - `APPLE_PASSWORD`
 - `APPLE_TEAM_ID`
 
-Windows Authenticode signing is required by default for release packaging:
+Windows Authenticode signing is optional for release packaging:
 
 - `WINDOWS_CODESIGN_CERTIFICATE` as a base64-encoded `.pfx`
 - `WINDOWS_CODESIGN_PASSWORD`
 
-If the Windows secrets are missing, tagged release packaging fails before building Windows artifacts.
-For a manual non-production packaging test, dispatch the workflow with
-`allow_unsigned_windows=true`; the signing step will publish unsigned Windows artifacts and print a
-warning in the build log.
+If the Windows secrets are missing, the workflow publishes unsigned Windows artifacts and prints a
+warning in the build log. To enforce signed Windows artifacts for a manual packaging run, dispatch
+the workflow with `require_windows_signing=true`.
 
-Windows portable builds use Enigma Virtual Box. Configure these repository variables before release
-packaging so the build uses an operator-controlled installer mirror and verifies it before install:
+Windows portable builds use Enigma Virtual Box. These repository variables are optional:
 
 - `ENIGMA_VIRTUAL_BOX_INSTALLER_URL`
 - `ENIGMA_VIRTUAL_BOX_INSTALLER_SHA256`
 
-If those variables are missing, tagged release packaging fails before building Windows artifacts. For
-a manual non-production packaging test, dispatch the workflow with
-`allow_vendor_enigma_download=true` to permit the vendor fallback URLs.
+If those variables are configured, the build uses the operator-controlled installer mirror and
+verifies it before install. If they are missing, the workflow falls back to vendor URLs and prints a
+warning in the build log. To require an operator-controlled installer mirror for a manual packaging
+run, dispatch the workflow with `require_controlled_enigma_download=true`.
 
 ## Release Assets
 

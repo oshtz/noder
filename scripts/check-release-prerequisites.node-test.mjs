@@ -46,50 +46,51 @@ test('validateWindowsReleasePrerequisites passes with signing and controlled Eni
   });
 });
 
-test('validateWindowsReleasePrerequisites requires Windows signing secrets by default', () => {
+test('validateWindowsReleasePrerequisites warns when Windows signing secrets are missing', () => {
   const result = validateWindowsReleasePrerequisites({
     ...completePrerequisites,
     windowsCertificate: '',
-  });
-
-  assert.match(result.errors.join('\n'), /Missing Windows signing secrets/);
-  assert.deepEqual(result.warnings, []);
-});
-
-test('validateWindowsReleasePrerequisites allows unsigned Windows only with explicit override', () => {
-  const result = validateWindowsReleasePrerequisites({
-    ...completePrerequisites,
-    windowsCertificate: '',
-    allowUnsignedWindows: 'true',
   });
 
   assert.deepEqual(result.errors, []);
   assert.match(result.warnings.join('\n'), /Publishing unsigned Windows artifacts/);
 });
 
-test('validateWindowsReleasePrerequisites requires controlled Enigma mirror and hash by default', () => {
+test('validateWindowsReleasePrerequisites rejects missing signing when strict signing is required', () => {
+  const result = validateWindowsReleasePrerequisites({
+    ...completePrerequisites,
+    windowsCertificate: '',
+    requireWindowsSigning: 'true',
+  });
+
+  assert.match(result.errors.join('\n'), /Missing Windows signing secrets/);
+  assert.deepEqual(result.warnings, []);
+});
+
+test('validateWindowsReleasePrerequisites warns when controlled Enigma mirror is missing', () => {
   const result = validateWindowsReleasePrerequisites({
     ...completePrerequisites,
     enigmaInstallerUrl: '',
     enigmaInstallerSha256: '',
+  });
+
+  assert.deepEqual(result.errors, []);
+  assert.match(result.warnings.join('\n'), /Using vendor Enigma Virtual Box download fallback/);
+});
+
+test('validateWindowsReleasePrerequisites rejects vendor Enigma fallback when strict mirror is required', () => {
+  const result = validateWindowsReleasePrerequisites({
+    ...completePrerequisites,
+    enigmaInstallerUrl: '',
+    enigmaInstallerSha256: '',
+    requireControlledEnigmaDownload: 'true',
   });
 
   assert.match(
     result.errors.join('\n'),
     /Missing controlled Enigma Virtual Box installer variables/
   );
-});
-
-test('validateWindowsReleasePrerequisites allows vendor Enigma fallback only with explicit override', () => {
-  const result = validateWindowsReleasePrerequisites({
-    ...completePrerequisites,
-    enigmaInstallerUrl: '',
-    enigmaInstallerSha256: '',
-    allowVendorEnigmaDownload: 'true',
-  });
-
-  assert.deepEqual(result.errors, []);
-  assert.match(result.warnings.join('\n'), /Using vendor Enigma Virtual Box download fallback/);
+  assert.deepEqual(result.warnings, []);
 });
 
 test('validateWindowsReleasePrerequisites rejects custom Enigma URL without a valid SHA-256', () => {

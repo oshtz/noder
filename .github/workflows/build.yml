@@ -8,13 +8,13 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      allow_unsigned_windows:
-        description: 'Allow publishing unsigned Windows artifacts for this manual build'
+      require_windows_signing:
+        description: 'Fail Windows packaging if Authenticode signing secrets are missing'
         required: false
         type: boolean
         default: false
-      allow_vendor_enigma_download:
-        description: 'Allow Enigma Virtual Box vendor fallback download for this manual build'
+      require_controlled_enigma_download:
+        description: 'Fail Windows packaging if controlled Enigma installer URL/hash variables are missing'
         required: false
         type: boolean
         default: false
@@ -118,8 +118,8 @@ jobs:
       - name: Check Windows release prerequisites
         shell: pwsh
         env:
-          ALLOW_UNSIGNED_WINDOWS: ${{ inputs.allow_unsigned_windows || 'false' }}
-          ALLOW_VENDOR_ENIGMA_DOWNLOAD: ${{ inputs.allow_vendor_enigma_download || 'false' }}
+          REQUIRE_WINDOWS_SIGNING: ${{ inputs.require_windows_signing || 'false' }}
+          REQUIRE_CONTROLLED_ENIGMA_DOWNLOAD: ${{ inputs.require_controlled_enigma_download || 'false' }}
           WINDOWS_CODESIGN_CERTIFICATE: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE }}
           WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
           ENIGMA_VIRTUAL_BOX_INSTALLER_URL: ${{ vars.ENIGMA_VIRTUAL_BOX_INSTALLER_URL }}
