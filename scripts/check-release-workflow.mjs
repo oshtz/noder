@@ -5,7 +5,7 @@ const workflow = fs.readFileSync('.github/workflows/build.yml', 'utf8');
 const requiredSnippets = [
   'actions/checkout@v5',
   'actions/setup-node@v5',
-  'actions/upload-artifact@v5',
+  'actions/upload-artifact@v7',
   'softprops/action-gh-release@v3',
   "node-version: '22'",
   'WINDOWS_CODESIGN_CERTIFICATE',

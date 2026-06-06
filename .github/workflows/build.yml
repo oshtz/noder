@@ -306,7 +306,7 @@ jobs:
           }
 
       - name: Upload portable exe
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: noder-portable
           path: src-tauri/target/release/noder-portable.exe
@@ -346,13 +346,13 @@ jobs:
           Get-Content "SHA256SUMS-windows.txt"
 
       - name: Upload zip bundle
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: noder-win-zip
           path: noder-win.zip
 
       - name: Upload Windows checksums
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: noder-windows-checksums
           path: SHA256SUMS-windows.txt
@@ -460,7 +460,7 @@ jobs:
         run: npm run tauri:build -- --bundles app,dmg
 
       - name: Upload dmg
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: noder-macOS-dmg
           path: src-tauri/target/release/bundle/dmg/*.dmg
@@ -506,7 +506,7 @@ jobs:
 
       - name: Upload macOS checksums
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: noder-macOS-checksums
           path: SHA256SUMS-macos.txt
