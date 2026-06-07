@@ -1,6 +1,6 @@
 [package]
 name = "noder"
-version = "0.1.5"
+version = "0.1.6"
 description = "A node-based creative workflow canvas for chaining AI calls"
 authors = ["noder contributors"]
 license = "MIT"
