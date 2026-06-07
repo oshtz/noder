@@ -4,9 +4,9 @@
   right: 20px;
   width: 400px;
   max-width: calc(100vw - 40px);
-  background: var(--bg-secondary);
-  border: 2px solid #ef4444;
-  border-radius: 12px;
+  background: color-mix(in srgb, #1d1e25 96%, transparent);
+  border: 2px solid color-mix(in srgb, #ef4444 35%, var(--node-border));
+  border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   z-index: 1000;
   animation: slideUp 0.3s ease-out;

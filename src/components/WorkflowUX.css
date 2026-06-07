@@ -160,16 +160,17 @@
 
 .node-inspector-panel {
   position: fixed;
-  top: 72px;
-  right: calc(18px + var(--assistant-panel-offset, 0px));
-  bottom: 132px;
+  top: 48px;
+  right: calc(12px + var(--assistant-panel-offset, 0px));
+  bottom: auto;
   z-index: 720;
-  width: min(340px, calc(100vw - 112px));
+  width: min(300px, calc(100vw - 92px));
+  max-height: calc(100vh - 126px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--node-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--node-bg) 95%, transparent);
+  background: color-mix(in srgb, #1d1e25 94%, transparent);
   color: var(--text-color);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(14px);
@@ -181,7 +182,7 @@
 }
 
 .inspector-header {
-  padding: 12px 14px;
+  padding: 10px 11px;
   border-bottom: 1px solid var(--node-border);
 }
 
@@ -197,10 +198,10 @@
 
 .inspector-title {
   margin: 0;
-  max-width: 250px;
+  max-width: 216px;
   overflow: hidden;
   color: var(--text-color);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -221,7 +222,7 @@
 
 .inspector-body {
   overflow: auto;
-  padding: 12px 14px 14px;
+  padding: 9px 11px 11px;
 }
 
 .inspector-section {
@@ -358,14 +359,14 @@
 
 .connection-hint-overlay {
   position: fixed;
-  left: 92px;
-  top: 18px;
+  left: 48px;
+  top: 42px;
   z-index: 760;
-  width: min(360px, calc(100vw - 116px));
+  width: min(300px, calc(100vw - 72px));
   padding: 12px;
   border: 1px solid var(--node-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--node-bg) 95%, transparent);
+  background: color-mix(in srgb, #1d1e25 94%, transparent);
   color: var(--text-color);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(14px);
@@ -444,7 +445,7 @@
 
 .canvas-gallery-panel {
   position: fixed;
-  inset: 48px 48px 48px 92px;
+  inset: 44px 44px 44px 48px;
   z-index: 1200;
 }
 
@@ -469,7 +470,7 @@
 }
 
 .app-container.gallery-open .canvas-gallery-panel {
-  inset: 48px;
+  inset: 44px;
 }
 
 .command-dock {
@@ -694,23 +695,40 @@
     --minimap-bottom-offset: 0px;
   }
 
-  .execution-dock,
+  .workflow-title-chip {
+    left: 44px;
+    right: 10px;
+    max-width: none;
+  }
+
+  .command-dock {
+    left: 44px;
+    right: 10px;
+    align-items: stretch;
+    transform: none;
+  }
+
+  .command-dock-main {
+    justify-content: center;
+    overflow-x: auto;
+  }
+
   .node-inspector-panel,
   .output-filmstrip,
   .connection-hint-overlay {
-    left: 76px;
-    right: 12px;
+    left: 44px;
+    right: 10px;
     width: auto;
   }
 
   .node-inspector-panel {
     top: auto;
-    bottom: 118px;
+    bottom: 62px;
     max-height: 48vh;
   }
 
   .output-filmstrip {
-    display: none;
+    bottom: 62px;
   }
 
   .canvas-gallery-panel {
