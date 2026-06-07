@@ -61,6 +61,17 @@ describe('themes', () => {
         expect(themes[themeName]).toBeDefined();
       });
     });
+
+    it('should define the reference-tight dark workspace tokens', () => {
+      expect(themes.dark['--bg-color']).toBe('#08090d');
+      expect(themes.dark['--bg-primary']).toBe('#08090d');
+      expect(themes.dark['--bg-secondary']).toBe('#14151a');
+      expect(themes.dark['--bg-tertiary']).toBe('#1d1e25');
+      expect(themes.dark['--primary-color']).toBe('#f4eeb1');
+      expect(themes.dark['--accent-color']).toBe('#55d6c2');
+      expect(themes.dark['--node-bg']).toBe('#1b1c22');
+      expect(themes.dark['--node-border']).toBe('#2a2c34');
+    });
   });
 
   describe('theme completeness', () => {
