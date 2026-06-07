@@ -131,21 +131,30 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 32px;
-  padding: 7px 10px;
-  border: 1px solid var(--node-border);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.06);
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--node-border) 76%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
   color: var(--text-color);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.execution-action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--text-color) 24%, var(--node-border));
+  background: color-mix(in srgb, var(--text-color) 8%, var(--bg-tertiary));
 }
 
 .execution-action.primary {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: white;
+  border-color: color-mix(in srgb, var(--text-color) 28%, var(--node-border));
+  background: color-mix(in srgb, var(--text-color) 12%, var(--bg-tertiary));
+  color: var(--text-color);
 }
 
 .execution-action.danger {
@@ -161,19 +170,19 @@
 .node-inspector-panel {
   position: fixed;
   top: 48px;
-  right: calc(12px + var(--assistant-panel-offset, 0px));
+  right: calc(24px + var(--assistant-panel-offset, 0px));
   bottom: auto;
   z-index: 720;
-  width: min(300px, calc(100vw - 92px));
+  width: min(300px, calc(100vw - 116px - var(--assistant-panel-offset, 0px)));
   max-height: calc(100vh - 126px);
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--node-border);
+  border: 1px solid color-mix(in srgb, var(--node-border) 78%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--bg-tertiary) 94%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 96%, transparent);
   color: var(--text-color);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
 }
 
 .node-inspector-panel.empty {
@@ -182,8 +191,9 @@
 }
 
 .inspector-header {
-  padding: 10px 11px;
-  border-bottom: 1px solid var(--node-border);
+  padding: 11px 12px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--node-border) 76%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 56%, transparent);
 }
 
 .inspector-eyebrow {
@@ -211,23 +221,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--node-border);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-color);
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--node-border) 78%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-color) 6%, transparent);
+  color: color-mix(in srgb, var(--text-color) 78%, transparent);
   cursor: pointer;
+}
+
+.inspector-close:hover {
+  background: color-mix(in srgb, var(--text-color) 10%, transparent);
+  color: var(--text-color);
 }
 
 .inspector-body {
   overflow: auto;
-  padding: 9px 11px 11px;
+  padding: 8px 12px 12px;
 }
 
 .inspector-section {
-  padding: 11px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--node-border) 70%, transparent);
 }
 
 .inspector-section:last-child {
@@ -246,7 +261,7 @@
 .inspector-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
 }
 
 .inspector-model {
@@ -268,7 +283,7 @@
 .inspector-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .output-filmstrip {
@@ -697,13 +712,13 @@
 
   .workflow-title-chip {
     left: 44px;
-    right: 10px;
+    right: calc(10px + var(--assistant-panel-offset, 0px));
     max-width: none;
   }
 
   .command-dock {
     left: 44px;
-    right: 10px;
+    right: calc(10px + var(--assistant-panel-offset, 0px));
     align-items: stretch;
     transform: none;
   }
@@ -717,7 +732,7 @@
   .output-filmstrip,
   .connection-hint-overlay {
     left: 44px;
-    right: 10px;
+    right: calc(10px + var(--assistant-panel-offset, 0px));
     width: auto;
   }
 

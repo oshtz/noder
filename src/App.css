@@ -2002,10 +2002,7 @@ h6,
 }
 
 .app-container {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px), var(--bg-color);
-  background-size: 12px 12px;
+  background: var(--bg-color);
 }
 
 .react-flow__background {

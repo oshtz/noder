@@ -496,43 +496,41 @@ const AssistantPanel: React.FC<AssistantPanelProps> = ({
 
   useEffect(() => {
     const root = document.documentElement;
-    const panel = panelRef.current;
 
     const updateOffset = (): void => {
-      if (!isOpen || !panel) {
+      const panel = panelRef.current;
+      if (!panel) {
         root.style.setProperty('--assistant-panel-offset', '0px');
         return;
       }
-      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
+      if (isOpen && window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
         root.style.setProperty('--assistant-panel-offset', '0px');
         return;
       }
-      const width = panel.getBoundingClientRect().width;
-      root.style.setProperty('--assistant-panel-offset', `${Math.max(0, Math.round(width))}px`);
+      const rect = panel.getBoundingClientRect();
+      const rightInset = Math.max(0, Math.round(window.innerWidth - rect.right));
+      const width = Math.max(0, Math.round(rect.width));
+      root.style.setProperty('--assistant-panel-offset', `${width + rightInset}px`);
     };
 
     updateOffset();
-
-    if (!isOpen || !panel) {
-      return () => {
-        root.style.setProperty('--assistant-panel-offset', '0px');
-      };
-    }
+    const frameId = window.requestAnimationFrame(updateOffset);
 
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
       observer = new ResizeObserver(updateOffset);
-      observer.observe(panel);
-    } else {
-      window.addEventListener('resize', updateOffset);
+      if (panelRef.current) {
+        observer.observe(panelRef.current);
+      }
     }
+    window.addEventListener('resize', updateOffset);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       if (observer) {
         observer.disconnect();
-      } else {
-        window.removeEventListener('resize', updateOffset);
       }
+      window.removeEventListener('resize', updateOffset);
       root.style.setProperty('--assistant-panel-offset', '0px');
     };
   }, [isOpen]);
