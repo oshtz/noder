@@ -161,10 +161,10 @@ const CustomEdge: React.FC<EdgeProps<CustomEdgeData>> = ({
 
   const glowStyle: EdgeGlowStyle = {
     '--edge-glow-color': glowColor,
-    '--edge-glow-min': selected ? '0.45' : '0.25',
-    '--edge-glow-max': selected ? '0.95' : '0.7',
-    '--edge-glow-outer-min': selected ? '0.25' : '0.15',
-    '--edge-glow-outer-max': selected ? '0.8' : '0.5',
+    '--edge-glow-min': selected ? '0.25' : '0.12',
+    '--edge-glow-max': selected ? '0.62' : '0.38',
+    '--edge-glow-outer-min': selected ? '0.12' : '0.05',
+    '--edge-glow-outer-max': selected ? '0.42' : '0.22',
   };
 
   return (
@@ -268,11 +268,13 @@ const CustomEdge: React.FC<EdgeProps<CustomEdgeData>> = ({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          strokeWidth: selected ? 2.5 : isProcessing || isDataFlowing ? 2.5 : 2,
+          strokeWidth: selected ? 1.8 : isProcessing || isDataFlowing ? 1.8 : 1.2,
           stroke:
-            isProcessing || isDataFlowing ? `url(#${flowGradientId})` : 'rgba(160, 160, 160, 0.6)',
-          strokeDasharray: isProcessing ? 5 : 0,
-          animation: isProcessing ? 'dashdraw 1s linear infinite' : 'none',
+            isProcessing || isDataFlowing
+              ? `url(#${flowGradientId})`
+              : style?.stroke || 'rgba(150, 156, 166, 0.46)',
+          strokeDasharray: isProcessing ? 4 : 0,
+          animation: isProcessing ? 'dashdraw 1.2s linear infinite' : 'none',
         }}
       />
 
