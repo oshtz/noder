@@ -791,7 +791,7 @@ function App(): React.ReactElement {
               nodeBorderRadius={3}
               nodeStrokeWidth={1}
               maskColor="rgba(0, 0, 0, 0.35)"
-              style={{ margin: 16, left: 64, bottom: 'var(--minimap-bottom-offset, 0px)' }}
+              style={{ margin: 16, left: 92, bottom: 'var(--minimap-bottom-offset, 0px)' }}
               pannable
               zoomable
             />

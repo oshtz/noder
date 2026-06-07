@@ -67,6 +67,11 @@
   opacity: 1;
 }
 
+.sidebar-icon-button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--text-color) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .sidebar-icon-button.primary {
   background: var(--primary-color);
   color: #111111;
@@ -102,10 +107,16 @@
 }
 
 .sidebar-icon-button:hover .sidebar-icon-label,
-.sidebar-icon-button:focus-visible .sidebar-icon-label,
-.sidebar-icon-button.active .sidebar-icon-label {
+.sidebar-icon-button:focus-visible .sidebar-icon-label {
   opacity: 1;
   transform: translate(0, -50%);
+}
+
+.sidebar-icon-button.active .sidebar-icon-label,
+.sidebar-icon-button[aria-expanded='true'] .sidebar-icon-label,
+.sidebar-icon-button[aria-pressed='true'] .sidebar-icon-label {
+  opacity: 0;
+  transform: translate(-6px, -50%);
 }
 
 /* Badge styles for sidebar icons */

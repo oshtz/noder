@@ -8,6 +8,7 @@ import type { Node, Edge } from 'reactflow';
 import { executeWorkflow } from '../utils/workflowExecutor';
 import * as db from '../utils/database';
 import { PREVIEW_NODE_TYPES } from '../constants/app';
+import { isTauriRuntime } from '../utils/runtime';
 import {
   getPrimaryOutput,
   persistOutputToLocal,
@@ -21,6 +22,10 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import { useExecutionStore, type NodeOutput as StoreNodeOutput } from '../stores/useExecutionStore';
 
 import { logger } from '../utils/logger';
+
+const DESKTOP_RUNTIME_REQUIRED_MESSAGE =
+  'Workflow execution requires the desktop runtime. Open the desktop app to run provider-backed nodes.';
+
 // Local types
 interface NodeData {
   prompt?: string;
@@ -283,6 +288,80 @@ export function useWorkflowRunner({
 
       if (scopedNodes.length === 0) {
         logger.warn('[Workflow] No nodes to execute for the requested scope');
+        return;
+      }
+
+      if (!isTauriRuntime()) {
+        const failedNode = scopedNodes[0];
+        const failedNodeIds = failedNode ? [failedNode.id] : [];
+
+        if (failedNode) {
+          useExecutionStore
+            .getState()
+            .addFailedNode(failedNode.id, DESKTOP_RUNTIME_REQUIRED_MESSAGE, failedNode);
+
+          setFailedNodes((prev: FailedNode[]) => {
+            const existing = prev.find((n) => n.id === failedNode.id);
+            if (existing) return prev;
+            return [
+              ...prev,
+              {
+                id: failedNode.id,
+                error: DESKTOP_RUNTIME_REQUIRED_MESSAGE,
+                node: failedNode as Node,
+              },
+            ];
+          });
+        }
+
+        setShowErrorRecovery(true);
+        setValidationErrors((prev) => [
+          ...prev,
+          {
+            type: 'runtime',
+            message: `Workflow error: ${DESKTOP_RUNTIME_REQUIRED_MESSAGE}`,
+          },
+        ]);
+
+        setNodes((nds) =>
+          nds.map((n) => {
+            if (!scopedNodeIdSet.has(n.id)) return n;
+
+            const baseClassName = (n.className || 'react-flow__node-resizable')
+              .replace(' processing', '')
+              .replace(' error', '');
+
+            return {
+              ...n,
+              className: failedNode?.id === n.id ? `${baseClassName} error` : baseClassName,
+              data: {
+                ...n.data,
+                isProcessing: false,
+                error: failedNode?.id === n.id ? DESKTOP_RUNTIME_REQUIRED_MESSAGE : null,
+              },
+            };
+          })
+        );
+
+        setEdges((eds) =>
+          eds.map((e) => ({
+            ...e,
+            data: {
+              ...e.data,
+              isProcessing: false,
+            },
+          }))
+        );
+
+        executionStateRef.current = {
+          nodeOutputs: {},
+          scopeNodeIds: Array.from(scopedNodeIdSet),
+          failedNodeIds,
+        };
+        useExecutionStore.getState().setProgress(0, scopedNodes.length, null);
+        useExecutionStore
+          .getState()
+          .endExecution({ success: false }, Array.from(scopedNodeIdSet), failedNodeIds);
         return;
       }
 

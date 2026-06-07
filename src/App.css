@@ -642,11 +642,14 @@ h6,
 
 /* Controls styling */
 .react-flow__controls {
+  left: 48px !important;
+  bottom: 12px !important;
   background: var(--node-bg);
   border: 1px solid var(--node-border);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   padding: 4px;
+  margin: 0 !important;
 }
 
 .react-flow__controls-button {

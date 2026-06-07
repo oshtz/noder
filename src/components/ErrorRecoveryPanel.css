@@ -182,9 +182,9 @@
   .error-recovery-panel {
     bottom: 10px;
     right: 10px;
-    left: 10px;
+    left: 48px;
     width: auto;
-    max-width: none;
+    max-width: calc(100vw - 58px);
   }
 
   .error-recovery-actions {
