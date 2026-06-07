@@ -2012,7 +2012,7 @@ h6,
 .resizable-node {
   border: 1px solid color-mix(in srgb, var(--node-border) 70%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--node-bg) 92%, #111217);
+  background: color-mix(in srgb, var(--node-bg) 92%, #111111);
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 

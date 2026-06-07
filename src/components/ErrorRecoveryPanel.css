@@ -4,7 +4,7 @@
   right: 20px;
   width: 400px;
   max-width: calc(100vw - 40px);
-  background: color-mix(in srgb, #1d1e25 96%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 96%, transparent);
   border: 2px solid color-mix(in srgb, #ef4444 35%, var(--node-border));
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);

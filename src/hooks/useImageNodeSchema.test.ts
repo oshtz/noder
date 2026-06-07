@@ -12,10 +12,15 @@ vi.mock('../utils/schemaFieldBuilder', () => ({
   mergeDefinitionFields: vi.fn((base, dynamic) => [...(base || []), ...(dynamic || [])]),
 }));
 
+vi.mock('../utils/runtime', () => ({
+  isTauriRuntime: vi.fn(() => true),
+}));
+
 import { useImageNodeSchema } from './useImageNodeSchema';
 
 // Import after mocks are set up
 import { fetchModelSchema, clearSchemaCache } from '../utils/replicateSchemaCache';
+import { isTauriRuntime } from '../utils/runtime';
 import {
   buildDynamicFieldsFromSchema,
   mergeDefinitionFields,
@@ -84,6 +89,7 @@ describe('useImageNodeSchema', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isTauriRuntime).mockReturnValue(true);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockSetFormState = vi.fn((updater) => {
@@ -167,6 +173,29 @@ describe('useImageNodeSchema', () => {
   // Test 2: Fetching schema when modelId is provided
   // ==========================================================================
   describe('fetching schema when modelId is provided', () => {
+    it('should stay idle and skip fetching outside the Tauri runtime', () => {
+      vi.mocked(isTauriRuntime).mockReturnValue(false);
+
+      const definition = createMockDefinition();
+      const formState: ImageFormState = { model: 'owner/model-name' };
+      const data: Record<string, unknown> = {};
+
+      const { result } = renderHook(() =>
+        useImageNodeSchema({
+          modelId: 'owner/model-name',
+          definition,
+          formState,
+          setFormState: mockSetFormState,
+          data,
+        })
+      );
+
+      expect(result.current.schemaStatus).toBe('idle');
+      expect(result.current.dynamicFields).toEqual([]);
+      expect(result.current.schemaError).toBeNull();
+      expect(mockedFetchModelSchema).not.toHaveBeenCalled();
+    });
+
     it('should call fetchModelSchema with the provided modelId', async () => {
       const mockSchema = createMockSchema();
       mockedFetchModelSchema.mockResolvedValueOnce(mockSchema as never);
@@ -1192,6 +1221,31 @@ describe('useImageNodeSchema', () => {
 
       mockedClearSchemaCache.mockClear();
       mockedFetchModelSchema.mockClear();
+
+      act(() => {
+        result.current.refreshSchema();
+      });
+
+      expect(mockedClearSchemaCache).not.toHaveBeenCalled();
+      expect(mockedFetchModelSchema).not.toHaveBeenCalled();
+    });
+
+    it('should not refresh outside the Tauri runtime', () => {
+      vi.mocked(isTauriRuntime).mockReturnValue(false);
+
+      const definition = createMockDefinition();
+      const formState: ImageFormState = { model: 'owner/model-name' };
+      const data: Record<string, unknown> = {};
+
+      const { result } = renderHook(() =>
+        useImageNodeSchema({
+          modelId: 'owner/model-name',
+          definition,
+          formState,
+          setFormState: mockSetFormState,
+          data,
+        })
+      );
 
       act(() => {
         result.current.refreshSchema();
