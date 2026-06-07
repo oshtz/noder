@@ -140,7 +140,23 @@ describe('Sidebar', () => {
     expect(screen.getByText('Workflows')).toBeInTheDocument();
     expect(screen.getByText('Templates')).toBeInTheDocument();
     expect(screen.getByText('Gallery')).toBeInTheDocument();
+    expect(screen.getByText('Assistant')).toBeInTheDocument();
     expect(screen.getByText('Controls')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('toggles the assistant from the icon rail', async () => {
+    const user = userEvent.setup();
+    const setShowAssistantPanel = vi.fn();
+    useSettingsStore.setState({
+      showTemplates: true,
+      showAssistantPanel: false,
+      setShowAssistantPanel,
+    });
+
+    render(<Sidebar {...buildProps()} />);
+
+    await user.click(screen.getByTitle('Assistant'));
+    expect(setShowAssistantPanel).toHaveBeenCalledWith(true);
   });
 });

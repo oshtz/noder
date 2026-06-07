@@ -32,6 +32,7 @@ import {
   FaBolt,
   FaSlidersH,
   FaHome,
+  FaRobot,
 } from 'react-icons/fa';
 import { IconType } from 'react-icons';
 import Popover from './Popover';
@@ -187,6 +188,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   // Read settings from Zustand store
   const showTemplates = useSettingsStore((s) => s.showTemplates);
+  const showAssistantPanel = useSettingsStore((s) => s.showAssistantPanel);
+  const setShowAssistantPanel = useSettingsStore((s) => s.setShowAssistantPanel);
 
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true);
@@ -513,6 +516,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {workflowOutputs.length}
               </span>
             )}
+          </button>
+
+          {/* Assistant Toggle Button */}
+          <button
+            className={`sidebar-icon-button ${showAssistantPanel ? 'active' : ''}`}
+            onClick={() => setShowAssistantPanel(!showAssistantPanel)}
+            title="Assistant"
+            aria-label={showAssistantPanel ? 'Hide assistant' : 'Show assistant'}
+            aria-pressed={showAssistantPanel}
+          >
+            <FaRobot aria-hidden="true" />
+            <span className="sidebar-icon-label">Assistant</span>
           </button>
 
           {/* Controls Toggle Button */}
