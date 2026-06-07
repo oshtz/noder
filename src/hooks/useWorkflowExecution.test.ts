@@ -2,7 +2,7 @@
  * Tests for useWorkflowExecution hook
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWorkflowExecution, type FailedNode } from './useWorkflowExecution';
 import type { Node, Edge } from 'reactflow';
@@ -158,18 +158,23 @@ describe('useWorkflowExecution', () => {
       expect(result.current.getNodeDuration('unknown-node')).toBeNull();
     });
 
-    it('should track duration over time', async () => {
+    it('should track duration over time', () => {
       const { result } = renderHook(() => useWorkflowExecution());
+      let now = 1_000;
+      const dateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
 
-      act(() => {
-        result.current.recordNodeStart('node-1');
-      });
+      try {
+        act(() => {
+          result.current.recordNodeStart('node-1');
+        });
 
-      // Wait a small amount of time
-      await new Promise((resolve) => setTimeout(resolve, 10));
+        now += 10;
 
-      const duration = result.current.getNodeDuration('node-1');
-      expect(duration).toBeGreaterThanOrEqual(10);
+        const duration = result.current.getNodeDuration('node-1');
+        expect(duration).toBe(10);
+      } finally {
+        dateNowSpy.mockRestore();
+      }
     });
   });
 
