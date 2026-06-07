@@ -39,8 +39,6 @@ export interface SidebarPropsConfig {
   // UI state
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  showEditorToolbar: boolean;
-  setShowEditorToolbar: (show: boolean) => void;
   setShowWelcome: React.Dispatch<React.SetStateAction<boolean>>;
   setWelcomePinned: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -100,8 +98,6 @@ export interface SidebarPropsResult {
     onLoadWorkflow: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onExportWorkflow: () => void;
     onClearWorkflow: () => void;
-    showEditorToolbar: boolean;
-    onShowEditorToolbarChange: (show: boolean) => void;
     onGoHome: () => void;
   };
 }
@@ -123,8 +119,6 @@ export function useSidebarProps({
   handleLoadWorkflow,
   sidebarOpen,
   setSidebarOpen,
-  showEditorToolbar,
-  setShowEditorToolbar,
   setShowWelcome,
   setWelcomePinned,
   setNodes,
@@ -240,8 +234,6 @@ export function useSidebarProps({
       ) => void,
       onExportWorkflow: exportWorkflow,
       onClearWorkflow: handleClearWorkflow,
-      showEditorToolbar,
-      onShowEditorToolbarChange: setShowEditorToolbar,
       onGoHome: handleGoHome,
     }),
     [
@@ -261,8 +253,6 @@ export function useSidebarProps({
       handleLoadWorkflow,
       exportWorkflow,
       handleClearWorkflow,
-      showEditorToolbar,
-      setShowEditorToolbar,
       handleGoHome,
     ]
   );

@@ -85,8 +85,6 @@ export interface SidebarProps {
   onGalleryDragEnd?: () => void;
   updateState?: UpdateState | null;
   updateActions?: UpdateActions | null;
-  showEditorToolbar?: boolean;
-  onShowEditorToolbarChange?: (show: boolean) => void;
   onGoHome?: () => void;
 }
 

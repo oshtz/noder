@@ -35,8 +35,6 @@ describe('useSidebarProps', () => {
     handleLoadWorkflow: vi.fn(),
     sidebarOpen: false,
     setSidebarOpen: vi.fn(),
-    showEditorToolbar: true,
-    setShowEditorToolbar: vi.fn(),
     setShowWelcome: vi.fn(),
     setWelcomePinned: vi.fn(),
     setNodes: vi.fn(),
@@ -154,15 +152,6 @@ describe('useSidebarProps', () => {
       const { result } = renderHook(() => useSidebarProps(config));
 
       expect(result.current.sidebarProps.database).toBe(mockDatabase);
-    });
-
-    it('should contain showEditorToolbar from config', () => {
-      const config = createDefaultConfig();
-      config.showEditorToolbar = false;
-
-      const { result } = renderHook(() => useSidebarProps(config));
-
-      expect(result.current.sidebarProps.showEditorToolbar).toBe(false);
     });
   });
 
@@ -591,16 +580,6 @@ describe('useSidebarProps', () => {
       const { result } = renderHook(() => useSidebarProps(config));
 
       expect(result.current.sidebarProps.onLoadTemplate).toBe(handleLoadTemplate);
-    });
-
-    it('should contain onShowEditorToolbarChange mapped to setShowEditorToolbar', () => {
-      const setShowEditorToolbar = vi.fn();
-      const config = createDefaultConfig();
-      config.setShowEditorToolbar = setShowEditorToolbar;
-
-      const { result } = renderHook(() => useSidebarProps(config));
-
-      expect(result.current.sidebarProps.onShowEditorToolbarChange).toBe(setShowEditorToolbar);
     });
   });
 

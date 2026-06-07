@@ -36,10 +36,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  position: relative;
   height: 100%;
   padding: 8px 0;
-  gap: 7px;
   overflow: visible;
+}
+
+.sidebar-icon-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .sidebar-icon-button {
@@ -75,8 +83,13 @@
 .sidebar-icon-button.primary {
   background: var(--primary-color);
   color: #111111;
-  margin-bottom: 4px;
   opacity: 1;
+}
+
+.sidebar-icon-button.sidebar-settings-button {
+  position: absolute;
+  bottom: 8px;
+  left: 4px;
 }
 
 .sidebar-icon-button.primary:hover {

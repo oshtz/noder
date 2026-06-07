@@ -122,8 +122,6 @@ function App(): React.ReactElement {
 
   // Settings
   const showAssistantPanel = useShowAssistantPanel();
-  const showEditorToolbar = useSettingsStore((s) => s.showEditorToolbar);
-  const setShowEditorToolbar = useSettingsStore((s) => s.setShowEditorToolbar);
   const edgeType = useSettingsStore((s) => s.edgeType);
   const defaultTextModel = useSettingsStore((s) => s.defaultTextModel);
   const defaultImageModel = useSettingsStore((s) => s.defaultImageModel);
@@ -555,8 +553,6 @@ function App(): React.ReactElement {
     handleLoadWorkflow,
     sidebarOpen,
     setSidebarOpen,
-    showEditorToolbar,
-    setShowEditorToolbar,
     setShowWelcome,
     setWelcomePinned,
     setNodes,

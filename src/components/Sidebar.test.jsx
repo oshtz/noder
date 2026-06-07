@@ -74,8 +74,6 @@ const buildProps = (overrides = {}) => ({
   onDefaultUpscalerModelChange: vi.fn(),
   edgeType: 'bezier',
   onEdgeTypeChange: vi.fn(),
-  showEditorToolbar: false,
-  onShowEditorToolbarChange: vi.fn(),
   onGoHome: vi.fn(),
   ...overrides,
 });
@@ -84,7 +82,6 @@ describe('Sidebar', () => {
   beforeEach(() => {
     useSettingsStore.setState({
       showTemplates: true,
-      showEditorToolbar: false,
     });
 
     invoke.mockImplementation(async (command) => {
@@ -141,7 +138,6 @@ describe('Sidebar', () => {
     expect(screen.getByText('Templates')).toBeInTheDocument();
     expect(screen.getByText('Gallery')).toBeInTheDocument();
     expect(screen.getByText('Assistant')).toBeInTheDocument();
-    expect(screen.getByText('Controls')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
