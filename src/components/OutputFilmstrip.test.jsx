@@ -58,4 +58,16 @@ describe('OutputFilmstrip', () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it('closes the contextual output tray', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(
+      <OutputFilmstrip outputs={outputs} nodes={[]} onOpenGallery={vi.fn()} onClose={onClose} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /close recent outputs/i }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

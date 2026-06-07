@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Node } from 'reactflow';
-import { FaImages } from 'react-icons/fa';
+import { FaImages, FaTimes } from 'react-icons/fa';
 import type { Output } from './gallery';
 import './WorkflowUX.css';
 
@@ -8,6 +8,7 @@ interface OutputFilmstripProps {
   outputs: Output[];
   nodes: Node[];
   onOpenGallery: () => void;
+  onClose?: () => void;
 }
 
 const getNodeLabel = (node: Node | undefined, fallback: string | undefined): string => {
@@ -19,7 +20,12 @@ const getNodeLabel = (node: Node | undefined, fallback: string | undefined): str
 const getTimestamp = (output: Output): number =>
   typeof output.timestamp === 'number' ? output.timestamp : Number(output.timestamp || 0);
 
-const OutputFilmstrip: React.FC<OutputFilmstripProps> = ({ outputs, nodes, onOpenGallery }) => {
+const OutputFilmstrip: React.FC<OutputFilmstripProps> = ({
+  outputs,
+  nodes,
+  onOpenGallery,
+  onClose,
+}) => {
   const recentOutputs = useMemo(
     () => [...outputs].sort((a, b) => getTimestamp(b) - getTimestamp(a)).slice(0, 8),
     [outputs]
@@ -42,6 +48,16 @@ const OutputFilmstrip: React.FC<OutputFilmstripProps> = ({ outputs, nodes, onOpe
           <FaImages aria-hidden="true" />
           Open gallery
         </button>
+        {onClose && (
+          <button
+            type="button"
+            className="execution-action filmstrip-close"
+            onClick={onClose}
+            aria-label="Close recent outputs"
+          >
+            <FaTimes aria-hidden="true" />
+          </button>
+        )}
       </div>
       <div className="filmstrip-items">
         {recentOutputs.map((output, index) => {

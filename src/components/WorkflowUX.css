@@ -627,6 +627,18 @@
   transition: width 0.18s ease;
 }
 
+.filmstrip-close {
+  width: 30px;
+  padding: 0;
+}
+
+.output-filmstrip {
+  left: 76px;
+  right: auto;
+  bottom: 62px;
+  width: min(720px, calc(100vw - 104px));
+}
+
 @media (max-width: 900px) {
   .app-container.has-output-filmstrip {
     --minimap-bottom-offset: 0px;
