@@ -115,6 +115,28 @@ describe('executeWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  it('stops before starting the next layer when requested', async () => {
+    const nodes = [createMediaNode('a')];
+    const onNodeStart = vi.fn();
+    const onNodeError = vi.fn();
+
+    const result = await executeWorkflow({
+      nodes,
+      edges: [],
+      onNodeStart,
+      onNodeError,
+      shouldStop: () => true,
+      autoCleanup: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Workflow stopped by user');
+    expect(result.completedCount).toBe(0);
+    expect(onNodeStart).not.toHaveBeenCalled();
+    expect(onNodeError).not.toHaveBeenCalled();
+  });
+
   it('skips cached nodes and keeps cached outputs', async () => {
     const nodes = [createMediaNode('a'), createMediaNode('b')];
     const onNodeStart = vi.fn();

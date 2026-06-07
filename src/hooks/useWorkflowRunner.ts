@@ -18,6 +18,7 @@ import type { WorkflowMetadata } from '../utils/workflowSchema';
 import type { FailedNode, ExecutionState } from './useWorkflowExecution';
 import type { ValidationError } from '../types/components';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { useExecutionStore, type NodeOutput as StoreNodeOutput } from '../stores/useExecutionStore';
 
 import { logger } from '../utils/logger';
 // Local types
@@ -91,6 +92,7 @@ export interface UseWorkflowRunnerOptions {
 
 export interface UseWorkflowRunnerReturn {
   runWorkflow: (options?: RunWorkflowOptions) => Promise<void>;
+  stopWorkflow: () => void;
   getExecutionScope: (targetNodeIds: string[] | null) => { nodes: Node[]; edges: Edge[] };
 }
 
@@ -122,6 +124,7 @@ export function useWorkflowRunner({
   const replicateApiKey = useSettingsStore((s) => s.replicateApiKey);
 
   const currentWorkflowIdRef = useRef<string | null>(null);
+  const stopRequestedRef = useRef(false);
 
   /**
    * Gets the execution scope for a set of target nodes
@@ -286,8 +289,11 @@ export function useWorkflowRunner({
       const startedAt = Date.now();
       const workflowId = `workflow-${Date.now()}`;
       currentWorkflowIdRef.current = workflowId;
+      stopRequestedRef.current = false;
       setCurrentWorkflowId(workflowId);
       nodeTimingsRef.current = {};
+      useExecutionStore.getState().startExecution(workflowId, !resume);
+      useExecutionStore.getState().setProgress(0, scopedNodes.length, null);
 
       let workflowResult: WorkflowResult | null = null;
       let workflowError: Error | null = null;
@@ -321,9 +327,11 @@ export function useWorkflowRunner({
           >[0]['initialNodeOutputs'],
           skipNodeIds: effectiveSkipNodeIds,
           continueOnError: allowPartial,
+          shouldStop: () => stopRequestedRef.current,
           onNodeStart: (node: Node): void => {
             logger.debug(`[Workflow] Starting node: ${node.id} (${node.type})`);
             nodeTimingsRef.current[node.id] = Date.now();
+            useExecutionStore.getState().recordNodeStart(node.id);
             setNodes((nds) =>
               nds.map((n) => {
                 if (n.id !== node.id) return n;
@@ -348,6 +356,7 @@ export function useWorkflowRunner({
           },
           onNodeComplete: (node: Node, output: unknown): void => {
             logger.debug(`[Workflow] Completed node: ${node.id}`, output);
+            useExecutionStore.getState().setNodeOutput(node.id, output as StoreNodeOutput);
             const outputPayload = getPrimaryOutput(output);
             const nodeStartedAt = nodeTimingsRef.current[node.id];
             const runDurationMs = nodeStartedAt ? Date.now() - nodeStartedAt : null;
@@ -455,6 +464,7 @@ export function useWorkflowRunner({
           },
           onNodeError: (node: Node, error: Error): void => {
             logger.error(`[Workflow] Error in node ${node.id}:`, error);
+            useExecutionStore.getState().addFailedNode(node.id, error, node);
             const nodeStartedAt = nodeTimingsRef.current[node.id];
             const runDurationMs = nodeStartedAt ? Date.now() - nodeStartedAt : null;
 
@@ -504,6 +514,13 @@ export function useWorkflowRunner({
             completed: number;
             total: number;
           }): void => {
+            useExecutionStore
+              .getState()
+              .setProgress(
+                progress.completed,
+                progress.total,
+                useExecutionStore.getState().currentNodeId
+              );
             logger.debug(
               `[Workflow] Progress: ${progress.percentage}% (${progress.completed}/${progress.total})`
             );
@@ -538,12 +555,21 @@ export function useWorkflowRunner({
             scopeNodeIds: Array.from(scopedNodeIdSet),
             failedNodeIds: Array.from(runFailedNodeIds),
           };
+          useExecutionStore.getState().endExecution(
+            {
+              success: false,
+              nodeOutputs: (workflowResult.nodeOutputs || {}) as Record<string, StoreNodeOutput>,
+            },
+            Array.from(scopedNodeIdSet),
+            Array.from(runFailedNodeIds)
+          );
         } else {
           executionStateRef.current = {
             nodeOutputs: {},
             scopeNodeIds: [],
             failedNodeIds: [],
           };
+          useExecutionStore.getState().endExecution({ success: true });
         }
 
         const workflowName = activeWorkflow?.name || workflowMetadata?.name || 'Local Draft';
@@ -577,6 +603,7 @@ export function useWorkflowRunner({
         setIsProcessing(false);
         setCurrentWorkflowId(null);
         currentWorkflowIdRef.current = null;
+        stopRequestedRef.current = false;
         logger.debug('[Workflow] Execution completed');
       }
     },
@@ -605,8 +632,15 @@ export function useWorkflowRunner({
     ]
   );
 
+  const stopWorkflow = useCallback((): void => {
+    if (!isProcessing) return;
+    stopRequestedRef.current = true;
+    logger.debug('[Workflow] Stop requested');
+  }, [isProcessing]);
+
   return {
     runWorkflow,
+    stopWorkflow,
     getExecutionScope,
   };
 }

@@ -367,7 +367,7 @@ const ImageNode: React.FC<ImageNodeProps> = ({ id, data, selected = false }) => 
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Image Generation Settings"
         renderToPortal={true}

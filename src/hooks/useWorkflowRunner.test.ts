@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useWorkflowRunner } from './useWorkflowRunner';
 import type { Node, Edge } from 'reactflow';
+import { useExecutionStore } from '../stores/useExecutionStore';
 
 // Mock workflowExecutor
 vi.mock('../utils/workflowExecutor', () => ({
@@ -86,6 +87,7 @@ describe('useWorkflowRunner', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useExecutionStore.getState().reset();
 
     mockSetNodes = vi.fn((updater) => {
       if (typeof updater === 'function') {
@@ -605,6 +607,34 @@ describe('useWorkflowRunner', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith('[Workflow] Progress: 50% (1/2)');
       consoleSpy.mockRestore();
+    });
+
+    it('should mirror workflow progress into the shared execution store', async () => {
+      const { executeWorkflow } = await import('../utils/workflowExecutor');
+      vi.mocked(executeWorkflow).mockImplementation(async (options) => {
+        options.onNodeStart?.({ id: 'node-1', type: 'text', data: { label: 'Prompt' } });
+        options.onProgress?.({ percentage: 50, completed: 1, total: 2 });
+        options.onNodeComplete?.({ id: 'node-1', type: 'text', data: {} }, { out: 'hello' });
+        options.onProgress?.({ percentage: 100, completed: 2, total: 2 });
+        return {
+          success: true,
+          duration: 100,
+          completedCount: 2,
+          nodeOutputs: { 'node-1': { out: 'hello' } },
+        };
+      });
+
+      const { result } = renderHookWithDefaults(createTestNodes(2), [createTestEdges()[0]]);
+
+      await act(async () => {
+        await result.current.runWorkflow();
+      });
+
+      const state = useExecutionStore.getState();
+      expect(state.isProcessing).toBe(false);
+      expect(state.processedNodeCount).toBe(2);
+      expect(state.totalNodeCount).toBe(2);
+      expect(state.executionState.nodeOutputs).toEqual({});
     });
   });
 });

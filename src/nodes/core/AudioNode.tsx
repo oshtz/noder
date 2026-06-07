@@ -515,7 +515,7 @@ const AudioNode: React.FC<AudioNodeProps> = ({ id, data, selected = false }) => 
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Audio Generation Settings"
         renderToPortal={true}

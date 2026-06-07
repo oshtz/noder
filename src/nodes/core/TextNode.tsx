@@ -50,6 +50,29 @@ export const NODE_TYPE = 'text';
 const definition = getNodeSchema(NODE_TYPE) as NodeSchemaDefinition;
 const handles = definition?.handles || [];
 
+const normalizeTextOutput = (output: unknown): string | null => {
+  if (output == null || output === '') return null;
+  if (typeof output === 'string') return output;
+  if (typeof output === 'number' || typeof output === 'boolean') return String(output);
+  if (Array.isArray(output)) {
+    return output
+      .map((item) =>
+        typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
+          ? String(item)
+          : JSON.stringify(item)
+      )
+      .join('');
+  }
+  if (typeof output === 'object') {
+    const record = output as Record<string, unknown>;
+    const value = [record.value, record.text, record.output].find(
+      (item): item is string => typeof item === 'string'
+    );
+    return value || JSON.stringify(output, null, 2);
+  }
+  return null;
+};
+
 // =============================================================================
 // Node Factory
 // =============================================================================
@@ -132,16 +155,17 @@ const TextNode: React.FC<TextNodeProps> = ({ id, data, selected = false }) => {
       audio: audioUrl,
     },
   });
+  const normalizedDataOutput = useMemo(() => normalizeTextOutput(data.output), [data.output]);
 
   // Sync outputText with data.output
   useEffect(() => {
-    if (data.output && data.output !== outputText) {
-      setOutputText(data.output);
+    if (normalizedDataOutput && normalizedDataOutput !== outputText) {
+      setOutputText(normalizedDataOutput);
     }
-    if (!data.output && outputText) {
+    if (!normalizedDataOutput && outputText) {
       setOutputText(null);
     }
-  }, [data.output, outputText, setOutputText]);
+  }, [normalizedDataOutput, outputText, setOutputText]);
 
   // Sync form state with data changes
   useEffect(() => {
@@ -341,7 +365,7 @@ const TextNode: React.FC<TextNodeProps> = ({ id, data, selected = false }) => {
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Text Settings"
         renderToPortal={true}

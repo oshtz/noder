@@ -231,6 +231,35 @@ function defaultExtractResult(output: unknown, type: GenerationType): string {
   throw new Error('Unexpected output format');
 }
 
+function normalizeInitialOutput(output: unknown, type: GenerationType): string | null {
+  if (output == null || output === '') return null;
+  if (typeof output === 'string') return output;
+  if (typeof output === 'number' || typeof output === 'boolean') return String(output);
+  if (Array.isArray(output)) {
+    if (output.length === 0) return null;
+    if (type === 'text') {
+      return output
+        .map((item) =>
+          typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
+            ? String(item)
+            : JSON.stringify(item)
+        )
+        .join('');
+    }
+    const firstString = output.find((item): item is string => typeof item === 'string');
+    return firstString || null;
+  }
+  if (typeof output === 'object') {
+    const record = output as Record<string, unknown>;
+    const stringValue = [record.value, record.url, record.output].find(
+      (value): value is string => typeof value === 'string'
+    );
+    if (stringValue) return stringValue;
+    return type === 'text' ? JSON.stringify(output, null, 2) : null;
+  }
+  return null;
+}
+
 // =============================================================================
 // Hook Implementation
 // =============================================================================
@@ -271,7 +300,9 @@ export function useGeneration<
 
   const [status, setStatus] = useState<'idle' | 'processing'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [output, setOutput] = useState<string | null>(data.output || null);
+  const [output, setOutput] = useState<string | null>(() =>
+    normalizeInitialOutput(data.output, config.type)
+  );
   const [pollingProgress, setPollingProgress] = useState({
     attempts: 0,
     maxAttempts: config.maxPollingAttempts ?? DEFAULT_CONFIG.maxPollingAttempts,

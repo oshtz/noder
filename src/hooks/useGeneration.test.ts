@@ -165,6 +165,20 @@ describe('useGeneration', () => {
       expect(result.current.output).toBe('existing-output');
     });
 
+    it('should initialize with object output value when data.output is structured', () => {
+      const dataWithOutput = { ...mockNodeData, output: { type: 'image', value: 'image-url' } };
+      const { result } = renderHook(() =>
+        useGeneration({
+          nodeId: 'test-node',
+          data: dataWithOutput,
+          formState: mockFormState,
+          config: mockConfig,
+        })
+      );
+
+      expect(result.current.output).toBe('image-url');
+    });
+
     it('should initialize polling progress', () => {
       const { result } = renderHook(() =>
         useGeneration({
@@ -776,6 +790,18 @@ describe('useTextGeneration', () => {
 
     expect(result.current.status).toBe('idle');
     expect(result.current.pollingProgress.maxAttempts).toBe(120);
+  });
+
+  it('should initialize structured text output as displayable text', () => {
+    const { result } = renderHook(() =>
+      useTextGeneration({
+        nodeId: 'test-node',
+        data: { content: '', output: { type: 'text', value: 'Structured output' } },
+        formState: { model: 'test/model', prompt: 'test' },
+      })
+    );
+
+    expect(result.current.output).toBe('Structured output');
   });
 });
 

@@ -540,7 +540,7 @@ const MediaNode: React.FC<MediaNodeProps> = ({ id, data, selected = false }) => 
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Media Settings"
         renderToPortal={true}

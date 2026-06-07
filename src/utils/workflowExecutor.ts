@@ -178,6 +178,7 @@ type ExecuteWorkflowOptions = {
   onNodeError?: (node: WorkflowNode, error: unknown) => void;
   onNodeSkip?: (node: WorkflowNode, reason: string) => void;
   onProgress?: (progress: WorkflowProgress) => void;
+  shouldStop?: () => boolean;
   autoCleanup?: boolean;
   initialNodeOutputs?: Record<string, NodeOutputs>;
   skipNodeIds?: string[];
@@ -1116,6 +1117,7 @@ export async function executeWorkflow({
   onNodeError = () => {},
   onNodeSkip = () => {},
   onProgress = () => {},
+  shouldStop = () => false,
   autoCleanup = true,
   initialNodeOutputs = {},
   skipNodeIds = [],
@@ -1149,11 +1151,23 @@ export async function executeWorkflow({
 
     // Execute each layer sequentially
     for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+      if (shouldStop()) {
+        throw new Error('Workflow stopped by user');
+      }
+
       const layer = layers[layerIndex] as WorkflowNode[];
       logger.debug(`[Executor] Layer ${layerIndex + 1}/${layers.length}: ${layer.length} nodes`);
 
       // Execute all nodes in this layer in parallel
       const layerPromises = layer.map(async (node) => {
+        if (shouldStop()) {
+          return {
+            nodeId: node.id,
+            success: false,
+            error: new Error('Workflow stopped by user'),
+          };
+        }
+
         if (skipNodeIdSet.has(node.id)) {
           skippedNodes.push(node.id);
           onNodeSkip(node, 'skipped');
@@ -1174,6 +1188,9 @@ export async function executeWorkflow({
 
           // Execute the node
           const output = await executeNode(node, inputs, context);
+          if (shouldStop()) {
+            throw new Error('Workflow stopped by user');
+          }
           logger.debug(`[Executor] Node ${node.id} (${node.type}) output:`, output);
 
           // Store output

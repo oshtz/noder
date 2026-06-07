@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -22,16 +22,21 @@ import { workflowTemplates } from './utils/workflowTemplates';
 import { getLayoutedElements, LAYOUT_DIRECTION } from './utils/layoutEngine';
 import { sortNodesForReactFlow } from './utils/createNode';
 import { normalizeTemplates, markEdgeGlows, prepareEdges } from './utils/workflowHelpers';
+import { buildConnectionHint, getConnectionHintNodeClass } from './utils/connectionHints';
 
 // Type imports
 import type { Node, Edge, NodeTypes } from 'reactflow';
 import type { Workflow } from './hooks/useWorkflowPersistence';
 import type { ValidationError } from './types/components';
 import type { WorkflowTemplate } from './utils/workflowTemplates';
+import type { Database as GalleryDatabase, Output } from './components/gallery';
 
 // Component imports
 import NodeSelector from './components/NodeSelector';
-import FloatingProcessButton from './components/FloatingProcessButton';
+import ExecutionDock from './components/ExecutionDock';
+import NodeInspectorPanel from './components/NodeInspectorPanel';
+import OutputFilmstrip from './components/OutputFilmstrip';
+import ConnectionHintOverlay from './components/ConnectionHintOverlay';
 import ValidationErrorsPanel from './components/ValidationErrorsPanel';
 import Sidebar from './components/Sidebar';
 import ErrorRecoveryPanel from './components/ErrorRecoveryPanel';
@@ -46,6 +51,9 @@ import AppFeedback from './components/AppFeedback';
 // Lazy-loaded components for code splitting
 const AssistantPanel = lazy(() => import('./components/AssistantPanel'));
 const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
+const CanvasOutputGallery = lazy(() =>
+  import('./components/OutputGallery').then((module) => ({ default: module.OutputGallery }))
+);
 
 // Hook imports
 import { useDragAndDrop } from './hooks/useDragAndDrop';
@@ -165,6 +173,7 @@ function App(): React.ReactElement {
   const [showWelcome, setShowWelcome] = useState<boolean>(showWelcomeInitially);
   const [hideEmptyHint, setHideEmptyHint] = useState<boolean>(false);
   const [welcomePinned, setWelcomePinned] = useState<boolean>(false);
+  const [showCanvasGallery, setShowCanvasGallery] = useState<boolean>(false);
   const [workflowTemplatesState] = useState<WorkflowTemplate[]>(() => {
     try {
       const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
@@ -276,7 +285,7 @@ function App(): React.ReactElement {
   });
 
   // Workflow runner hook - API keys are read from useSettingsStore internally
-  const { runWorkflow } = useWorkflowRunner({
+  const { runWorkflow, stopWorkflow } = useWorkflowRunner({
     nodes,
     edges,
     setNodes,
@@ -299,7 +308,14 @@ function App(): React.ReactElement {
   const { handleImageDrop } = useMediaHandling({ reactFlowInstance, handleAddNode, setNodes });
 
   // Node connections hook
-  const { onConnectStart, onConnectEnd, onConnect } = useNodeConnections({
+  const {
+    connectingNodeId,
+    connectingHandleId,
+    connectingHandleType,
+    onConnectStart,
+    onConnectEnd,
+    onConnect,
+  } = useNodeConnections({
     nodes,
     edges,
     setNodes,
@@ -328,6 +344,69 @@ function App(): React.ReactElement {
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
   const executionProgress = useExecutionProgress();
   const { current: currentNodeId, processed, total } = executionProgress;
+  const normalizedWorkflowOutputs = workflowOutputs as Output[];
+
+  const connectionHint = useMemo(
+    () => buildConnectionHint(nodes, connectingNodeId, connectingHandleId, connectingHandleType),
+    [nodes, connectingNodeId, connectingHandleId, connectingHandleType]
+  );
+
+  const flowNodes = useMemo(
+    () =>
+      sortNodesForReactFlow(
+        nodes.map((node) => {
+          const connectionClass = getConnectionHintNodeClass(
+            node,
+            connectionHint,
+            connectingNodeId
+          );
+          const nextData = { ...node.data, usePersistentInspector: true };
+          if (!connectionClass) {
+            return {
+              ...node,
+              data: nextData,
+            };
+          }
+          const baseClassName = (node.className || '').replace(
+            /\s?connection-(source|compatible|incompatible)/g,
+            ''
+          );
+          return {
+            ...node,
+            data: nextData,
+            className: `${baseClassName} ${connectionClass}`.trim(),
+          };
+        })
+      ),
+    [nodes, connectionHint, connectingNodeId]
+  );
+
+  const selectedNode = useMemo(
+    () => nodes.find((node) => node.id === selectedNodeId) || null,
+    [nodes, selectedNodeId]
+  );
+  const selectedIncomingEdges = useMemo(
+    () => (selectedNodeId ? edges.filter((edge) => edge.target === selectedNodeId) : []),
+    [edges, selectedNodeId]
+  );
+  const selectedOutgoingEdges = useMemo(
+    () => (selectedNodeId ? edges.filter((edge) => edge.source === selectedNodeId) : []),
+    [edges, selectedNodeId]
+  );
+  const selectedFailedNode = useMemo(
+    () => failedNodes.find((failedNode) => failedNode.id === selectedNodeId) || null,
+    [failedNodes, selectedNodeId]
+  );
+  const currentNodeName = useMemo(() => {
+    const currentNode = nodes.find((node) => node.id === currentNodeId);
+    if (!currentNode) return '';
+    const data = currentNode.data || {};
+    return String(
+      data.customTitle || data.title || data.label || currentNode.type || currentNode.id
+    );
+  }, [currentNodeId, nodes]);
+  const dockTotal = isProcessing || total > 0 ? total : nodes.length;
+  const dockProcessed = isProcessing ? processed : 0;
 
   useEffect(() => {
     if (isProcessing && currentNodeId) {
@@ -548,12 +627,44 @@ function App(): React.ReactElement {
     [nodes, edges, setNodes, reactFlowInstance, takeSnapshot]
   );
 
+  const handleRunNode = useCallback(
+    (nodeId: string): void => {
+      void runWorkflow({ targetNodeIds: [nodeId], trigger: 'inspector-node-run' });
+    },
+    [runWorkflow]
+  );
+
+  const handleRetryNode = useCallback(
+    (nodeId: string): void => {
+      void runWorkflow({
+        resume: true,
+        retryNodeIds: [nodeId],
+        continueOnError: true,
+        trigger: 'inspector-node-retry',
+      });
+    },
+    [runWorkflow]
+  );
+
+  const handleRetryFailed = useCallback((): void => {
+    void runWorkflow({
+      resume: true,
+      retryFailed: true,
+      continueOnError: true,
+      trigger: 'execution-dock-retry-failed',
+    });
+  }, [runWorkflow]);
+
   // ==========================================================================
   // Render
   // ==========================================================================
 
   return (
-    <div className={`app-container ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+    <div
+      className={`app-container ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} ${
+        showCanvasGallery ? 'gallery-open' : ''
+      } ${!showWelcome && normalizedWorkflowOutputs.length > 0 ? 'has-output-filmstrip' : ''}`}
+    >
       <div id="global-node-settings-portal" />
 
       {/* Screen reader live region for workflow status announcements */}
@@ -603,7 +714,7 @@ function App(): React.ReactElement {
       <ErrorBoundary level="canvas" showDetails={false}>
         <div className="flow-wrapper">
           <ReactFlow
-            nodes={sortNodesForReactFlow(nodes)}
+            nodes={flowNodes}
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
@@ -671,7 +782,7 @@ function App(): React.ReactElement {
               nodeBorderRadius={3}
               nodeStrokeWidth={1}
               maskColor="rgba(0, 0, 0, 0.35)"
-              style={{ margin: 16, left: 64, bottom: 0 }}
+              style={{ margin: 16, left: 64, bottom: 'var(--minimap-bottom-offset, 0px)' }}
               pannable
               zoomable
             />
@@ -702,7 +813,55 @@ function App(): React.ReactElement {
         </div>
       </ErrorBoundary>
 
-      <FloatingProcessButton onClick={runWorkflow} />
+      {!showWelcome && <ConnectionHintOverlay hint={connectionHint} />}
+
+      {!showWelcome && (
+        <NodeInspectorPanel
+          selectedNode={selectedNode}
+          incomingEdges={selectedIncomingEdges}
+          outgoingEdges={selectedOutgoingEdges}
+          outputs={normalizedWorkflowOutputs}
+          failedNode={selectedFailedNode}
+          onRunNode={handleRunNode}
+          onRetryNode={handleRetryNode}
+          onDeleteNode={(nodeId) => void handleRemoveNode(nodeId)}
+          onMoveNodeOrder={moveNodeOrder}
+          onClose={() => setSelectedNodeId(null)}
+        />
+      )}
+
+      {!showWelcome && (
+        <OutputFilmstrip
+          outputs={normalizedWorkflowOutputs}
+          nodes={nodes}
+          onOpenGallery={() => setShowCanvasGallery(true)}
+        />
+      )}
+
+      {showCanvasGallery && (
+        <div className="canvas-gallery-panel">
+          <Suspense fallback={<div className="loading-placeholder">Loading gallery...</div>}>
+            <CanvasOutputGallery
+              outputs={normalizedWorkflowOutputs}
+              onClose={() => setShowCanvasGallery(false)}
+              database={database as unknown as GalleryDatabase}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      <ExecutionDock
+        isProcessing={isProcessing}
+        processed={dockProcessed}
+        total={dockTotal}
+        failedCount={failedNodes.length}
+        outputCount={normalizedWorkflowOutputs.length}
+        currentNodeName={currentNodeName}
+        onRun={() => runWorkflow()}
+        onStop={stopWorkflow}
+        onRetryFailed={handleRetryFailed}
+        onOpenOutputs={() => setShowCanvasGallery(true)}
+      />
 
       {showAssistantPanel && (
         <ErrorBoundary level={'component' as 'canvas' | 'node' | 'component'} showDetails={false}>

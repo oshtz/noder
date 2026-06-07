@@ -77,4 +77,41 @@ describe('BaseNode', () => {
     await user.click(screen.getByRole('button', { name: /delete node/i }));
     expect(onRemove).toHaveBeenCalledWith('node-3');
   });
+
+  it('renders compact node status badges for execution state and outputs', () => {
+    render(
+      <BaseNode
+        id="node-4"
+        data={{
+          title: 'Image',
+          metadata: 'flux',
+          isProcessing: true,
+          output: 'https://example.com/image.png',
+          lastRunDurationMs: 1450,
+        }}
+        selected={false}
+      />
+    );
+
+    expect(screen.getByText('Running')).toBeInTheDocument();
+    expect(screen.getByText('Output ready')).toBeInTheDocument();
+    expect(screen.getByText('flux')).toBeInTheDocument();
+    expect(screen.getByText('1.45s')).toBeInTheDocument();
+  });
+
+  it('renders a failed badge when the node has an error', () => {
+    render(
+      <BaseNode
+        id="node-5"
+        data={{
+          title: 'Text',
+          error: 'Missing API key',
+        }}
+        selected={false}
+      />
+    );
+
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.getByTitle('Missing API key')).toBeInTheDocument();
+  });
 });

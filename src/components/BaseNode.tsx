@@ -35,6 +35,10 @@ interface NodeData {
   title?: string;
   customTitle?: string | null;
   metadata?: string;
+  output?: unknown;
+  error?: string | null;
+  isProcessing?: boolean;
+  usePersistentInspector?: boolean;
   lastRunDurationMs?: number;
   executionOrder?: number;
   onRemove?: (id: string) => void;
@@ -145,6 +149,30 @@ const BaseNode: React.FC<BaseNodeProps> = ({
     }
   };
 
+  const statusBadges = [
+    data.isProcessing
+      ? {
+          label: 'Running',
+          className: 'running',
+          title: 'Node is currently running',
+        }
+      : null,
+    data.error
+      ? {
+          label: 'Failed',
+          className: 'failed',
+          title: data.error,
+        }
+      : null,
+    !data.error && data.output
+      ? {
+          label: 'Output ready',
+          className: 'output',
+          title: 'This node has a recent output',
+        }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; className: string; title: string }>;
+
   return (
     <div
       className="base-node-container"
@@ -210,6 +238,19 @@ const BaseNode: React.FC<BaseNodeProps> = ({
           {data.lastRunDurationMs && (
             <span className="node-floating-timer nodrag" title="Last execution time">
               {formatDuration(data.lastRunDurationMs)}
+            </span>
+          )}
+          {statusBadges.length > 0 && (
+            <span className="node-status-row" aria-label="Node status">
+              {statusBadges.map((badge) => (
+                <span
+                  key={badge.label}
+                  className={`node-status-badge ${badge.className}`}
+                  title={badge.title}
+                >
+                  {badge.label}
+                </span>
+              ))}
             </span>
           )}
         </div>
@@ -305,7 +346,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
       </div>
 
       {/* Settings Popover - Render to portal when selected */}
-      {!onSettingsClick && selected && (
+      {!onSettingsClick && selected && !data.usePersistentInspector && (
         <NodeSettingsPopover
           isOpen={true}
           onClose={() => {}}

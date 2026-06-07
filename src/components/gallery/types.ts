@@ -7,6 +7,7 @@ export type CompareTarget = 'left' | 'right';
 
 export interface Output {
   id?: string;
+  nodeId?: string;
   value: string;
   type: OutputType;
   prompt?: string;

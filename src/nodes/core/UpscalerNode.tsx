@@ -412,7 +412,7 @@ const UpscalerNode: React.FC<UpscalerNodeProps> = ({ id, data, selected = false 
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Upscaler Settings"
         renderToPortal={true}

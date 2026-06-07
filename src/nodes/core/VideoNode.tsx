@@ -321,7 +321,7 @@ const VideoNode: React.FC<VideoNodeProps> = ({ id, data, selected = false }) => 
       </BaseNode>
 
       <NodeSettingsPopover
-        isOpen={selected}
+        isOpen={selected && !data.usePersistentInspector}
         onClose={() => {}}
         title="Video Generation Settings"
         renderToPortal={true}
