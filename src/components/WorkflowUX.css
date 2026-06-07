@@ -456,8 +456,10 @@
 
 .app-container.gallery-open .sidebar-container.icon-mode,
 .app-container.gallery-open .execution-dock,
+.app-container.gallery-open .command-dock,
 .app-container.gallery-open .node-inspector-panel,
 .app-container.gallery-open .output-filmstrip,
+.app-container.gallery-open .workflow-title-chip,
 .app-container.gallery-open .connection-hint-overlay,
 .app-container.gallery-open .editor-toolbar,
 .app-container.gallery-open .react-flow__controls,

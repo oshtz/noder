@@ -5,7 +5,7 @@ import './WorkflowUX.css';
 interface WorkflowTitleChipProps {
   activeWorkflow: { id: string; name: string } | null;
   hasUnsavedChanges: boolean;
-  onSave?: () => void | Promise<void>;
+  onSave?: () => void | Promise<unknown>;
 }
 
 const WorkflowTitleChip: React.FC<WorkflowTitleChipProps> = ({
