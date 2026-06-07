@@ -639,6 +639,54 @@
   width: min(720px, calc(100vw - 104px));
 }
 
+.workflow-title-chip {
+  position: fixed;
+  top: 42px;
+  left: 48px;
+  z-index: 760;
+  display: inline-flex;
+  align-items: center;
+  max-width: min(320px, calc(100vw - 112px));
+  min-height: 30px;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--node-border) 70%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, #1f2028 94%, transparent);
+  color: var(--text-color);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.workflow-title-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-title-chip-status {
+  color: #f4eeb1;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workflow-title-chip-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   .app-container.has-output-filmstrip {
     --minimap-bottom-offset: 0px;
