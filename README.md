@@ -5,242 +5,300 @@
 <h1 align="center">noder</h1>
 
 <p align="center">
-  <strong>A node-based creative workflow canvas for chaining AI calls</strong>
+  <strong>A local-first desktop canvas for chaining AI media workflows</strong>
 </p>
 
 <p align="center">
   <a href="#features">Features</a> |
   <a href="#installation">Installation</a> |
   <a href="#quick-start">Quick Start</a> |
-  <a href="#documentation">Documentation</a> |
-  <a href="#contributing">Contributing</a>
+  <a href="#development">Development</a> |
+  <a href="#release-process">Release Process</a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-purple" alt="License: MIT" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-orange" alt="Platform: Windows | macOS" />
-  <img src="https://img.shields.io/badge/PRs-Welcome-pink" alt="PRs Welcome" />
+  <img src="https://img.shields.io/badge/Tauri-2.x-blue" alt="Tauri 2.x" />
+  <img src="https://img.shields.io/badge/React-18-blue" alt="React 18" />
 </p>
 
 ---
 
 ## Overview
 
-**noder** is an open-source, local-first desktop application for building AI-powered creative workflows using a visual node-based interface. Connect text, image, video, and audio generation nodes to create complex pipelines - all running on your machine with your own API keys.
+**noder** is an open-source Tauri desktop app for building creative AI workflows on a
+visual node canvas. You can connect text, image, video, audio, media, chip, upscaler,
+markdown, and display nodes, then run the graph locally with your own provider keys.
 
-Built with [React Flow](https://reactflow.dev/) and [Tauri](https://tauri.app/), noder provides a fast, native experience while keeping your data and credentials local to your machine.
+The app is built with React 18, Vite, React Flow, Rust, and Tauri 2. Workflows,
+settings, downloaded outputs, and credentials stay on your machine. API calls go only
+to the providers you configure.
 
 ---
 
 ## Features
 
-- **Visual Workflow Editor** - Drag-and-drop nodes, connect them visually, and watch your workflow execute in real-time
-- **Multi-Modal AI Generation** - Text, image, video, and audio generation via Replicate API
-- **Image Upscaling** - Built-in upscaler node for enhancing generated images
-- **Output Gallery** - Browse, compare, and manage all your generated outputs with side-by-side comparison view
-- **Workflow Templates** - Start quickly with pre-built templates for common use cases
-- **Local-First Architecture** - All workflows, settings, and API keys stay on your machine
-- **Keyboard Shortcuts** - Power-user features including copy/paste nodes, duplicate, and more
-- **Dark/Light Themes** - Comfortable editing in any lighting condition
-- **Cross-Platform** - Native apps for Windows and macOS, with signed/notarized macOS builds and optional Windows Authenticode signing in CI
+- **Visual workflow canvas** - drag, connect, group, duplicate, align, and execute
+  nodes on a React Flow canvas with minimap, editor toolbar, and keyboard shortcuts.
+- **Provider-backed generation** - text, image, video, audio, and upscaling nodes can
+  use configured cloud and local model providers.
+- **Reusable prompt chips** - define named values such as `STYLE` or `CHARACTER` and
+  inject them into connected prompts with placeholders like `__STYLE__`.
+- **Templates for real workflows** - start from character sheets, product photo sets,
+  thumbnail generation, editorial image series, storyboards, campaign assets, and
+  animation keyframes.
+- **Output review tools** - generated media appears in node previews and in the output
+  gallery/filmstrip for scanning, comparing, and opening assets.
+- **Assistant panel** - OpenRouter-backed assistant with model search, recent models,
+  featured models, and tool-aware workflow context.
+- **Local-first storage** - saved workflows use the app data directory; generated and
+  downloaded media defaults to `Downloads/noder`.
+- **Secure key handling** - desktop settings load API keys from the operating system
+  credential store and migrate older plaintext settings when possible.
+- **Update and release hardening** - release assets include SHA-256 manifests, and the
+  in-app updater verifies platform checksums before marking downloaded updates ready.
+- **Cross-platform release builds** - CI publishes Windows zip/portable artifacts and
+  macOS app/DMG artifacts. Windows signing is optional; macOS builds are signed and
+  notarized when Apple credentials are configured.
 
 ---
 
 ## Installation
 
-### Download Pre-built Binary
+### Download a Release
 
-Download the latest release from the [Releases](https://github.com/oshtz/noder/releases) page:
+Download the latest build from the [GitHub Releases](https://github.com/oshtz/noder/releases)
+page.
 
-| Platform | Download | Description |
-|----------|----------|-------------|
-| Windows (Zip) | `noder-win.zip` | Recommended - extract and run |
-| Windows (Portable) | `noder-portable.exe` | Single-file executable |
-| macOS (DMG) | `noder_x.x.x_x64.dmg` | Installer |
-| macOS (App Bundle) | `noder.app.zip` | Direct app bundle |
-| Checksums | `SHA256SUMS-windows.txt`, `SHA256SUMS-macos.txt` | SHA-256 hashes for release assets |
+| Platform | Asset | Notes |
+| --- | --- | --- |
+| Windows | `noder-win.zip` | Recommended Windows download; extract and run `noder.exe`. |
+| Windows | `noder-portable.exe` | Single-file portable executable. |
+| macOS | `noder_<version>_aarch64.dmg` | Apple Silicon DMG from the current CI build. |
+| macOS | `noder.app.zip` | Zipped app bundle used by releases and updater checks. |
+| Checksums | `SHA256SUMS-windows.txt`, `SHA256SUMS-macos.txt` | SHA-256 manifests for release assets. |
 
-**Windows:** Extract `noder-win.zip` and run `noder.exe`. No installation required.
+**Windows:** prefer `noder-win.zip` if SmartScreen or antivirus tools are sensitive to
+single-file packed executables. The portable build is produced with Enigma Virtual Box
+and may trigger stricter heuristics when unsigned.
 
-**macOS:** Download the DMG, open it, and drag noder to your Applications folder. The app is signed and notarized for Gatekeeper.
+**macOS:** open the DMG and drag `noder.app` to Applications, or unzip `noder.app.zip`
+directly. Current release automation publishes Apple Silicon macOS artifacts.
 
-Verify downloads with the matching checksum file:
+### Verify Downloads
+
+Windows:
 
 ```powershell
-# Windows
 Get-FileHash -Algorithm SHA256 .\noder-win.zip
 Get-Content .\SHA256SUMS-windows.txt
 ```
 
+macOS:
+
 ```bash
-# macOS
 shasum -a 256 noder*.dmg noder.app.zip
 cat SHA256SUMS-macos.txt
-```
-
-> **Note for Windows Users:** Windows builds are Authenticode-signed when the release workflow has signing secrets configured. Unsigned portable builds may still trigger SmartScreen or antivirus heuristics, especially because `noder-portable.exe` is packaged with [Enigma Virtual Box](https://enigmaprotector.com/en/aboutvb.html). If you prefer to avoid portable-exe warnings, use `noder-win.zip`.
-
-### Build from Source
-
-**Prerequisites:**
-- [Node.js](https://nodejs.org/) 18+ and npm
-- [Rust](https://rustup.rs/) (latest stable)
-
-```bash
-# Clone the repository
-git clone https://github.com/oshtz/noder.git
-cd noder
-
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run start
-
-# Or build for production
-npm run tauri build
 ```
 
 ---
 
 ## Quick Start
 
-1. **Launch noder** - Open the app or run `npm run start`
-2. **Add your API keys** - Click the Settings icon (gear) and enter your Replicate API key
-3. **Create a workflow:**
-   - Double-click the canvas to open the node selector
-   - Add an **Image** node
-   - Enter a prompt like "A serene mountain landscape at sunset"
-   - Click **Run Workflow** (or press the play button)
-4. **View results** - Generated outputs appear in the node and in the Output Gallery
+1. Launch noder.
+2. Open Settings and add the API keys or local service URLs for the providers you want
+   to use.
+3. Start from a template or double-click the canvas to open the node selector.
+4. Add a node, enter a prompt, connect any inputs, and run the workflow.
+5. Review results in the node preview, filmstrip, or Output Gallery.
 
-### Keyboard Shortcuts
+Useful first workflows:
 
-| Shortcut | Action |
-|----------|--------|
-| `Double-click` | Open node selector |
-| `Delete` / `Backspace` | Delete selected nodes |
-| `Ctrl+D` | Duplicate selected nodes |
-| `Ctrl+C` | Copy selected nodes |
-| `Ctrl+V` | Paste nodes |
-| `Ctrl+G` | Group selected nodes |
-| `Ctrl+Shift+G` | Ungroup selected group |
-| `Ctrl+Enter` | Run workflow |
+- **AI Prompt Generator** - text node expands an idea into an image prompt.
+- **Character Concept Sheet** - chip node feeds a consistent character description to
+  multiple image nodes and upscalers.
+- **Product Photo Suite** - chip-driven product description with hero and lifestyle
+  image outputs.
+- **Storyboard Sequence** - consistent character and scene frames across multiple
+  image nodes.
 
-> **Note:** On macOS, use `Cmd` instead of `Ctrl`
+---
+
+## Providers
+
+Provider availability depends on the key or local service URL you configure in
+Settings.
+
+| Provider | Used For | Configuration |
+| --- | --- | --- |
+| OpenRouter | Assistant panel and default text model routing | OpenRouter API key |
+| OpenAI | Text models through the desktop backend | OpenAI API key |
+| Anthropic | Claude text models through the desktop backend | Anthropic API key |
+| Google Gemini | Gemini text models | Gemini API key |
+| Ollama | Local text models | Ollama base URL, default `http://localhost:11434` |
+| LM Studio | Local OpenAI-compatible text models | LM Studio base URL, default `http://localhost:1234` |
+| Replicate | Image, video, audio, upscaling, media uploads | Replicate API key |
+| fal.ai | Image, video, audio model discovery/execution paths | fal API key |
+
+Default models are stored in Settings and can be changed per node. Current defaults
+include OpenRouter `openai/gpt-4o-mini` for text, Replicate `black-forest-labs/flux-2-klein-4b`
+for image, `lightricks/ltx-2-fast` for video, `google/lyria-2` for audio, and
+`recraft-ai/recraft-crisp-upscale` for upscaling.
 
 ---
 
 ## Node Types
 
-### Generation Nodes
-- **Text** - Generate text using LLMs via Replicate
-- **Image** - Generate images with Stable Diffusion, FLUX, and more
-- **Video** - Create videos with AI video models
-- **Audio** - Generate music and sound effects
-
-### Utility Nodes
-- **Upscaler** - Enhance image resolution (2x, 4x)
-- **Media** - Import local images, videos, or audio files
-- **Display Text** - Show text output
-- **Markdown** - Render formatted markdown
-
----
-
-## Workflow Templates
-
-noder comes with pre-built templates to help you get started:
-
-| Category | Templates |
-|----------|-----------|
-| **Beginner** | Concept Art Generator, Motion Graphics Creator, Soundtrack Generator, AI Copywriter |
-| **Intermediate** | A/B Style Testing, Prompt Enhancer, Generate & Upscale, Brief to Image |
-| **Advanced** | Content Pipeline, Brand Asset Generator, Storyboard Generator, Launch Campaign Kit |
-
-Access templates from the rocket icon in the sidebar.
+| Node | Purpose |
+| --- | --- |
+| Text (LLM) | Generate text from prompts and optional system prompts. |
+| Image | Generate images from text or connected text/chip inputs. |
+| Video | Generate video from prompts and optional image/video inputs. |
+| Audio | Generate music, speech, or sound from prompts. |
+| Upscaler | Enhance or upscale generated or connected images. |
+| Media | Import local image, video, or audio assets into the workflow. |
+| Chip | Reusable text value for prompt placeholders such as `__CHARACTER__`. |
+| Display Text | Show text output on the canvas. |
+| Markdown | Render markdown content on the canvas. |
+| Group | Organize selected nodes visually. |
 
 ---
 
-## Configuration
+## Keyboard Shortcuts
 
-### API Keys
+| Shortcut | Action |
+| --- | --- |
+| Double-click canvas | Open node selector |
+| Delete / Backspace | Delete selected nodes |
+| Ctrl+D | Duplicate selected nodes |
+| Ctrl+C | Copy selected nodes |
+| Ctrl+V | Paste nodes |
+| Ctrl+G | Group selected nodes |
+| Ctrl+Shift+G | Ungroup selected group |
+| Ctrl+Enter | Run workflow |
 
-noder supports the following API providers:
+On macOS, use `Cmd` instead of `Ctrl`.
 
-| Provider | Purpose | Get API Key |
-|----------|---------|-------------|
-| **Replicate** | Image/Video/Audio/Text generation | [replicate.com](https://replicate.com/) |
-| **OpenRouter** | AI Assistant panel | [openrouter.ai](https://openrouter.ai/) |
+---
 
-API keys are stored in the operating system credential store through the desktop backend and are never transmitted except to their respective APIs. Older plaintext keys in `settings.json` are migrated into secure storage the next time settings load successfully.
+## Data Storage
 
-### Data Storage
+- **Saved workflows:** Tauri app data directory, under `workflows/`.
+- **Settings:** Tauri app data directory.
+- **API keys:** operating system credential store when running in the desktop app.
+- **Generated/downloaded media:** defaults to `Downloads/noder`.
+- **Uploads:** defaults to `Downloads/noder/uploads`.
+- **WhatsApp service data:** app data directory, under `whatsapp/`, when that backend
+  integration is active.
 
-All data is stored locally:
-- **Workflows:** `~/.noder/workflows/` (or platform equivalent)
-- **Outputs:** SQLite database in app data directory
-- **Settings:** JSON settings file in app data directory
+The web-only Vite shell uses browser/runtime fallbacks for development. Tauri-only
+features such as credential storage, local file commands, updater checks, and backend
+provider calls require the desktop runtime.
 
 ---
 
 ## Development
 
-```bash
-# Install dependencies
-npm install
+### Prerequisites
 
-# Start development server (Vite + Tauri)
+- Node.js `^20.19.0` or `>=22.12.0`; CI uses Node 22.
+- npm.
+- Rust stable through [rustup](https://rustup.rs/).
+- Platform build dependencies required by Tauri.
+
+### Commands
+
+```bash
+git clone https://github.com/oshtz/noder.git
+cd noder
+npm ci
+```
+
+```bash
+# Start the desktop app in development mode
 npm run start
 
-# Run Vite dev server only (web shell; Tauri-only features use fallbacks)
+# Run the Vite web shell only
 npm run dev
 
-# Typecheck production source
-npm run typecheck
-
-# Run smoke tests used by CI
-npm run test:smoke
+# Typecheck and build the frontend
+npm run build
 
 # Run tests
-npm run test
+npm run test:run
 
-# Build for production
-npm run tauri build
+# Run focused CI smoke tests
+npm run test:smoke
+
+# Check formatting
+npm run format:check
+
+# Build the Tauri app
+npm run tauri:build
 ```
 
 ### Project Structure
 
-```
+```text
 noder/
 |-- src/                    # React frontend
+|   |-- api/                # Frontend API clients and provider helpers
 |   |-- components/         # UI components
-|   |-- nodes/              # Node type definitions
-|   |-- hooks/              # Custom React hooks
-|   |-- utils/              # Utility functions
-|   `-- constants/          # Constants and themes
-|-- src-tauri/              # Rust backend (Tauri)
-|   `-- src/                # Rust source code
+|   |-- hooks/              # Workflow, UI, assistant, and persistence hooks
+|   |-- nodes/              # Node registry and node components
+|   |-- stores/             # Zustand stores
+|   |-- utils/              # Workflow, logging, model, and runtime utilities
+|   `-- constants/          # Shared UI and connection constants
+|-- src-tauri/              # Rust/Tauri backend
+|   |-- src/                # Commands, settings, updates, file handling
+|   `-- capabilities/       # Tauri permissions
+|-- docs/                   # Release checklist and operational docs
+|-- scripts/                # CI/release verification scripts
 |-- public/                 # Static assets
-`-- .github/workflows/      # CI/CD configuration
+`-- .github/workflows/      # Build and release automation
 ```
+
+---
+
+## Release Process
+
+The release workflow validates on normal `main` and `codex/**` pushes. Windows and
+macOS packaging jobs run for `v*` tag pushes and manual workflow dispatches.
+
+Version alignment is enforced across:
+
+- `package.json`
+- `package-lock.json`
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/tauri.conf.json`
+
+Release checks include workflow smoke tests, release prerequisite tests, version
+alignment, artifact verification tests, frontend build, npm audit, and Rust `cargo check`.
+Published release assets can be verified with:
+
+```bash
+npm run verify:release-artifacts -- v0.1.6
+```
+
+For the step-by-step release checklist, see [docs/release-checklist.md](docs/release-checklist.md).
 
 ---
 
 ## Contributing
 
-We welcome contributions! Here's how:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork the repository.
+2. Create a feature branch.
+3. Make focused changes and include tests where behavior changes.
+4. Run the relevant local checks.
+5. Open a pull request.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
@@ -249,3 +307,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [React Flow](https://reactflow.dev/)
 - [Tauri](https://tauri.app/)
 - [Replicate](https://replicate.com/)
+- [OpenRouter](https://openrouter.ai/)
+- [fal.ai](https://fal.ai/)
