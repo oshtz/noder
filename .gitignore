@@ -124,6 +124,7 @@ src-tauri/puppeteer/
 .parcel-cache/
 .eslintcache
 .stylelintcache
+.superpowers/
 
 # -----------------------------------------------------------------------------
 # Test & Coverage
