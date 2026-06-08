@@ -439,7 +439,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       <div className="sidebar-container icon-mode">
         <div className="sidebar-icon-bar">
-          <div className="sidebar-icon-cluster" role="group" aria-label="Workflow navigation">
+          <div
+            className="sidebar-icon-cluster sidebar-icon-island"
+            role="group"
+            aria-label="Workflow navigation and settings"
+          >
             {/* Home Button */}
             <button
               className="sidebar-icon-button"
@@ -523,18 +527,20 @@ const Sidebar: React.FC<SidebarProps> = ({
               <FaRobot aria-hidden="true" />
               <span className="sidebar-icon-label">Assistant</span>
             </button>
-          </div>
 
-          <button
-            className={`sidebar-icon-button sidebar-settings-button ${isSettingsModalOpen ? 'active' : ''}`}
-            onClick={() => setIsSettingsModalOpen(true)}
-            ref={settingsButtonRef}
-            title="Settings"
-            aria-label="Open settings"
-          >
-            <FaCog aria-hidden="true" />
-            <span className="sidebar-icon-label">Settings</span>
-          </button>
+            <span className="sidebar-icon-spacer" aria-hidden="true" />
+
+            <button
+              className={`sidebar-icon-button sidebar-settings-button ${isSettingsModalOpen ? 'active' : ''}`}
+              onClick={() => setIsSettingsModalOpen(true)}
+              ref={settingsButtonRef}
+              title="Settings"
+              aria-label="Open settings"
+            >
+              <FaCog aria-hidden="true" />
+              <span className="sidebar-icon-label">Settings</span>
+            </button>
+          </div>
         </div>
 
         {/* Workflows Popover */}

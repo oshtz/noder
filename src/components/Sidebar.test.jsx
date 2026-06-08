@@ -141,6 +141,16 @@ describe('Sidebar', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
+  it('keeps settings inside the centered icon rail', () => {
+    render(<Sidebar {...buildProps()} />);
+
+    const rail = screen.getByRole('group', { name: /workflow navigation/i });
+    expect(rail).toHaveClass('sidebar-icon-island');
+    expect(screen.queryByRole('group', { name: /application controls/i })).not.toBeInTheDocument();
+    expect(screen.getByTitle('Settings')).toHaveClass('sidebar-settings-button');
+    expect(rail).toContainElement(screen.getByTitle('Settings'));
+  });
+
   it('toggles the assistant from the icon rail', async () => {
     const user = userEvent.setup();
     const setShowAssistantPanel = vi.fn();

@@ -1,16 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export type ContextualSurfaceMode =
-  | 'composition'
-  | 'inspect'
-  | 'execution'
-  | 'output-review'
-  | 'failure';
+export type ContextualSurfaceMode = 'composition' | 'inspect' | 'execution' | 'failure';
 
 export interface UseContextualSurfacesArgs {
   selectedNodeId: string | null;
   failedNodeIds: string[];
-  outputCount: number;
   isProcessing: boolean;
 }
 
@@ -27,12 +21,9 @@ export interface UseContextualSurfacesResult {
 export function useContextualSurfaces({
   selectedNodeId,
   failedNodeIds,
-  outputCount,
   isProcessing,
 }: UseContextualSurfacesArgs): UseContextualSurfacesResult {
   const [dismissedInspectorNodeId, setDismissedInspectorNodeId] = useState<string | null>(null);
-  const [outputTrayOpen, setOutputTrayOpen] = useState(false);
-  const previousOutputCountRef = useRef(outputCount);
   const previousSelectedNodeIdRef = useRef<string | null>(selectedNodeId);
 
   const failedNodeSet = useMemo(() => new Set(failedNodeIds), [failedNodeIds]);
@@ -46,22 +37,13 @@ export function useContextualSurfaces({
     }
   }, [selectedNodeId]);
 
-  useEffect(() => {
-    const previousOutputCount = previousOutputCountRef.current;
-    if (!isProcessing && outputCount > previousOutputCount) {
-      setOutputTrayOpen(true);
-    }
-    previousOutputCountRef.current = outputCount;
-  }, [isProcessing, outputCount]);
-
   const showInspector =
     !!selectedNodeId && (selectedNodeFailed || dismissedInspectorNodeId !== selectedNodeId);
-  const showOutputTray = outputCount > 0 && outputTrayOpen;
+  const showOutputTray = false;
 
   let mode: ContextualSurfaceMode = 'composition';
   if (hasFailures) mode = 'failure';
   else if (isProcessing) mode = 'execution';
-  else if (showOutputTray) mode = 'output-review';
   else if (showInspector) mode = 'inspect';
 
   return {
@@ -73,9 +55,7 @@ export function useContextualSurfaces({
       if (!selectedNodeId || selectedNodeFailed) return;
       setDismissedInspectorNodeId(selectedNodeId);
     },
-    openOutputTray: () => {
-      if (outputCount > 0) setOutputTrayOpen(true);
-    },
-    closeOutputTray: () => setOutputTrayOpen(false),
+    openOutputTray: () => {},
+    closeOutputTray: () => {},
   };
 }

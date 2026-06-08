@@ -195,6 +195,49 @@ type ExecuteWorkflowResult = {
   error?: string;
   errors?: unknown[];
 };
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>;
+    if (typeof record.message === 'string' && record.message.trim()) {
+      return record.message;
+    }
+    if (typeof record.error === 'string' && record.error.trim()) {
+      return record.error;
+    }
+
+    try {
+      const serialized = JSON.stringify(error);
+      if (serialized && serialized !== '{}') {
+        return serialized;
+      }
+    } catch {
+      // Fall through to the generic message below.
+    }
+  }
+
+  if (error !== null && error !== undefined) {
+    const message = String(error);
+    if (message && message !== '[object Object]') {
+      return message;
+    }
+  }
+
+  return 'Unknown error';
+}
+
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(getErrorMessage(error));
+}
+
 /**
  * Poll a Replicate prediction until it completes or times out
  * @param {string} predictionId - The prediction ID to poll
@@ -610,43 +653,10 @@ async function executeImageNode(
 
   logger.debug(`[Executor] Running Replicate Image node ${node.id}`, { model });
 
+  let schema: NormalizedSchema;
+
   try {
-    // Fetch model schema
-    const schema = await fetchModelSchema(model);
-
-    logger.debug(`[Executor] Connected inputs:`, connectedInputs);
-
-    validateConnectedInputs(schema, connectedInputs, node, model);
-
-    // Apply chip replacements to text inputs
-    if (connectedInputs.text.length > 0) {
-      connectedInputs.text = connectedInputs.text.map((text) =>
-        replaceChipPlaceholders(text, chipValues)
-      );
-    }
-
-    // Also apply chip replacements to node data prompt
-    const nodeDataWithChips = { ...node.data };
-    if (nodeDataWithChips.prompt) {
-      nodeDataWithChips.prompt = replaceChipPlaceholders(nodeDataWithChips.prompt, chipValues);
-    }
-    if (nodeDataWithChips.negativePrompt) {
-      nodeDataWithChips.negativePrompt = replaceChipPlaceholders(
-        nodeDataWithChips.negativePrompt,
-        chipValues
-      );
-    }
-
-    // Build input using schema
-    const input = buildReplicateInput(schema, connectedInputs, nodeDataWithChips) as Record<
-      string,
-      unknown
-    >;
-
-    logger.debug(`[Executor] Built input from schema:`, input);
-    logger.debug(`[Executor] Image input URL (if any):`, input.image || 'no image');
-
-    return await runReplicatePrediction(model, input, HANDLE_TYPES.IMAGE.type);
+    schema = await fetchModelSchema(model);
   } catch (schemaError) {
     // Fallback to manual input building if schema fetch fails
     logger.warn(`[Executor] Schema fetch failed, using fallback:`, schemaError);
@@ -690,6 +700,40 @@ async function executeImageNode(
 
     return await runReplicatePrediction(model, input, HANDLE_TYPES.IMAGE.type);
   }
+
+  logger.debug(`[Executor] Connected inputs:`, connectedInputs);
+
+  validateConnectedInputs(schema, connectedInputs, node, model);
+
+  // Apply chip replacements to text inputs
+  if (connectedInputs.text.length > 0) {
+    connectedInputs.text = connectedInputs.text.map((text) =>
+      replaceChipPlaceholders(text, chipValues)
+    );
+  }
+
+  // Also apply chip replacements to node data prompt
+  const nodeDataWithChips = { ...node.data };
+  if (nodeDataWithChips.prompt) {
+    nodeDataWithChips.prompt = replaceChipPlaceholders(nodeDataWithChips.prompt, chipValues);
+  }
+  if (nodeDataWithChips.negativePrompt) {
+    nodeDataWithChips.negativePrompt = replaceChipPlaceholders(
+      nodeDataWithChips.negativePrompt,
+      chipValues
+    );
+  }
+
+  // Build input using schema
+  const input = buildReplicateInput(schema, connectedInputs, nodeDataWithChips) as Record<
+    string,
+    unknown
+  >;
+
+  logger.debug(`[Executor] Built input from schema:`, input);
+  logger.debug(`[Executor] Image input URL (if any):`, input.image || 'no image');
+
+  return await runReplicatePrediction(model, input, HANDLE_TYPES.IMAGE.type);
 }
 /**
  * Execute Replicate Upscaler node
@@ -1211,8 +1255,9 @@ export async function executeWorkflow({
 
           return { nodeId: node.id, success: true };
         } catch (error) {
-          onNodeError(node, error);
-          return { nodeId: node.id, success: false, error };
+          const nodeError = normalizeError(error);
+          onNodeError(node, nodeError);
+          return { nodeId: node.id, success: false, error: nodeError };
         }
       });
 
@@ -1245,11 +1290,12 @@ export async function executeWorkflow({
       nodeOutputs,
       completedCount,
       skippedNodes,
-      error: (errors[0] as Error | undefined)?.message,
+      error: errors.length > 0 ? getErrorMessage(errors[0]) : undefined,
     };
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(`[Executor] Workflow failed:`, error);
+    const workflowError = normalizeError(error);
+    logger.error(`[Executor] Workflow failed:`, workflowError);
 
     // Cleanup Replicate files even on error
     if (autoCleanup) {
@@ -1264,11 +1310,11 @@ export async function executeWorkflow({
       success: false,
       workflowId,
       duration,
-      error: (error as Error)?.message,
+      error: workflowError.message,
       nodeOutputs,
       completedCount,
       skippedNodes,
-      errors,
+      errors: errors.map((nodeError) => normalizeError(nodeError)),
     };
   }
 }

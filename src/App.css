@@ -642,7 +642,7 @@ h6,
 
 /* Controls styling */
 .react-flow__controls {
-  left: 48px !important;
+  left: 8px !important;
   bottom: 12px !important;
   background: var(--node-bg);
   border: 1px solid var(--node-border);
@@ -686,6 +686,12 @@ h6,
 
 .react-flow__minimap.app-minimap svg {
   background: var(--node-bg);
+}
+
+@media (max-width: 900px) {
+  .react-flow__minimap.app-minimap {
+    display: none;
+  }
 }
 
 /* Override ReactFlow default styles */

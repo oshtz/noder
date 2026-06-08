@@ -21,15 +21,15 @@
   top: 30px;
   bottom: 0;
   transform: none;
-  width: 36px;
+  width: 44px;
   height: auto;
-  background: color-mix(in srgb, var(--bg-tertiary) 95%, transparent);
+  background: transparent;
   border: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0;
   box-shadow: none;
   z-index: 820;
   overflow: visible;
+  pointer-events: none;
 }
 
 .sidebar-icon-bar {
@@ -41,6 +41,7 @@
   height: 100%;
   padding: 8px 0;
   overflow: visible;
+  pointer-events: none;
 }
 
 .sidebar-icon-cluster {
@@ -48,6 +49,23 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+.sidebar-icon-island {
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--node-border, #3d3d3d) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 92%, transparent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.sidebar-icon-spacer {
+  width: 18px;
+  height: 1px;
+  margin: 2px 0;
+  background: color-mix(in srgb, var(--node-border, #3d3d3d) 76%, transparent);
 }
 
 .sidebar-icon-button {
@@ -87,9 +105,7 @@
 }
 
 .sidebar-icon-button.sidebar-settings-button {
-  position: absolute;
-  bottom: 8px;
-  left: 4px;
+  position: relative;
 }
 
 .sidebar-icon-button.primary:hover {

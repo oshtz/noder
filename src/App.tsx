@@ -35,7 +35,6 @@ import type { Database as GalleryDatabase, Output } from './components/gallery';
 import NodeSelector from './components/NodeSelector';
 import CommandDock from './components/CommandDock';
 import NodeInspectorPanel from './components/NodeInspectorPanel';
-import OutputFilmstrip from './components/OutputFilmstrip';
 import ConnectionHintOverlay from './components/ConnectionHintOverlay';
 import ValidationErrorsPanel from './components/ValidationErrorsPanel';
 import Sidebar from './components/Sidebar';
@@ -410,7 +409,6 @@ function App(): React.ReactElement {
   const contextualSurfaces = useContextualSurfaces({
     selectedNodeId,
     failedNodeIds: failedNodes.map((failedNode) => failedNode.id),
-    outputCount: normalizedWorkflowOutputs.length,
     isProcessing,
   });
 
@@ -667,7 +665,7 @@ function App(): React.ReactElement {
     <div
       className={`app-container ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} ${
         showCanvasGallery ? 'gallery-open' : ''
-      } ${!showWelcome && contextualSurfaces.showOutputTray ? 'has-output-filmstrip' : ''}`}
+      }`}
     >
       <div id="global-node-settings-portal" />
 
@@ -787,7 +785,7 @@ function App(): React.ReactElement {
               nodeBorderRadius={3}
               nodeStrokeWidth={1}
               maskColor="rgba(0, 0, 0, 0.35)"
-              style={{ margin: 16, left: 92, bottom: 'var(--minimap-bottom-offset, 0px)' }}
+              style={{ margin: 12, left: 54 }}
               pannable
               zoomable
             />
@@ -835,15 +833,6 @@ function App(): React.ReactElement {
         />
       )}
 
-      {!showWelcome && contextualSurfaces.showOutputTray && (
-        <OutputFilmstrip
-          outputs={normalizedWorkflowOutputs}
-          nodes={nodes}
-          onOpenGallery={() => setShowCanvasGallery(true)}
-          onClose={contextualSurfaces.closeOutputTray}
-        />
-      )}
-
       {showCanvasGallery && (
         <div className="canvas-gallery-panel">
           <Suspense fallback={<div className="loading-placeholder">Loading gallery...</div>}>
@@ -873,7 +862,7 @@ function App(): React.ReactElement {
           onRun={() => runWorkflow()}
           onStop={stopWorkflow}
           onRetryFailed={handleRetryFailed}
-          onOpenOutputs={contextualSurfaces.openOutputTray}
+          onOpenOutputs={() => setShowCanvasGallery(true)}
           onUndo={undo}
           onRedo={redo}
           onAutoLayout={autoLayout}

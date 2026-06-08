@@ -8,7 +8,6 @@ describe('useContextualSurfaces', () => {
       useContextualSurfaces({
         selectedNodeId: null,
         failedNodeIds: [],
-        outputCount: 0,
         isProcessing: false,
       })
     );
@@ -24,7 +23,6 @@ describe('useContextualSurfaces', () => {
         useContextualSurfaces({
           selectedNodeId,
           failedNodeIds: [],
-          outputCount: 0,
           isProcessing: false,
         }),
       { initialProps: 'node-1' }
@@ -48,7 +46,6 @@ describe('useContextualSurfaces', () => {
       useContextualSurfaces({
         selectedNodeId: 'node-1',
         failedNodeIds: ['node-1'],
-        outputCount: 0,
         isProcessing: false,
       })
     );
@@ -58,13 +55,12 @@ describe('useContextualSurfaces', () => {
     expect(result.current.mode).toBe('failure');
   });
 
-  it('opens output tray when output count increases after processing', () => {
+  it('does not open an output tray when output count increases after processing', () => {
     const { result, rerender } = renderHook(
-      ({ outputCount, isProcessing }: { outputCount: number; isProcessing: boolean }) =>
+      ({ isProcessing }: { outputCount: number; isProcessing: boolean }) =>
         useContextualSurfaces({
           selectedNodeId: null,
           failedNodeIds: [],
-          outputCount,
           isProcessing,
         }),
       { initialProps: { outputCount: 1, isProcessing: true } }
@@ -73,24 +69,24 @@ describe('useContextualSurfaces', () => {
     expect(result.current.showOutputTray).toBe(false);
 
     rerender({ outputCount: 2, isProcessing: false });
-    expect(result.current.showOutputTray).toBe(true);
-    expect(result.current.mode).toBe('output-review');
+    expect(result.current.showOutputTray).toBe(false);
+    expect(result.current.mode).toBe('composition');
 
     act(() => result.current.closeOutputTray());
     expect(result.current.showOutputTray).toBe(false);
   });
 
-  it('lets users manually open the output tray when outputs exist', () => {
+  it('keeps the output tray hidden when users request outputs', () => {
     const { result } = renderHook(() =>
       useContextualSurfaces({
         selectedNodeId: null,
         failedNodeIds: [],
-        outputCount: 3,
         isProcessing: false,
       })
     );
 
     act(() => result.current.openOutputTray());
-    expect(result.current.showOutputTray).toBe(true);
+    expect(result.current.showOutputTray).toBe(false);
+    expect(result.current.mode).toBe('composition');
   });
 });

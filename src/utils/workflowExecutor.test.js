@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
 import { executeWorkflow } from './workflowExecutor';
+import { clearSchemaCache } from './replicateSchemaCache';
 
 // Mock Tauri invoke
 vi.mock('@tauri-apps/api/core', () => ({
@@ -114,6 +116,7 @@ const createUnknownNode = (id, overrides = {}) => ({
 describe('executeWorkflow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearSchemaCache();
   });
 
   it('stops before starting the next layer when requested', async () => {
@@ -648,6 +651,70 @@ describe('executeWorkflow', () => {
     expect(onNodeError).toHaveBeenCalledTimes(2);
     // The successful node should still have output
     expect(result.nodeOutputs.media1).toBeDefined();
+  });
+
+  it('surfaces string provider rejections as readable node errors', async () => {
+    vi.mocked(invoke).mockRejectedValue(
+      'Replicate API key not configured. Please add it in Settings.'
+    );
+    const onNodeError = vi.fn();
+    const nodes = [_createImageNode('image1', { prompt: 'A studio product shot' })];
+
+    const result = await executeWorkflow({
+      nodes,
+      edges: [],
+      onNodeError,
+      autoCleanup: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Replicate API key not configured. Please add it in Settings.');
+    expect(onNodeError).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'image1' }),
+      expect.objectContaining({
+        message: 'Replicate API key not configured. Please add it in Settings.',
+      })
+    );
+  });
+
+  it('does not run image fallback after a schema-backed prediction creation fails', async () => {
+    vi.mocked(invoke)
+      .mockResolvedValueOnce({
+        latest_version: {
+          openapi_schema: {
+            components: {
+              schemas: {
+                Input: {
+                  type: 'object',
+                  required: ['prompt'],
+                  properties: {
+                    prompt: { type: 'string', 'x-order': 1 },
+                  },
+                },
+                Output: {
+                  type: 'array',
+                  items: { type: 'string', format: 'uri' },
+                },
+              },
+            },
+          },
+        },
+      })
+      .mockRejectedValueOnce({ message: 'Replicate quota exceeded' });
+
+    const result = await executeWorkflow({
+      nodes: [
+        _createImageNode('image1', { model: 'test-owner/test-model', prompt: 'A product shot' }),
+      ],
+      edges: [],
+      autoCleanup: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Replicate quota exceeded');
+    expect(
+      vi.mocked(invoke).mock.calls.filter(([command]) => command === 'replicate_create_prediction')
+    ).toHaveLength(1);
   });
 
   it('handles nodes with same type but different data', async () => {

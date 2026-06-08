@@ -13,10 +13,6 @@
   backdrop-filter: blur(14px);
 }
 
-.app-container.has-output-filmstrip {
-  --minimap-bottom-offset: 190px;
-}
-
 .execution-dock.is-dragging {
   cursor: grabbing;
   user-select: none;
@@ -25,7 +21,6 @@
 .execution-dock-header,
 .execution-dock-actions,
 .inspector-header,
-.filmstrip-header,
 .connection-hint-header {
   display: flex;
   align-items: center;
@@ -83,8 +78,7 @@
 
 .execution-chip,
 .node-status-badge,
-.inspector-chip,
-.filmstrip-chip {
+.inspector-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -185,11 +179,6 @@
   backdrop-filter: blur(16px);
 }
 
-.node-inspector-panel.empty {
-  bottom: auto;
-  min-height: 132px;
-}
-
 .inspector-header {
   padding: 11px 12px 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--node-border) 76%, transparent);
@@ -284,92 +273,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-}
-
-.output-filmstrip {
-  position: fixed;
-  left: 92px;
-  right: calc(400px + var(--assistant-panel-offset, 0px));
-  bottom: 18px;
-  z-index: 690;
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--node-border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--node-bg) 94%, transparent);
-  color: var(--text-color);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(14px);
-}
-
-.filmstrip-header {
-  margin-bottom: 8px;
-}
-
-.filmstrip-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.filmstrip-items {
-  display: grid;
-  grid-auto-columns: minmax(112px, 148px);
-  grid-auto-flow: column;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.filmstrip-item {
-  min-width: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-
-.filmstrip-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 62px;
-  background: rgba(0, 0, 0, 0.16);
-  color: var(--text-color);
-  font-size: 11px;
-  line-height: 1.35;
-  overflow: hidden;
-}
-
-.filmstrip-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.filmstrip-text-preview {
-  display: -webkit-box;
-  padding: 8px;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.filmstrip-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 7px;
-}
-
-.filmstrip-node {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .connection-hint-overlay {
@@ -474,7 +377,6 @@
 .app-container.gallery-open .execution-dock,
 .app-container.gallery-open .command-dock,
 .app-container.gallery-open .node-inspector-panel,
-.app-container.gallery-open .output-filmstrip,
 .app-container.gallery-open .workflow-title-chip,
 .app-container.gallery-open .connection-hint-overlay,
 .app-container.gallery-open .editor-toolbar,
@@ -490,7 +392,7 @@
 
 .command-dock {
   position: fixed;
-  left: 50%;
+  left: calc((100vw - var(--assistant-panel-offset, 0px)) / 2);
   bottom: 12px;
   z-index: 900;
   transform: translateX(-50%);
@@ -645,26 +547,14 @@
   transition: width 0.18s ease;
 }
 
-.filmstrip-close {
-  width: 30px;
-  padding: 0;
-}
-
-.output-filmstrip {
-  left: 76px;
-  right: auto;
-  bottom: 62px;
-  width: min(720px, calc(100vw - 104px));
-}
-
 .workflow-title-chip {
   position: fixed;
   top: 42px;
-  left: 48px;
+  left: 8px;
   z-index: 760;
   display: inline-flex;
   align-items: center;
-  max-width: min(320px, calc(100vw - 112px));
+  max-width: min(320px, calc(100vw - 72px));
   min-height: 30px;
   gap: 8px;
   padding: 0 10px;
@@ -706,18 +596,14 @@
 }
 
 @media (max-width: 900px) {
-  .app-container.has-output-filmstrip {
-    --minimap-bottom-offset: 0px;
-  }
-
   .workflow-title-chip {
-    left: 44px;
-    right: calc(10px + var(--assistant-panel-offset, 0px));
-    max-width: none;
+    left: 8px;
+    right: auto;
+    max-width: min(320px, calc(100vw - 24px));
   }
 
   .command-dock {
-    left: 44px;
+    left: 64px;
     right: calc(10px + var(--assistant-panel-offset, 0px));
     align-items: stretch;
     transform: none;
@@ -729,7 +615,6 @@
   }
 
   .node-inspector-panel,
-  .output-filmstrip,
   .connection-hint-overlay {
     left: 44px;
     right: calc(10px + var(--assistant-panel-offset, 0px));
@@ -740,10 +625,6 @@
     top: auto;
     bottom: 62px;
     max-height: 48vh;
-  }
-
-  .output-filmstrip {
-    bottom: 62px;
   }
 
   .canvas-gallery-panel {
