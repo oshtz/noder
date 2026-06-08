@@ -3,6 +3,7 @@ import type { Node, Edge, ReactFlowInstance } from 'reactflow';
 import { useUpdateNodeInternals } from 'reactflow';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '../utils/eventBus';
+import { isTauriRuntime } from '../utils/runtime';
 import { toSafeWorkflowId } from '../utils/workflowId';
 import { buildWorkflowDocument } from '../utils/workflowSchema';
 import { applyTemplate } from '../utils/workflowTemplates';
@@ -53,11 +54,13 @@ export function useWelcomeHandlers({
       setWelcomePinned(false);
 
       let existingIds: string[] = [];
-      try {
-        const workflowsList = (await invoke('list_workflows')) as Workflow[];
-        existingIds = Array.isArray(workflowsList) ? workflowsList.map((wf) => wf.id) : [];
-      } catch (error) {
-        logger.error('Failed to list workflows:', error);
+      if (isTauriRuntime()) {
+        try {
+          const workflowsList = (await invoke('list_workflows')) as Workflow[];
+          existingIds = Array.isArray(workflowsList) ? workflowsList.map((wf) => wf.id) : [];
+        } catch (error) {
+          logger.error('Failed to list workflows:', error);
+        }
       }
 
       const trimmedName = typeof requestedName === 'string' ? requestedName.trim() : '';
@@ -79,10 +82,12 @@ export function useWelcomeHandlers({
       });
       const newWorkflow = { id: uniqueId, name: uniqueName, data: document };
 
-      try {
-        await invoke('save_workflow', { name: newWorkflow.name, data: document });
-      } catch (error) {
-        logger.error('Failed to create workflow:', error);
+      if (isTauriRuntime()) {
+        try {
+          await invoke('save_workflow', { name: newWorkflow.name, data: document });
+        } catch (error) {
+          logger.error('Failed to create workflow:', error);
+        }
       }
 
       await loadWorkflow(newWorkflow);
@@ -114,6 +119,11 @@ export function useWelcomeHandlers({
       setWelcomePinned(false);
 
       if (workflow?.id) {
+        if (!isTauriRuntime()) {
+          await loadWorkflow(workflow);
+          return;
+        }
+
         try {
           const loadedData = (await invoke('load_workflow', { id: workflow.id })) as
             | { data?: WorkflowDocument }

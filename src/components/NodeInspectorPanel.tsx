@@ -48,21 +48,7 @@ const NodeInspectorPanel: React.FC<NodeInspectorPanelProps> = ({
   onClose,
 }) => {
   if (!selectedNode) {
-    return (
-      <aside className="node-inspector-panel empty" aria-label="Node inspector">
-        <div className="inspector-header">
-          <div>
-            <p className="inspector-eyebrow">Inspector</p>
-            <h2 className="inspector-title">Select a node</h2>
-          </div>
-        </div>
-        <div className="inspector-body">
-          <p className="inspector-model">
-            Select any canvas node to inspect its settings, links, outputs, and last run.
-          </p>
-        </div>
-      </aside>
-    );
+    return null;
   }
 
   const nodeTitle = getNodeTitle(selectedNode);

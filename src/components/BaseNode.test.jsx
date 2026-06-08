@@ -5,8 +5,8 @@ import BaseNode from './BaseNode';
 import { emit } from '../utils/eventBus';
 
 vi.mock('reactflow', () => ({
-  Handle: ({ id, children }) => (
-    <div data-testid="handle" data-handle-id={id}>
+  Handle: ({ id, className, children }) => (
+    <div data-testid="handle" data-handle-id={id} className={className}>
       {children}
     </div>
   ),
@@ -113,5 +113,30 @@ describe('BaseNode', () => {
 
     expect(screen.getByText('Failed')).toBeInTheDocument();
     expect(screen.getByTitle('Missing API key')).toBeInTheDocument();
+  });
+
+  it('uses compact handle affordances instead of large add icons', () => {
+    render(
+      <BaseNode
+        id="node-6"
+        data={{ title: 'Node' }}
+        selected={false}
+        handles={[{ id: 'out', type: 'output', position: 'right', dataType: 'image' }]}
+      />
+    );
+
+    expect(screen.getByTestId('handle')).toHaveClass('node-port-handle');
+  });
+
+  it('marks secondary status as contextual chrome', () => {
+    render(
+      <BaseNode
+        id="node-7"
+        data={{ title: 'Image', metadata: 'flux', output: 'ready' }}
+        selected={false}
+      />
+    );
+
+    expect(screen.getByLabelText('Node status')).toHaveClass('node-status-row');
   });
 });

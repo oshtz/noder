@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useWorkflowRunner } from './useWorkflowRunner';
 import type { Node, Edge } from 'reactflow';
 import { useExecutionStore } from '../stores/useExecutionStore';
+import { isTauriRuntime } from '../utils/runtime';
 
 // Mock workflowExecutor
 vi.mock('../utils/workflowExecutor', () => ({
@@ -19,6 +20,10 @@ vi.mock('../utils/workflowExecutor', () => ({
 // Mock database
 vi.mock('../utils/database', () => ({
   saveOutput: vi.fn(() => Promise.resolve('saved-id-123')),
+}));
+
+vi.mock('../utils/runtime', () => ({
+  isTauriRuntime: vi.fn(() => true),
 }));
 
 // Mock workflowHelpers
@@ -88,6 +93,7 @@ describe('useWorkflowRunner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useExecutionStore.getState().reset();
+    vi.mocked(isTauriRuntime).mockReturnValue(true);
 
     mockSetNodes = vi.fn((updater) => {
       if (typeof updater === 'function') {
@@ -274,6 +280,51 @@ describe('useWorkflowRunner', () => {
         '[Workflow] No nodes to execute for the requested scope'
       );
       consoleSpy.mockRestore();
+    });
+
+    it('should show recovery state without invoking providers in browser preview', async () => {
+      const { executeWorkflow } = await import('../utils/workflowExecutor');
+      vi.mocked(isTauriRuntime).mockReturnValue(false);
+      const nodes = createTestNodes(2);
+      const edges = [createTestEdges()[0]];
+      const { result } = renderHookWithDefaults(nodes, edges);
+
+      await act(async () => {
+        await result.current.runWorkflow();
+      });
+
+      expect(executeWorkflow).not.toHaveBeenCalled();
+      expect(mockSetIsProcessing).not.toHaveBeenCalledWith(true);
+      expect(mockSetShowErrorRecovery).toHaveBeenCalledWith(true);
+
+      const failedNodesUpdater = mockSetFailedNodes.mock.calls[0][0] as (
+        prev: unknown[]
+      ) => unknown[];
+      expect(failedNodesUpdater([])).toEqual([
+        expect.objectContaining({
+          id: 'node-1',
+          error: expect.stringContaining('desktop runtime'),
+        }),
+      ]);
+
+      const validationUpdater = mockSetValidationErrors.mock.calls[0][0] as (
+        prev: unknown[]
+      ) => unknown[];
+      expect(validationUpdater([])).toEqual([
+        expect.objectContaining({
+          type: 'runtime',
+          message: expect.stringContaining('desktop runtime'),
+        }),
+      ]);
+
+      expect(executionStateRef.current).toEqual({
+        nodeOutputs: {},
+        scopeNodeIds: ['node-1', 'node-2'],
+        failedNodeIds: ['node-1'],
+      });
+      expect(useExecutionStore.getState().executionState.failedNodeIds).toEqual(['node-1']);
+      expect(useExecutionStore.getState().processedNodeCount).toBe(0);
+      expect(useExecutionStore.getState().totalNodeCount).toBe(2);
     });
 
     it('should set isProcessing to true during execution', async () => {

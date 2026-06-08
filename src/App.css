@@ -642,11 +642,14 @@ h6,
 
 /* Controls styling */
 .react-flow__controls {
+  left: 8px !important;
+  bottom: 12px !important;
   background: var(--node-bg);
   border: 1px solid var(--node-border);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   padding: 4px;
+  margin: 0 !important;
 }
 
 .react-flow__controls-button {
@@ -683,6 +686,12 @@ h6,
 
 .react-flow__minimap.app-minimap svg {
   background: var(--node-bg);
+}
+
+@media (max-width: 900px) {
+  .react-flow__minimap.app-minimap {
+    display: none;
+  }
 }
 
 /* Override ReactFlow default styles */
@@ -1996,6 +2005,84 @@ h6,
   width: 16px;
   height: 16px;
   filter: brightness(0) invert(1); /* Makes icons white for dark themes */
+}
+
+.app-container {
+  background: var(--bg-color);
+}
+
+.react-flow__background {
+  opacity: 0.22;
+}
+
+.resizable-node {
+  border: 1px solid color-mix(in srgb, var(--node-border) 70%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--node-bg) 92%, #111111);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.resizable-node:hover,
+.react-flow__node.selected .resizable-node {
+  border-color: color-mix(in srgb, var(--primary-color) 55%, var(--node-border));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.custom-drag-handle {
+  min-height: 6px !important;
+  padding: 2px !important;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.node-content {
+  padding: 8px !important;
+}
+
+.node-floating-header {
+  top: -30px;
+  padding: 2px 0;
+}
+
+.node-floating-title {
+  font-size: 12px;
+}
+
+.node-floating-metadata,
+.node-floating-timer,
+.node-status-badge {
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 10px;
+  opacity: 0.72;
+}
+
+.node-status-row {
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.base-node-container:hover .node-status-row,
+.react-flow__node.selected .node-status-row {
+  opacity: 1;
+}
+
+.node-port-handle {
+  width: 16px !important;
+  height: 16px !important;
+  opacity: 0;
+}
+
+.node-port-handle-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
 }
 
 /* For light themes, use black icons */

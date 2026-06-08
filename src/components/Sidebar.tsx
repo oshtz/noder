@@ -30,8 +30,8 @@ import {
   FaStar,
   FaSeedling,
   FaBolt,
-  FaSlidersH,
   FaHome,
+  FaRobot,
 } from 'react-icons/fa';
 import { IconType } from 'react-icons';
 import Popover from './Popover';
@@ -122,9 +122,6 @@ interface SidebarProps {
   // Update system (still managed by hook in App)
   updateState?: UpdateState | null;
   updateActions?: UpdateActions | null;
-  // Editor toolbar visibility toggle (read from store via useSettingsStore)
-  showEditorToolbar?: boolean;
-  onShowEditorToolbarChange?: (show: boolean) => void;
   // Home navigation
   onGoHome?: () => void;
 }
@@ -179,14 +176,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Update system (still managed by hook in App)
   updateState = null,
   updateActions = null,
-  // Editor toolbar visibility toggle
-  showEditorToolbar,
-  onShowEditorToolbarChange,
   // Home navigation
   onGoHome,
 }) => {
   // Read settings from Zustand store
   const showTemplates = useSettingsStore((s) => s.showTemplates);
+  const showAssistantPanel = useSettingsStore((s) => s.showAssistantPanel);
+  const setShowAssistantPanel = useSettingsStore((s) => s.setShowAssistantPanel);
 
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true);
@@ -443,104 +439,108 @@ const Sidebar: React.FC<SidebarProps> = ({
     <>
       <div className="sidebar-container icon-mode">
         <div className="sidebar-icon-bar">
-          {/* Home Button */}
-          <button
-            className="sidebar-icon-button"
-            onClick={() => onGoHome && onGoHome()}
-            title="Home"
-            aria-label="Go to home screen"
+          <div
+            className="sidebar-icon-cluster sidebar-icon-island"
+            role="group"
+            aria-label="Workflow navigation and settings"
           >
-            <FaHome aria-hidden="true" />
-            <span className="sidebar-icon-label">Home</span>
-          </button>
-
-          {/* Add Workflow Button */}
-          <button
-            className="sidebar-icon-button primary"
-            onClick={() => {
-              setShowPopover(true);
-              setCreatingWorkflow(true);
-            }}
-            ref={addButtonRef}
-            title="Add Workflow"
-            aria-label="Create new workflow"
-          >
-            <FaPlus aria-hidden="true" />
-            <span className="sidebar-icon-label">Create</span>
-          </button>
-
-          {/* Workflows Button */}
-          <button
-            className={`sidebar-icon-button ${activePopover === 'workflows' ? 'active' : ''}`}
-            onClick={() => setActivePopover(activePopover === 'workflows' ? null : 'workflows')}
-            ref={workflowsButtonRef}
-            title="Workflows"
-            aria-label="Open saved workflows"
-            aria-expanded={activePopover === 'workflows'}
-          >
-            <FaProjectDiagram aria-hidden="true" />
-            <span className="sidebar-icon-label">Workflows</span>
-          </button>
-
-          {/* Templates Button */}
-          {showTemplates && (
+            {/* Home Button */}
             <button
-              className={`sidebar-icon-button ${activePopover === 'templates' ? 'active' : ''}`}
-              onClick={() => setActivePopover(activePopover === 'templates' ? null : 'templates')}
-              ref={templatesButtonRef}
-              title="Workflow Templates"
-              aria-label="Open workflow templates"
-              aria-expanded={activePopover === 'templates'}
+              className="sidebar-icon-button"
+              onClick={() => onGoHome && onGoHome()}
+              title="Home"
+              aria-label="Go to home screen"
             >
-              <FaRocket aria-hidden="true" />
-              <span className="sidebar-icon-label">Templates</span>
+              <FaHome aria-hidden="true" />
+              <span className="sidebar-icon-label">Home</span>
             </button>
-          )}
 
-          {/* Output Gallery Button */}
-          <button
-            className={`sidebar-icon-button ${activePopover === 'gallery' ? 'active' : ''} ${workflowOutputs.length > 0 ? 'has-content' : ''}`}
-            onClick={() => setActivePopover(activePopover === 'gallery' ? null : 'gallery')}
-            ref={galleryButtonRef}
-            title={`Output Gallery (${workflowOutputs.length})`}
-            aria-label={`Open output gallery with ${workflowOutputs.length} items`}
-            aria-expanded={activePopover === 'gallery'}
-          >
-            <FaImage aria-hidden="true" />
-            <span className="sidebar-icon-label">Gallery</span>
-            {workflowOutputs.length > 0 && (
-              <span className="badge" aria-hidden="true">
-                {workflowOutputs.length}
-              </span>
+            {/* Add Workflow Button */}
+            <button
+              className="sidebar-icon-button primary"
+              onClick={() => {
+                setShowPopover(true);
+                setCreatingWorkflow(true);
+              }}
+              ref={addButtonRef}
+              title="Add Workflow"
+              aria-label="Create new workflow"
+            >
+              <FaPlus aria-hidden="true" />
+              <span className="sidebar-icon-label">Create</span>
+            </button>
+
+            {/* Workflows Button */}
+            <button
+              className={`sidebar-icon-button ${activePopover === 'workflows' ? 'active' : ''}`}
+              onClick={() => setActivePopover(activePopover === 'workflows' ? null : 'workflows')}
+              ref={workflowsButtonRef}
+              title="Workflows"
+              aria-label="Open saved workflows"
+              aria-expanded={activePopover === 'workflows'}
+            >
+              <FaProjectDiagram aria-hidden="true" />
+              <span className="sidebar-icon-label">Workflows</span>
+            </button>
+
+            {/* Templates Button */}
+            {showTemplates && (
+              <button
+                className={`sidebar-icon-button ${activePopover === 'templates' ? 'active' : ''}`}
+                onClick={() => setActivePopover(activePopover === 'templates' ? null : 'templates')}
+                ref={templatesButtonRef}
+                title="Workflow Templates"
+                aria-label="Open workflow templates"
+                aria-expanded={activePopover === 'templates'}
+              >
+                <FaRocket aria-hidden="true" />
+                <span className="sidebar-icon-label">Templates</span>
+              </button>
             )}
-          </button>
 
-          {/* Controls Toggle Button */}
-          <button
-            className={`sidebar-icon-button ${showEditorToolbar ? 'active' : ''}`}
-            onClick={() => onShowEditorToolbarChange?.(!showEditorToolbar)}
-            title={showEditorToolbar ? 'Hide Editor Toolbar' : 'Show Editor Toolbar'}
-            aria-label={showEditorToolbar ? 'Hide editor toolbar' : 'Show editor toolbar'}
-            aria-pressed={showEditorToolbar}
-          >
-            <FaSlidersH aria-hidden="true" />
-            <span className="sidebar-icon-label">Controls</span>
-          </button>
+            {/* Output Gallery Button */}
+            <button
+              className={`sidebar-icon-button ${activePopover === 'gallery' ? 'active' : ''} ${workflowOutputs.length > 0 ? 'has-content' : ''}`}
+              onClick={() => setActivePopover(activePopover === 'gallery' ? null : 'gallery')}
+              ref={galleryButtonRef}
+              title={`Output Gallery (${workflowOutputs.length})`}
+              aria-label={`Open output gallery with ${workflowOutputs.length} items`}
+              aria-expanded={activePopover === 'gallery'}
+            >
+              <FaImage aria-hidden="true" />
+              <span className="sidebar-icon-label">Gallery</span>
+              {workflowOutputs.length > 0 && (
+                <span className="badge" aria-hidden="true">
+                  {workflowOutputs.length}
+                </span>
+              )}
+            </button>
 
-          {/* Spacer to push settings to bottom */}
-          <div style={{ flex: 1 }} aria-hidden="true" />
+            {/* Assistant Toggle Button */}
+            <button
+              className={`sidebar-icon-button ${showAssistantPanel ? 'active' : ''}`}
+              onClick={() => setShowAssistantPanel(!showAssistantPanel)}
+              title="Assistant"
+              aria-label={showAssistantPanel ? 'Hide assistant' : 'Show assistant'}
+              aria-pressed={showAssistantPanel}
+            >
+              <FaRobot aria-hidden="true" />
+              <span className="sidebar-icon-label">Assistant</span>
+            </button>
 
-          {/* Settings Button at Bottom */}
-          <button
-            className={`sidebar-icon-button ${isSettingsModalOpen ? 'active' : ''}`}
-            onClick={() => setIsSettingsModalOpen(true)}
-            ref={settingsButtonRef}
-            title="Settings"
-            aria-label="Open settings"
-          >
-            <FaCog aria-hidden="true" />
-            <span className="sidebar-icon-label">Settings</span>
-          </button>
+            <span className="sidebar-icon-spacer" aria-hidden="true" />
+
+            <button
+              className={`sidebar-icon-button sidebar-settings-button ${isSettingsModalOpen ? 'active' : ''}`}
+              onClick={() => setIsSettingsModalOpen(true)}
+              ref={settingsButtonRef}
+              title="Settings"
+              aria-label="Open settings"
+            >
+              <FaCog aria-hidden="true" />
+              <span className="sidebar-icon-label">Settings</span>
+            </button>
+          </div>
         </div>
 
         {/* Workflows Popover */}

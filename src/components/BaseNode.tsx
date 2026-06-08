@@ -11,7 +11,6 @@ import React, {
 } from 'react';
 import { Handle, Position } from 'reactflow';
 import { NodeResizer } from '@reactflow/node-resizer';
-import { IoIosAddCircle } from 'react-icons/io';
 import { FaTrash } from 'react-icons/fa';
 import { getHandleColor, HandleDataType } from '../constants/handleTypes';
 import { NodeSettingsPopover } from './NodeSettingsPopover';
@@ -313,6 +312,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
           return (
             <Handle
               key={handle.id}
+              className="node-port-handle"
               type={isInput ? 'target' : isOutput ? 'source' : (handle.type as 'target' | 'source')}
               position={handle.position}
               id={handle.id}
@@ -328,18 +328,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
                 ...handle.style, // Apply custom positioning
               }}
             >
-              <IoIosAddCircle
-                className="handle-icon"
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  fontSize: '28px',
-                  color: 'white',
-                  pointerEvents: 'none',
-                }}
-              />
+              <span className="node-port-handle-dot" aria-hidden="true" />
             </Handle>
           );
         })}

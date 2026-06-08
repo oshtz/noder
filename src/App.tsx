@@ -33,9 +33,8 @@ import type { Database as GalleryDatabase, Output } from './components/gallery';
 
 // Component imports
 import NodeSelector from './components/NodeSelector';
-import ExecutionDock from './components/ExecutionDock';
+import CommandDock from './components/CommandDock';
 import NodeInspectorPanel from './components/NodeInspectorPanel';
-import OutputFilmstrip from './components/OutputFilmstrip';
 import ConnectionHintOverlay from './components/ConnectionHintOverlay';
 import ValidationErrorsPanel from './components/ValidationErrorsPanel';
 import Sidebar from './components/Sidebar';
@@ -43,10 +42,10 @@ import ErrorRecoveryPanel from './components/ErrorRecoveryPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import HelperLines from './components/HelperLines';
 
-import EditorToolbar from './components/EditorToolbar';
 import EmptyWorkflowOverlay from './components/EmptyWorkflowOverlay';
 import KeyboardShortcutsOverlay from './components/KeyboardShortcutsOverlay';
 import AppFeedback from './components/AppFeedback';
+import WorkflowTitleChip from './components/WorkflowTitleChip';
 
 // Lazy-loaded components for code splitting
 const AssistantPanel = lazy(() => import('./components/AssistantPanel'));
@@ -76,6 +75,7 @@ import { useThemeEffect } from './hooks/useThemeEffect';
 import { useInitialWorkflow } from './hooks/useInitialWorkflow';
 import { useAutoUpdate } from './hooks/useAutoUpdate';
 import { useValidationErrors } from './hooks/useValidationErrors';
+import { useContextualSurfaces } from './hooks/useContextualSurfaces';
 import { useShowAssistantPanel, useSettingsStore } from './stores/useSettingsStore';
 import { useExecutionProgress } from './stores/useExecutionStore';
 import { useSidebarProps } from './hooks/useSidebarProps';
@@ -121,8 +121,6 @@ function App(): React.ReactElement {
 
   // Settings
   const showAssistantPanel = useShowAssistantPanel();
-  const showEditorToolbar = useSettingsStore((s) => s.showEditorToolbar);
-  const setShowEditorToolbar = useSettingsStore((s) => s.setShowEditorToolbar);
   const edgeType = useSettingsStore((s) => s.edgeType);
   const defaultTextModel = useSettingsStore((s) => s.defaultTextModel);
   const defaultImageModel = useSettingsStore((s) => s.defaultImageModel);
@@ -142,6 +140,7 @@ function App(): React.ReactElement {
 
   // UI state
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [zoomPercent, setZoomPercent] = useState(100);
 
   // Hook to force ReactFlow to update node internals (recalculate handle positions)
   const updateNodeInternals = useUpdateNodeInternals();
@@ -407,6 +406,11 @@ function App(): React.ReactElement {
   }, [currentNodeId, nodes]);
   const dockTotal = isProcessing || total > 0 ? total : nodes.length;
   const dockProcessed = isProcessing ? processed : 0;
+  const contextualSurfaces = useContextualSurfaces({
+    selectedNodeId,
+    failedNodeIds: failedNodes.map((failedNode) => failedNode.id),
+    isProcessing,
+  });
 
   useEffect(() => {
     if (isProcessing && currentNodeId) {
@@ -547,8 +551,6 @@ function App(): React.ReactElement {
     handleLoadWorkflow,
     sidebarOpen,
     setSidebarOpen,
-    showEditorToolbar,
-    setShowEditorToolbar,
     setShowWelcome,
     setWelcomePinned,
     setNodes,
@@ -663,7 +665,7 @@ function App(): React.ReactElement {
     <div
       className={`app-container ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} ${
         showCanvasGallery ? 'gallery-open' : ''
-      } ${!showWelcome && normalizedWorkflowOutputs.length > 0 ? 'has-output-filmstrip' : ''}`}
+      }`}
     >
       <div id="global-node-settings-portal" />
 
@@ -711,6 +713,14 @@ function App(): React.ReactElement {
         <Sidebar {...sidebarProps} />
       </ErrorBoundary>
 
+      {!showWelcome && (
+        <WorkflowTitleChip
+          activeWorkflow={activeWorkflow}
+          hasUnsavedChanges={hasUnsavedChanges}
+          onSave={saveCurrentWorkflow}
+        />
+      )}
+
       <ErrorBoundary level="canvas" showDetails={false}>
         <div className="flow-wrapper">
           <ReactFlow
@@ -726,7 +736,13 @@ function App(): React.ReactElement {
             onNodeDragStop={handleNodeDragStop}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
-            onInit={setReactFlowInstance}
+            onInit={(instance) => {
+              setReactFlowInstance(instance);
+              setZoomPercent(Math.round(instance.getZoom() * 100));
+            }}
+            onMoveEnd={(_, viewport) => {
+              setZoomPercent(Math.round(viewport.zoom * 100));
+            }}
             fitView
             defaultEdgeOptions={{ type: 'custom', animated: false }}
             isValidConnection={(params) =>
@@ -761,19 +777,6 @@ function App(): React.ReactElement {
             <Background />
             <Controls />
             <HelperLines horizontal={helperLines.horizontal} vertical={helperLines.vertical} />
-            {showEditorToolbar && (
-              <EditorToolbar
-                onUndo={undo}
-                onRedo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onAutoLayout={autoLayout}
-                onGroupSelected={groupSelectedNodes}
-                onUngroupSelected={handleUngroupSelected}
-                hasSelection={hasSelection}
-                hasGroupSelected={hasGroupSelected}
-              />
-            )}
             <MiniMap
               className="app-minimap"
               position="bottom-left"
@@ -782,7 +785,7 @@ function App(): React.ReactElement {
               nodeBorderRadius={3}
               nodeStrokeWidth={1}
               maskColor="rgba(0, 0, 0, 0.35)"
-              style={{ margin: 16, left: 64, bottom: 'var(--minimap-bottom-offset, 0px)' }}
+              style={{ margin: 12, left: 54 }}
               pannable
               zoomable
             />
@@ -815,7 +818,7 @@ function App(): React.ReactElement {
 
       {!showWelcome && <ConnectionHintOverlay hint={connectionHint} />}
 
-      {!showWelcome && (
+      {!showWelcome && contextualSurfaces.showInspector && (
         <NodeInspectorPanel
           selectedNode={selectedNode}
           incomingEdges={selectedIncomingEdges}
@@ -826,15 +829,7 @@ function App(): React.ReactElement {
           onRetryNode={handleRetryNode}
           onDeleteNode={(nodeId) => void handleRemoveNode(nodeId)}
           onMoveNodeOrder={moveNodeOrder}
-          onClose={() => setSelectedNodeId(null)}
-        />
-      )}
-
-      {!showWelcome && (
-        <OutputFilmstrip
-          outputs={normalizedWorkflowOutputs}
-          nodes={nodes}
-          onOpenGallery={() => setShowCanvasGallery(true)}
+          onClose={contextualSurfaces.closeInspector}
         />
       )}
 
@@ -850,18 +845,31 @@ function App(): React.ReactElement {
         </div>
       )}
 
-      <ExecutionDock
-        isProcessing={isProcessing}
-        processed={dockProcessed}
-        total={dockTotal}
-        failedCount={failedNodes.length}
-        outputCount={normalizedWorkflowOutputs.length}
-        currentNodeName={currentNodeName}
-        onRun={() => runWorkflow()}
-        onStop={stopWorkflow}
-        onRetryFailed={handleRetryFailed}
-        onOpenOutputs={() => setShowCanvasGallery(true)}
-      />
+      {!showWelcome && (
+        <CommandDock
+          mode={contextualSurfaces.mode}
+          isProcessing={isProcessing}
+          processed={dockProcessed}
+          total={dockTotal}
+          failedCount={failedNodes.length}
+          outputCount={normalizedWorkflowOutputs.length}
+          currentNodeName={currentNodeName}
+          zoomPercent={zoomPercent}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasSelection={hasSelection}
+          hasGroupSelected={hasGroupSelected}
+          onRun={() => runWorkflow()}
+          onStop={stopWorkflow}
+          onRetryFailed={handleRetryFailed}
+          onOpenOutputs={() => setShowCanvasGallery(true)}
+          onUndo={undo}
+          onRedo={redo}
+          onAutoLayout={autoLayout}
+          onGroupSelected={groupSelectedNodes}
+          onUngroupSelected={handleUngroupSelected}
+        />
+      )}
 
       {showAssistantPanel && (
         <ErrorBoundary level={'component' as 'canvas' | 'node' | 'component'} showDetails={false}>

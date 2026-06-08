@@ -17,32 +17,61 @@
 /* Icon Mode Styles */
 .sidebar-container.icon-mode {
   position: fixed;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 72px;
+  left: 0;
+  top: 30px;
+  bottom: 0;
+  transform: none;
+  width: 44px;
   height: auto;
-  background: var(--settings-bg, #2a2a2a);
-  border: 1px solid var(--node-border, #3d3d3d);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  z-index: 100;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  z-index: 820;
   overflow: visible;
+  pointer-events: none;
 }
 
 .sidebar-icon-bar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 0;
-  gap: 8px;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+  padding: 8px 0;
   overflow: visible;
+  pointer-events: none;
+}
+
+.sidebar-icon-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-icon-island {
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--node-border, #3d3d3d) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-tertiary, #2a2a2a) 92%, transparent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.sidebar-icon-spacer {
+  width: 18px;
+  height: 1px;
+  margin: 2px 0;
+  background: color-mix(in srgb, var(--node-border, #3d3d3d) 76%, transparent);
 }
 
 .sidebar-icon-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--text-color, #a0a0a0);
@@ -50,29 +79,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 13px;
   transition: all 0.2s ease;
   position: relative;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.72;
 }
 
-.sidebar-icon-button:hover {
-  background: var(--node-bg, #3d3d3d);
-  opacity: 1;
-}
-
+.sidebar-icon-button:hover,
 .sidebar-icon-button.active {
-  background: var(--node-bg, #3d3d3d);
-  color: var(--primary-color, #ff6b6b);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
   opacity: 1;
+}
+
+.sidebar-icon-button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--text-color) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .sidebar-icon-button.primary {
-  background: var(--primary-color, #ffffff);
-  color: var(--bg-color, #2a2a2a);
-  margin-bottom: 8px;
+  background: var(--primary-color);
+  color: #111111;
   opacity: 1;
+}
+
+.sidebar-icon-button.sidebar-settings-button {
+  position: relative;
 }
 
 .sidebar-icon-button.primary:hover {
@@ -82,16 +115,16 @@
 
 .sidebar-icon-label {
   position: absolute;
-  left: calc(100% + 12px);
+  left: calc(100% + 9px);
   top: 50%;
   transform: translate(-6px, -50%);
-  padding: 6px 9px;
+  padding: 5px 7px;
   border: 1px solid var(--node-border, #3d3d3d);
-  border-radius: 7px;
+  border-radius: 6px;
   background: var(--settings-bg, #2a2a2a);
   color: var(--text-color, #e0e0e0);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -103,10 +136,16 @@
 }
 
 .sidebar-icon-button:hover .sidebar-icon-label,
-.sidebar-icon-button:focus-visible .sidebar-icon-label,
-.sidebar-icon-button.active .sidebar-icon-label {
+.sidebar-icon-button:focus-visible .sidebar-icon-label {
   opacity: 1;
   transform: translate(0, -50%);
+}
+
+.sidebar-icon-button.active .sidebar-icon-label,
+.sidebar-icon-button[aria-expanded='true'] .sidebar-icon-label,
+.sidebar-icon-button[aria-pressed='true'] .sidebar-icon-label {
+  opacity: 0;
+  transform: translate(-6px, -50%);
 }
 
 /* Badge styles for sidebar icons */

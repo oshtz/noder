@@ -1,4 +1,12 @@
-import React, { useMemo, useRef, useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  ChangeEvent,
+  KeyboardEvent,
+} from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FaPaperPlane, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import appIcon from '../../appICON.png';
@@ -155,6 +163,40 @@ const buildRequestMessages = (systemPrompt: string | undefined, messages: Messag
 const MAX_TOOL_ROUNDS = 8;
 const MAX_RECENT_MODELS = 6;
 const PANEL_OPEN_STORAGE_KEY = 'assistant-panel-open';
+const PANEL_WIDTH_STORAGE_KEY = 'assistant-panel-width';
+const DEFAULT_PANEL_WIDTH = 360;
+const MIN_PANEL_WIDTH = 300;
+const MAX_PANEL_WIDTH = 720;
+const PANEL_VIEWPORT_GUTTER = 72;
+const PANEL_KEYBOARD_RESIZE_STEP = 24;
+const MOBILE_PANEL_MEDIA_QUERY = '(max-width: 720px)';
+
+const usesMobilePanelLayout = (): boolean =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia(MOBILE_PANEL_MEDIA_QUERY).matches;
+
+const getMaxPanelWidth = (): number => {
+  if (typeof window === 'undefined') return MAX_PANEL_WIDTH;
+  if (usesMobilePanelLayout()) return MAX_PANEL_WIDTH;
+  return Math.max(
+    MIN_PANEL_WIDTH,
+    Math.min(MAX_PANEL_WIDTH, window.innerWidth - PANEL_VIEWPORT_GUTTER)
+  );
+};
+
+const clampPanelWidth = (width: number): number =>
+  Math.min(Math.max(width, MIN_PANEL_WIDTH), getMaxPanelWidth());
+
+const getStoredPanelWidth = (): number => {
+  try {
+    const stored = localStorage.getItem(PANEL_WIDTH_STORAGE_KEY);
+    const parsed = stored ? Number.parseInt(stored, 10) : DEFAULT_PANEL_WIDTH;
+    return Number.isFinite(parsed) ? clampPanelWidth(parsed) : DEFAULT_PANEL_WIDTH;
+  } catch {
+    return DEFAULT_PANEL_WIDTH;
+  }
+};
 
 const MODEL_CATALOG: ModelCatalogEntry[] = [
   {
@@ -383,6 +425,9 @@ const AssistantPanel: React.FC<AssistantPanelProps> = ({
   const [model, setModel] = useState(defaultModel);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelProvider, setModelProvider] = useState('All');
+  const [panelWidth, setPanelWidth] = useState(getStoredPanelWidth);
+  const [isResizingPanel, setIsResizingPanel] = useState(false);
+  const [isMobilePanelLayout, setIsMobilePanelLayout] = useState(usesMobilePanelLayout);
   const [recentModels, setRecentModels] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('assistant-recent-models');
@@ -495,44 +540,103 @@ const AssistantPanel: React.FC<AssistantPanelProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(PANEL_WIDTH_STORAGE_KEY, String(panelWidth));
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [panelWidth]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const clampWidthOnResize = (): void => {
+      if (usesMobilePanelLayout()) return;
+      setPanelWidth((currentWidth) => clampPanelWidth(currentWidth));
+    };
+
+    window.addEventListener('resize', clampWidthOnResize);
+    clampWidthOnResize();
+
+    return () => {
+      window.removeEventListener('resize', clampWidthOnResize);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const syncPanelLayout = (): void => {
+      setIsMobilePanelLayout(usesMobilePanelLayout());
+    };
+
+    syncPanelLayout();
+    window.addEventListener('resize', syncPanelLayout);
+
+    return () => {
+      window.removeEventListener('resize', syncPanelLayout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isResizingPanel) return undefined;
+
+    const handleMouseMove = (event: globalThis.MouseEvent): void => {
+      setPanelWidth(clampPanelWidth(window.innerWidth - event.clientX));
+    };
+
+    const handleMouseUp = (): void => {
+      setIsResizingPanel(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingPanel]);
+
+  useEffect(() => {
     const root = document.documentElement;
-    const panel = panelRef.current;
 
     const updateOffset = (): void => {
-      if (!isOpen || !panel) {
+      const panel = panelRef.current;
+      if (!panel) {
         root.style.setProperty('--assistant-panel-offset', '0px');
         return;
       }
-      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
+      if (isOpen && window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
         root.style.setProperty('--assistant-panel-offset', '0px');
         return;
       }
-      const width = panel.getBoundingClientRect().width;
-      root.style.setProperty('--assistant-panel-offset', `${Math.max(0, Math.round(width))}px`);
+      const rect = panel.getBoundingClientRect();
+      const rightInset = Math.max(0, Math.round(window.innerWidth - rect.right));
+      const width = Math.max(0, Math.round(rect.width));
+      root.style.setProperty('--assistant-panel-offset', `${width + rightInset}px`);
     };
 
     updateOffset();
-
-    if (!isOpen || !panel) {
-      return () => {
-        root.style.setProperty('--assistant-panel-offset', '0px');
-      };
-    }
+    const frameId = window.requestAnimationFrame(updateOffset);
 
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
       observer = new ResizeObserver(updateOffset);
-      observer.observe(panel);
-    } else {
-      window.addEventListener('resize', updateOffset);
+      if (panelRef.current) {
+        observer.observe(panelRef.current);
+      }
     }
+    window.addEventListener('resize', updateOffset);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       if (observer) {
         observer.disconnect();
-      } else {
-        window.removeEventListener('resize', updateOffset);
       }
+      window.removeEventListener('resize', updateOffset);
       root.style.setProperty('--assistant-panel-offset', '0px');
     };
   }, [isOpen]);
@@ -788,11 +892,43 @@ const AssistantPanel: React.FC<AssistantPanelProps> = ({
     setError('');
   };
 
+  const handleResizeStart = useCallback((event: React.MouseEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    setIsResizingPanel(true);
+  }, []);
+
+  const handleResizeKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowLeft' ? 1 : -1;
+    setPanelWidth((currentWidth) =>
+      clampPanelWidth(currentWidth + direction * PANEL_KEYBOARD_RESIZE_STEP)
+    );
+  }, []);
+
   return (
     <div
       ref={panelRef}
-      className={`assistant-panel ${isOpen ? 'open' : 'closed'} ${isLoading ? 'loading' : ''}`}
+      className={`assistant-panel ${isOpen ? 'open' : 'closed'} ${isLoading ? 'loading' : ''} ${
+        isResizingPanel ? 'is-resizing' : ''
+      }`}
+      style={isOpen && !isMobilePanelLayout ? { width: `${panelWidth}px` } : undefined}
     >
+      {isOpen && !isMobilePanelLayout && (
+        <div
+          className="assistant-resize-handle"
+          role="separator"
+          aria-label="Resize assistant panel"
+          aria-orientation="vertical"
+          aria-valuemin={MIN_PANEL_WIDTH}
+          aria-valuemax={getMaxPanelWidth()}
+          aria-valuenow={panelWidth}
+          tabIndex={0}
+          title="Drag to resize"
+          onMouseDown={handleResizeStart}
+          onKeyDown={handleResizeKeyDown}
+        />
+      )}
       <div className="assistant-header">
         <div>
           <div className="assistant-title" title="noder.bot">

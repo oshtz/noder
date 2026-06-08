@@ -15,6 +15,7 @@ import type { SchemaStatus, ImageFormState } from '../types/imageNode';
 import type { NodeSchemaDefinition } from '../nodes/nodeSchemas';
 
 import { logger } from '../utils/logger';
+import { isTauriRuntime } from '../utils/runtime';
 interface UseImageNodeSchemaOptions {
   modelId: string;
   definition: NodeSchemaDefinition;
@@ -52,6 +53,13 @@ export function useImageNodeSchema({
     const trimmedModelId = modelId?.trim();
 
     if (!trimmedModelId) {
+      setDynamicFields([]);
+      setSchemaStatus('idle');
+      setSchemaError(null);
+      return undefined;
+    }
+
+    if (!isTauriRuntime()) {
       setDynamicFields([]);
       setSchemaStatus('idle');
       setSchemaError(null);
@@ -124,6 +132,7 @@ export function useImageNodeSchema({
   const refreshSchema = useCallback(() => {
     const trimmedModelId = modelId?.trim();
     if (!trimmedModelId) return;
+    if (!isTauriRuntime()) return;
 
     logger.debug('[useImageNodeSchema] Clearing schema cache and refetching for:', trimmedModelId);
     clearSchemaCache();

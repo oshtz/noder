@@ -63,8 +63,8 @@ describe('NodeInspectorPanel', () => {
     expect(onRetryNode).toHaveBeenCalledWith('image-1');
   });
 
-  it('renders an empty inspector state when no node is selected', () => {
-    render(
+  it('renders nothing when no node is selected', () => {
+    const { container } = render(
       <NodeInspectorPanel
         selectedNode={null}
         incomingEdges={[]}
@@ -77,6 +77,7 @@ describe('NodeInspectorPanel', () => {
       />
     );
 
-    expect(screen.getByText('Select a node')).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText('Select a node')).not.toBeInTheDocument();
   });
 });

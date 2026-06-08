@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useWelcomeHandlers, type WelcomeHandlersConfig } from './useWelcomeHandlers';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '../utils/eventBus';
+import { isTauriRuntime } from '../utils/runtime';
 import { buildWorkflowDocument } from '../utils/workflowSchema';
 import { applyTemplate } from '../utils/workflowTemplates';
 import { markEdgeGlows } from '../utils/workflowHelpers';
@@ -55,6 +56,10 @@ vi.mock('../utils/workflowId', () => ({
   toSafeWorkflowId: vi.fn((name) => name?.replace(/\s+/g, '-').toLowerCase() || 'workflow'),
 }));
 
+vi.mock('../utils/runtime', () => ({
+  isTauriRuntime: vi.fn(() => true),
+}));
+
 describe('useWelcomeHandlers', () => {
   let setShowWelcome: ReturnType<typeof vi.fn>;
   let setWelcomePinned: ReturnType<typeof vi.fn>;
@@ -74,6 +79,7 @@ describe('useWelcomeHandlers', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isTauriRuntime).mockReturnValue(true);
 
     // Mock requestAnimationFrame for synchronous testing
     originalRaf = global.requestAnimationFrame;
@@ -357,6 +363,24 @@ describe('useWelcomeHandlers', () => {
       expect(loadWorkflow).toHaveBeenCalled();
       expect(mockReactFlowInstance.setViewport).not.toHaveBeenCalled();
     });
+
+    it('should create workflow in browser mode without Tauri calls', async () => {
+      vi.mocked(isTauriRuntime).mockReturnValue(false);
+
+      const { result } = renderHook(() => useWelcomeHandlers(config));
+
+      await act(async () => {
+        await result.current.handleCreateWorkflowFromWelcome('Browser Workflow');
+      });
+
+      expect(invoke).not.toHaveBeenCalled();
+      expect(loadWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'browser-workflow',
+          name: 'Browser Workflow',
+        })
+      );
+    });
   });
 
   // ==========================================================================
@@ -631,6 +655,19 @@ describe('useWelcomeHandlers', () => {
 
       expect(loadWorkflow).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+
+    it('should load provided workflow directly in browser mode', async () => {
+      vi.mocked(isTauriRuntime).mockReturnValue(false);
+      const { result } = renderHook(() => useWelcomeHandlers(config));
+      const workflow: Workflow = { id: 'browser-workflow', name: 'Browser Workflow' };
+
+      await act(async () => {
+        await result.current.handleLoadWorkflowFromWelcome(workflow);
+      });
+
+      expect(invoke).not.toHaveBeenCalled();
+      expect(loadWorkflow).toHaveBeenCalledWith(workflow);
     });
   });
 

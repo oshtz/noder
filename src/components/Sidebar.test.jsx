@@ -74,8 +74,6 @@ const buildProps = (overrides = {}) => ({
   onDefaultUpscalerModelChange: vi.fn(),
   edgeType: 'bezier',
   onEdgeTypeChange: vi.fn(),
-  showEditorToolbar: false,
-  onShowEditorToolbarChange: vi.fn(),
   onGoHome: vi.fn(),
   ...overrides,
 });
@@ -84,7 +82,6 @@ describe('Sidebar', () => {
   beforeEach(() => {
     useSettingsStore.setState({
       showTemplates: true,
-      showEditorToolbar: false,
     });
 
     invoke.mockImplementation(async (command) => {
@@ -140,7 +137,32 @@ describe('Sidebar', () => {
     expect(screen.getByText('Workflows')).toBeInTheDocument();
     expect(screen.getByText('Templates')).toBeInTheDocument();
     expect(screen.getByText('Gallery')).toBeInTheDocument();
-    expect(screen.getByText('Controls')).toBeInTheDocument();
+    expect(screen.getByText('Assistant')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('keeps settings inside the centered icon rail', () => {
+    render(<Sidebar {...buildProps()} />);
+
+    const rail = screen.getByRole('group', { name: /workflow navigation/i });
+    expect(rail).toHaveClass('sidebar-icon-island');
+    expect(screen.queryByRole('group', { name: /application controls/i })).not.toBeInTheDocument();
+    expect(screen.getByTitle('Settings')).toHaveClass('sidebar-settings-button');
+    expect(rail).toContainElement(screen.getByTitle('Settings'));
+  });
+
+  it('toggles the assistant from the icon rail', async () => {
+    const user = userEvent.setup();
+    const setShowAssistantPanel = vi.fn();
+    useSettingsStore.setState({
+      showTemplates: true,
+      showAssistantPanel: false,
+      setShowAssistantPanel,
+    });
+
+    render(<Sidebar {...buildProps()} />);
+
+    await user.click(screen.getByTitle('Assistant'));
+    expect(setShowAssistantPanel).toHaveBeenCalledWith(true);
   });
 });
