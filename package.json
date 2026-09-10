@@ -109,6 +109,6 @@
     "rollup-plugin-visualizer": "^5.12.0",
     "typescript": "^5.9.3",
     "vite": "^8.1.2",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.11"
   }
 }
