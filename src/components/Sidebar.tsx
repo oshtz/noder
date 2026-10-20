@@ -568,7 +568,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     className={`workflow-button ghost${hasUnsavedChanges ? '' : ' is-disabled'}`}
                     onClick={() => {
                       if (!hasUnsavedChanges) return;
-                      onSave && onSave();
+                      onSave?.();
                     }}
                     title={hasUnsavedChanges ? 'Save Changes' : 'No changes to save'}
                     disabled={!hasUnsavedChanges}
